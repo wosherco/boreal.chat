@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [
     sentrySvelteKit({
       sourceMapsUploadOptions: {
-        org: "plchat",
+        org: "borealchat",
         project: "webapp",
       },
     }),
