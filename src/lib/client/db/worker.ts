@@ -3,7 +3,7 @@ import { worker } from "@electric-sql/pglite/worker";
 
 worker({
   async init(options) {
-    return new PGlite("idb://plchat-syncdata", options);
-    // return new PGlite('opfs-ahp://plchat-syncdata', options);
+    return new PGlite("idb://borealchat-syncdata", options);
+    // return new PGlite('opfs-ahp://borealchat-syncdata', options);
   },
 });

@@ -1,4 +1,20 @@
 services:
+  boreal.chat:
+    image: ghcr.io/wosherco/boreal.chat
+    ports:
+      - 3000:3000
+    environment:
+      PUBLIC_ENVIRONMENT: development
+      PUBLIC_URL: https://localhost:3001
+      PUBLIC_SENTRY_DSN: ""
+      GOOGLE_AUTH_CLIENT_ID: ""
+      GOOGLE_AUTH_CLIENT_SECRET: ""
+      GOOGLE_AUTH_REDIRECT_URI: "http://localhost:3000/auth/google/callback"
+      DATABASE_URL: "postgres://postgres:password@postgres:5432/borealchat"
+      ELECTRIC_SQL_URL: "http://electric:3000"
+    volumes:
+      - .env:/app/.env
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -6,7 +22,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     ports:
-      - 5432:5432
+      - 5432
     volumes:
       - postgres-data:/var/lib/postgresql/data
     command:
@@ -28,7 +44,7 @@ services:
       # See https://electric-sql.com/docs/guides/security
       ELECTRIC_INSECURE: true
     ports:
-      - "3000:3000"
+      - 3000
     depends_on:
       postgres:
         condition: service_healthy
