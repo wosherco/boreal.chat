@@ -28,7 +28,12 @@ RUN CI=1 pnpm build
 
 # Actual deploy
 FROM base AS app
-COPY --from=build /app/build /prod
+COPY --from=build /app/build /prod/build
+COPY --from=build /app/package.json /prod/package.json
+COPY --from=build /app/pnpm-lock.yaml /prod/pnpm-lock.yaml
+COPY --from=build /app/drizzle /prod/drizzle
+COPY --from=build /app/drizzle.config.ts /prod/drizzle.config.ts
+COPY --from=build /app/node_modules /prod/node_modules
 WORKDIR /prod
 
 ENV PUBLIC_ENVIRONMENT=production
