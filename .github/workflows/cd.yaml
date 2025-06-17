@@ -100,7 +100,6 @@ jobs:
         uses: ./.github/setup
 
       - name: Build and upload sourcemaps for app
-        working-directory: /
         env:
           CI: 1
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
