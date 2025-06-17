@@ -4,12 +4,12 @@ services:
     ports:
       - 3000:3000
     environment:
-      PUBLIC_ENVIRONMENT: development
-      PUBLIC_URL: https://localhost:3001
+      PUBLIC_ENVIRONMENT: production
+      PUBLIC_URL: https://boreal.chat
       PUBLIC_SENTRY_DSN: ""
       GOOGLE_AUTH_CLIENT_ID: ""
       GOOGLE_AUTH_CLIENT_SECRET: ""
-      GOOGLE_AUTH_REDIRECT_URI: "http://localhost:3000/auth/google/callback"
+      GOOGLE_AUTH_REDIRECT_URI: "https://boreal.chat/auth/google/callback"
       DATABASE_URL: "postgres://postgres:password@postgres:5432/borealchat"
       ELECTRIC_SQL_URL: "http://electric:3000"
     volumes:
