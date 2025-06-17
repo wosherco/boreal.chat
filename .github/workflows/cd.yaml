@@ -54,7 +54,7 @@ jobs:
       - name: Tag and push images
         run: |
           # Get all service names from docker-compose.build.yaml
-          SERVICES=$(grep -E "^  [a-zA-Z0-9_-]+:" docker-compose.build.yaml | sed 's/://g' | awk '{print $1}')
+          SERVICES=$(grep -E "^  [a-zA-Z0-9_.-]+:" docker-compose.build.yaml | sed 's/://g' | awk '{print $1}')
 
           # Tag and push each image
           for SERVICE in $SERVICES; do
@@ -70,7 +70,7 @@ jobs:
             echo "Processing $SERVICE with image $IMAGE_NAME"
             
             # Tag with version and SHA
-            GHCR_IMAGE="${REGISTRY}/${OWNER}/kokoro-${SERVICE}"
+            GHCR_IMAGE="${REGISTRY}/${OWNER}/${SERVICE}"
             SHA_TAG=$(echo ${{ github.sha }} | cut -c1-7)
             
             docker tag $IMAGE_NAME $GHCR_IMAGE:$VERSION
