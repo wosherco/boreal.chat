@@ -1,0 +1,44 @@
+FROM node:20.17-slim AS base
+
+RUN npm install -g pnpm@9.12.2
+
+WORKDIR /app
+
+# Copying needed files
+COPY ./package.json /app/package.json
+COPY ./.npmrc /app/.npmrc
+COPY ./.nvmrc /app/.nvmrc
+COPY ./pnpm-lock.yaml /app/pnpm-lock.yaml
+COPY ./.env.example /app/.env.example
+
+FROM base AS deps
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+
+FROM deps AS build
+
+ENV PUBLIC_ENVIRONMENT=production
+ENV NODE_ENV=production
+ENV LOG_LEVEL=info
+
+# Copying needed folders
+COPY . .
+
+RUN cp .env.example .env
+RUN CI=1 pnpm build
+
+# Actual deploy
+FROM base AS app
+COPY --from=build /app/build /prod
+WORKDIR /prod
+
+ENV PUBLIC_ENVIRONMENT=production
+ENV NODE_ENV=production
+
+EXPOSE 3000
+
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+
+CMD ["pnpm", "start"]
+

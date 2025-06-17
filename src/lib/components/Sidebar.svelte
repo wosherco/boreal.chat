@@ -1,0 +1,181 @@
+<script lang="ts">
+  import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+  import { Button } from "./ui/button";
+  import { Skeleton } from "./ui/skeleton";
+  import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "./ui/tooltip";
+  import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator,
+    DropdownMenuLabel,
+  } from "./ui/dropdown-menu";
+  import {
+    LogOutIcon,
+    PlusIcon,
+    SearchIcon,
+    SettingsIcon,
+    MessageSquareIcon,
+    ChevronsUpDownIcon,
+    SunIcon,
+    MoonIcon,
+    MonitorIcon,
+    Loader2,
+  } from "@lucide/svelte";
+  import { goto } from "$app/navigation";
+  import { mode, setMode } from "mode-watcher";
+  import type { Chat, HydratableDataResult } from "$lib/common/sharedTypes";
+  import VirtualizedChatList from "./chatList/VirtualizedChatList.svelte";
+  import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
+  import BetaBadge from "./BetaBadge.svelte";
+
+  interface Props {
+    loading: boolean;
+    user?: {
+      name: string;
+      email: string;
+      profilePicture: string;
+    };
+    authenticated?: boolean;
+    chats: HydratableDataResult<Chat[]>;
+    onSearchOpen?: () => void;
+    onNewChat?: () => void;
+  }
+
+  const { user, loading, authenticated, chats, onSearchOpen, onNewChat }: Props = $props();
+
+  // Detect if user is on Mac or Windows/Linux for keyboard shortcuts
+  const isMac =
+    typeof navigator !== "undefined" && navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+  const cmdKey = isMac ? "⌘" : "Ctrl";
+</script>
+
+<TooltipProvider>
+  <div class="bg-sidebar text-sidebar-foreground flex h-full w-80 flex-col overflow-hidden">
+    <!-- Header -->
+    <a href="/" class="flex items-center justify-between p-4">
+      <h1 class="ml-12 text-lg font-semibold">boreal.chat</h1>
+      <BetaBadge />
+    </a>
+
+    <!-- New Chat and Search Row -->
+    <div class="flex items-center gap-2 p-3">
+      <!-- New Chat Button -->
+      <Tooltip>
+        <TooltipTrigger>
+          <Button variant="default" size="icon" onclick={onNewChat} class="flex-shrink-0">
+            <PlusIcon class="size-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>New chat ({cmdKey}+Shift+O)</p>
+        </TooltipContent>
+      </Tooltip>
+
+      <!-- Search Button -->
+      <Button
+        variant="secondary"
+        onclick={onSearchOpen}
+        class="bg-input/50 border-input hover:bg-input/70 text-foreground/70 hover:text-foreground flex-1 justify-between border"
+      >
+        <div class="flex items-center gap-2">
+          <SearchIcon class="size-4" />
+          <span>Search...</span>
+        </div>
+        <div class="bg-muted/80 border-border rounded border px-1.5 py-0.5 font-mono text-xs">
+          {cmdKey}+K
+        </div>
+      </Button>
+    </div>
+
+    <!-- Chat List -->
+    <div class="flex-1 overflow-y-auto p-2">
+      {#if chats.loading}
+        <div class="flex flex-col items-center justify-center">
+          <Loader2 class="size-4 animate-spin" />
+        </div>
+      {:else}
+        <VirtualizedChatList chats={chats.data} />
+      {/if}
+    </div>
+
+    <!-- Account Section -->
+    <div class="p-3">
+      {#if loading}
+        <!-- Skeleton State -->
+        <div class="flex items-center gap-2">
+          <Skeleton class="size-8 rounded-full" />
+          <div class="flex-1 space-y-1">
+            <Skeleton class="h-4 w-24" />
+            <Skeleton class="h-3 w-16" />
+          </div>
+        </div>
+      {:else if !authenticated}
+        <!-- Login Button -->
+        <Button href="/auth" class="w-full" variant="default">Sign In</Button>
+      {:else if user}
+        <!-- User Dropdown -->
+        <DropdownMenu>
+          <DropdownMenuTrigger class="w-full">
+            <Button variant="ghost" class="h-auto w-full justify-start p-2 text-start">
+              <div class="flex w-full items-center gap-2">
+                <Avatar class="size-8">
+                  <AvatarImage src={user.profilePicture} />
+                  <AvatarFallback class="text-xs">
+                    {user.name.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div class="flex min-w-0 flex-1 flex-col items-start">
+                  <p class="w-full truncate text-sm font-medium">{user.name}</p>
+                  <p class="text-muted-foreground text-xs">Free</p>
+                </div>
+                <ChevronsUpDownIcon class="size-4" />
+              </div>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" class="w-56">
+            <DropdownMenuLabel>
+              <div class="flex flex-col space-y-1">
+                <p class="text-sm leading-none font-medium">{user.name}</p>
+                <p class="text-muted-foreground text-xs leading-none">{user.email}</p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div class="px-2 py-2">
+              <div class="flex flex-row items-center justify-between gap-2">
+                <span class="text-sm font-medium">Theme</span>
+                <Tabs
+                  value={mode.current}
+                  onValueChange={(value) => setMode(value as "system" | "light" | "dark")}
+                >
+                  <TabsList>
+                    <TabsTrigger value="system">
+                      <MonitorIcon class="size-4" />
+                    </TabsTrigger>
+                    <TabsTrigger value="light">
+                      <SunIcon class="size-4" />
+                    </TabsTrigger>
+                    <TabsTrigger value="dark">
+                      <MoonIcon class="size-4" />
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onclick={() => goto("/settings")}>
+              <SettingsIcon class="mr-2 size-4" />
+              <span>Settings</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onclick={() => console.log("TODO")} variant="destructive">
+              <LogOutIcon class="mr-2 size-4" />
+              <span>Log out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      {/if}
+    </div>
+  </div>
+</TooltipProvider>

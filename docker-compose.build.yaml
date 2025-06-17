@@ -1,0 +1,13 @@
+services:
+  boreal.chat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    ports:
+      - 3000:3000
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+    volumes:
+      - .env:/app/.env

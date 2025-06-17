@@ -1,0 +1,27 @@
+<script lang="ts">
+  import type { Snippet } from "svelte";
+  import type { LayoutData } from "./$types";
+  import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
+  import { Loader2Icon } from "@lucide/svelte";
+  import { goto } from "$app/navigation";
+
+  const { data, children }: { data: LayoutData; children: Snippet } = $props();
+
+  const currentUser = useCurrentUser(data);
+
+  $effect(() => {
+    if (!$currentUser.loading && $currentUser.data?.authenticated) {
+      goto("/");
+    }
+  });
+</script>
+
+{#if $currentUser.loading}
+  <div class="flex h-screen w-screen items-center justify-center">
+    <div class="flex flex-col items-center justify-center">
+      <Loader2Icon class="size-10 animate-spin" />
+    </div>
+  </div>
+{:else if !$currentUser.data?.authenticated}
+  {@render children()}
+{/if}

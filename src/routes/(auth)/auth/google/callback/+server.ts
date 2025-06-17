@@ -1,0 +1,107 @@
+import { decodeIdToken, type OAuth2Tokens } from "arctic";
+import type { RequestHandler } from "./$types";
+import {
+  createSession,
+  generateSessionToken,
+  googleProvider,
+  setSessionTokenCookie,
+} from "$lib/server/auth";
+import { db } from "$lib/server/db";
+import { accountTable, userTable } from "$lib/server/db/schema";
+import { and, eq } from "drizzle-orm";
+
+export const GET: RequestHandler = async (event) => {
+  const code = event.url.searchParams.get("code");
+  const state = event.url.searchParams.get("state");
+  const storedState = event.cookies.get("google_oauth_state") ?? null;
+  const codeVerifier = event.cookies.get("google_code_verifier") ?? null;
+
+  if (code === null || state === null || storedState === null || codeVerifier === null) {
+    return new Response("Missing required parameters.", {
+      status: 400,
+    });
+  }
+  if (state !== storedState) {
+    return new Response("State mismatch.", {
+      status: 400,
+    });
+  }
+
+  let tokens: OAuth2Tokens;
+  try {
+    tokens = await googleProvider.validateAuthorizationCode(code, codeVerifier);
+  } catch (e) {
+    console.error(e);
+
+    // Invalid code or client credentials
+    return new Response("Invalid code or client credentials.", {
+      status: 400,
+    });
+  }
+
+  // https://developers.google.com/identity/gsi/web/guides/verify-google-id-token#using-a-google-api-client-library
+  const claims = decodeIdToken(tokens.idToken()) as {
+    sub: string;
+    name: string;
+    picture: string;
+    family_name: string;
+    given_name: string;
+    email: string;
+    email_verified: boolean;
+  };
+
+  const googleUserId = claims.sub;
+
+  const [existingAccount] = await db
+    .select()
+    .from(accountTable)
+    .where(and(eq(accountTable.platform, "GOOGLE"), eq(accountTable.platformId, googleUserId)));
+
+  // Existing User
+  if (existingAccount !== undefined) {
+    const sessionToken = generateSessionToken();
+    const session = await createSession(sessionToken, existingAccount.userId);
+    setSessionTokenCookie(event, sessionToken, session.expiresAt);
+
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: "/",
+      },
+    });
+  }
+
+  const user = await db.transaction(async (tx) => {
+    const [user] = await tx
+      .insert(userTable)
+      .values({
+        email: claims.email,
+        name: `${claims.given_name} ${claims.family_name}`,
+        profilePicture: claims.picture,
+      })
+      .returning();
+
+    if (!user) {
+      throw new Error("Failed to create user");
+    }
+
+    await tx.insert(accountTable).values({
+      platform: "GOOGLE",
+      platformId: googleUserId,
+      userId: user.id,
+    });
+
+    return user;
+  });
+
+  const sessionToken = generateSessionToken();
+  const session = await createSession(sessionToken, user.id);
+  setSessionTokenCookie(event, sessionToken, session.expiresAt);
+
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: "/",
+    },
+  });
+};

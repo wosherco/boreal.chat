@@ -1,0 +1,16 @@
+{
+    # Admin API remains on 2020
+    admin 0.0.0.0:2020
+
+    # Use Caddy’s internal CA for all certs (no ACME → no HTTP challenge on :80)
+    local_certs
+
+    # Disable only the HTTP→HTTPS redirect (so no listener on :80)
+    auto_https disable_redirects
+}
+
+# Serve HTTPS *only* on port 3001
+https://localhost:5174 {
+    reverse_proxy localhost:5173
+    encode gzip
+}

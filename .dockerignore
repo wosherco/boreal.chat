@@ -1,0 +1,8 @@
+.env
+.github
+.vscode
+.svelte-kit
+.wrangler
+node_modules
+build
+docs

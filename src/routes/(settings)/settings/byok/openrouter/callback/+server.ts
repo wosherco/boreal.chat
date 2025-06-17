@@ -1,0 +1,55 @@
+import type { RequestHandler } from "./$types";
+import { db } from "$lib/server/db";
+import { openRouterKeyTable } from "$lib/server/db/schema";
+import { eq } from "drizzle-orm";
+
+export const GET: RequestHandler = async (event) => {
+  const code = event.url.searchParams.get("code");
+  const codeVerifier = event.cookies.get("openrouter_code_verifier");
+  const user = event.locals.user;
+
+  if (!code || !codeVerifier || !user) {
+    return new Response("Invalid request", { status: 400 });
+  }
+
+  const res = await fetch("https://openrouter.ai/api/v1/auth/keys", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      code,
+      code_verifier: codeVerifier,
+      code_challenge_method: "S256",
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error("OpenRouter error", text);
+    return new Response("Failed to obtain key", { status: 500 });
+  }
+
+  const data = (await res.json()) as { key: string; user_id: string };
+
+  const [existing] = await db
+    .select()
+    .from(openRouterKeyTable)
+    .where(eq(openRouterKeyTable.userId, user.id));
+
+  if (existing) {
+    await db
+      .update(openRouterKeyTable)
+      .set({ apiKey: data.key, openRouterUserId: data.user_id, updatedAt: new Date() })
+      .where(eq(openRouterKeyTable.userId, user.id));
+  } else {
+    await db.insert(openRouterKeyTable).values({
+      userId: user.id,
+      openRouterUserId: data.user_id,
+      apiKey: data.key,
+    });
+  }
+
+  return new Response(null, {
+    status: 302,
+    headers: { Location: "/settings/byok" },
+  });
+};

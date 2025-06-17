@@ -1,0 +1,321 @@
+<script lang="ts">
+  import type { MessageWithOptionalChainRow, SegmentJson } from "$lib/common/sharedTypes";
+  import { cn } from "$lib/utils";
+  import type { MessageTreeNode } from "$lib/utils/tree";
+  import {
+    AlertCircleIcon,
+    ChevronDownIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    CopyIcon,
+    EditIcon,
+    RotateCcwIcon,
+  } from "@lucide/svelte";
+  import { Button } from "../ui/button";
+  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+  import { toast } from "svelte-sonner";
+  import { MODEL_DETAILS, type ModelId } from "$lib/common/ai/models";
+  import ModelPickerPopover from "../chatInput/ModelPickerPopover.svelte";
+  import ReasoningSegment from "./ReasoningSegment.svelte";
+  import { orpc } from "$lib/client/orpc";
+  import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+  import Markdown from "../markdown/Markdown.svelte";
+  import ChatMessageInlineInput from "./ChatMessageInlineInput.svelte";
+
+  interface Props {
+    message: MessageWithOptionalChainRow;
+    messageNode?: MessageTreeNode;
+    onChangeThreadId?: (newThreadId: string) => void;
+  }
+
+  const { message, messageNode, onChangeThreadId }: Props = $props();
+
+  let editingMessage = $state(false);
+  let messageContainer = $state<HTMLDivElement>();
+
+  const isUser = $derived(message.role === "user");
+
+  const otherVersions = $derived(
+    messageNode?.parent?.children
+      ?.filter((child) => child.value.id !== message.id)
+      ?.sort((a, b) => a.value.version - b.value.version) ?? [],
+  );
+
+  function nextThread() {
+    const nextVersion = message.version + 1;
+    const nextThread = otherVersions.find((child) => child.value.version === nextVersion);
+    if (nextThread) {
+      onChangeThreadId?.(nextThread.value.threadId);
+    }
+  }
+
+  function previousThread() {
+    const previousVersion = message.version - 1;
+    const previousThread = otherVersions.find((child) => child.value.version === previousVersion);
+    if (previousThread) {
+      onChangeThreadId?.(previousThread.value.threadId);
+    }
+  }
+
+  type ChatSegment = SegmentJson & {
+    streamed: boolean;
+  };
+
+  const cleanedSegments = $derived.by(() => {
+    const { segments: dbSegments, tokenStream: streamedSegments } = message;
+    let cleanedSegments: ChatSegment[] = [];
+
+    if (dbSegments) {
+      let cacheSegment: ChatSegment | undefined;
+
+      for (const segment of dbSegments) {
+        switch (segment.kind) {
+          case "reasoning":
+          case "text":
+            {
+              if (cacheSegment) {
+                if (cacheSegment.kind === segment.kind) {
+                  if (!cacheSegment.content) {
+                    cacheSegment.content = "";
+                  }
+
+                  if (segment.content) {
+                    cacheSegment.content += segment.content;
+                  }
+                } else {
+                  cleanedSegments.push(cacheSegment);
+                  cacheSegment = {
+                    ...segment,
+                    streamed: false,
+                  };
+                }
+              } else {
+                cacheSegment = {
+                  ...segment,
+                  streamed: false,
+                };
+              }
+            }
+            continue;
+          case "tool_call":
+          case "tool_result":
+            {
+              if (cacheSegment) {
+                cleanedSegments.push(cacheSegment);
+                cacheSegment = undefined;
+              }
+
+              cleanedSegments.push({
+                ...segment,
+                streamed: false,
+              });
+            }
+            continue;
+        }
+      }
+
+      if (cacheSegment) {
+        cleanedSegments.push(cacheSegment);
+      }
+    }
+
+    if (streamedSegments) {
+      let segmentCache: ChatSegment | undefined;
+
+      let i = 0;
+      for (const segment of streamedSegments) {
+        if (segment.kind === "tool_call" || segment.kind === "tool_result") {
+          // TODO: Add support for streaming tool calls and results
+          continue;
+        }
+
+        if (segmentCache) {
+          if (segmentCache.kind === segment.kind) {
+            if (!segmentCache.content) {
+              segmentCache.content = "";
+            }
+
+            if (segment.token) {
+              segmentCache.content += segment.token;
+            }
+          } else {
+            cleanedSegments.push(segmentCache);
+            segmentCache = {
+              kind: segment.kind,
+              content: segment.token ? segment.token : "",
+              ordinal: i,
+              toolCallId: null,
+              toolName: null,
+              toolArgs: null,
+              toolResult: null,
+              streamed: true,
+            };
+          }
+        } else {
+          segmentCache = {
+            kind: segment.kind,
+            content: segment.token ? segment.token : "",
+            ordinal: i,
+            toolCallId: null,
+            toolName: null,
+            toolArgs: null,
+            toolResult: null,
+            streamed: true,
+          };
+        }
+
+        i++;
+      }
+
+      if (segmentCache) {
+        cleanedSegments.push(segmentCache);
+      }
+    }
+
+    return cleanedSegments;
+  });
+
+  const cleanedMessageText = $derived(
+    cleanedSegments
+      .filter((segment) => segment.kind === "text")
+      .map((segment) => segment.content)
+      .join("") || "",
+  );
+
+  function copyToClipboard() {
+    navigator.clipboard.writeText(cleanedMessageText);
+    toast.success("Copied message to clipboard!");
+  }
+
+  async function regenerateMessage(newModel: ModelId) {
+    const result = await orpc.v1.chat.regenerateMessage({
+      model: newModel,
+      messageId: message.id,
+    });
+
+    onChangeThreadId?.(result.threadId);
+  }
+
+  function onSubmitEdit(newThreadId: string) {
+    onChangeThreadId?.(newThreadId);
+    editingMessage = false;
+  }
+
+  function onCancelEdit() {
+    editingMessage = false;
+  }
+</script>
+
+<div class="group" bind:this={messageContainer}>
+  {#if editingMessage && isUser}
+    <ChatMessageInlineInput
+      defaultValue={cleanedMessageText}
+      onSubmit={onSubmitEdit}
+      parentMessageId={message.parentMessageId}
+      chatId={message.chatId}
+      onCancel={onCancelEdit}
+    />
+  {:else}
+    {#if message.status === "error"}
+      <Alert variant="destructive">
+        <AlertCircleIcon />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>
+          <p>{message.error ?? "Unknown error"}</p>
+          <p>Please try again later by regenerating the message.</p>
+        </AlertDescription>
+      </Alert>
+    {:else}
+      <div
+        class={cn(
+          isUser
+            ? "bg-muted border-input ml-auto w-fit rounded-lg border px-4 py-2 shadow-sm"
+            : "mr-auto",
+        )}
+      >
+        {#each cleanedSegments as segment}
+          {#if segment.kind === "text"}
+            <Markdown content={segment.content ?? ""} />
+          {:else if segment.kind === "reasoning"}
+            <ReasoningSegment reasoning={segment.content ?? ""} isReasoning={segment.streamed} />
+          {:else if segment.kind === "tool_call"}
+            TODO: Tool call
+          {:else if segment.kind === "tool_result"}
+            TODO: Tool result
+          {/if}
+        {/each}
+      </div>
+    {/if}
+
+    {#if message.status !== "processing"}
+      <TooltipProvider>
+        <div
+          class={cn("flex w-fit flex-row items-center gap-1 pt-2", isUser ? "ml-auto" : "mr-auto")}
+        >
+          {#if message.status === "finished"}
+            <Tooltip>
+              <TooltipTrigger>
+                <Button variant="ghost" size="small-icon" onclick={copyToClipboard}>
+                  <CopyIcon />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Copy</TooltipContent>
+            </Tooltip>
+          {/if}
+
+          {#if isUser}
+            <Tooltip>
+              <TooltipTrigger>
+                <Button
+                  variant="ghost"
+                  size="small-icon"
+                  onclick={() => (editingMessage = true)}
+                  disabled={!messageNode}
+                >
+                  <EditIcon />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Edit</TooltipContent>
+            </Tooltip>
+          {/if}
+
+          {#if !isUser}
+            <Tooltip>
+              <TooltipTrigger>
+                <ModelPickerPopover selectedModel={message.model} onSelect={regenerateMessage}>
+                  <Button variant="ghost" size="sm">
+                    <RotateCcwIcon />
+                    <ChevronDownIcon />
+                  </Button>
+                </ModelPickerPopover>
+              </TooltipTrigger>
+              <TooltipContent
+                >Regenerate ({MODEL_DETAILS[message.model].displayName})</TooltipContent
+              >
+            </Tooltip>
+          {/if}
+
+          {#if otherVersions.length >= 1}
+            <Button
+              variant="ghost"
+              size="small-icon"
+              onclick={previousThread}
+              disabled={message.version === 1}
+            >
+              <ChevronLeftIcon />
+            </Button>
+            <p>{message.version}/{otherVersions.length + 1}</p>
+            <Button
+              variant="ghost"
+              size="small-icon"
+              onclick={nextThread}
+              disabled={message.version === otherVersions.length + 1}
+            >
+              <ChevronRightIcon />
+            </Button>
+          {/if}
+        </div>
+      </TooltipProvider>
+    {/if}
+  {/if}
+</div>

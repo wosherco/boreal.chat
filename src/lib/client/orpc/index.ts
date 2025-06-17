@@ -1,0 +1,16 @@
+import { createORPCClient } from "@orpc/client";
+import { RPCLink } from "@orpc/client/fetch";
+import type { RouterClient } from "@orpc/server";
+import type { appRouter } from "$lib/server/orpc/router";
+import { PUBLIC_URL } from "$env/static/public";
+
+const link = new RPCLink({
+  url: `${PUBLIC_URL}/api/rpc`,
+  // headers: () => ({
+  //   authorization: 'Bearer token',
+  // }),
+  // fetch: <-- provide fetch polyfill fetch if needed
+});
+
+// Create a client for your router
+export const orpc: RouterClient<typeof appRouter> = createORPCClient(link);
