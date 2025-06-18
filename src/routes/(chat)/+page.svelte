@@ -83,10 +83,13 @@
     </div>
   {:else}
     <h1 class="text-2xl font-bold">Welcome to boreal.chat!</h1>
-    <ul class="list-inside list-disc">
-      <li>Fastest, most reliable AI chat application</li>
-      <li>Use any model you want, and add web search, attachments, and more!</li>
+    <ul class="list-inside list-disc space-y-2">
+      <li>The upcoming best AI chat platform.</li>
+      <li>Use any model you want, and add web search, and more!</li>
       <li>Completely open-source.</li>
     </ul>
+    <div class="flex justify-center pt-4">
+      <Button href="/auth">Sign up Today</Button>
+    </div>
   {/if}
 </div>
