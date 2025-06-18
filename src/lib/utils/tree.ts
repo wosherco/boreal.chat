@@ -9,10 +9,18 @@ export type MessageTree = ReturnType<typeof createMessageTree>;
 export type MessageTreeNode = MessageTree["roots"][number];
 
 export function findMessageTreePath(
-  node: MessageTreeNode,
+  node: MessageTreeNode | MessageTreeNode[],
   check: (value: MessageWithOptionalChainRow) => boolean,
   path: MessageTreeNode[] = [],
 ): MessageTreeNode[] | undefined {
+  if (Array.isArray(node)) {
+    for (const n of node) {
+      const result = findMessageTreePath(n, check, [n]);
+      if (result) return result;
+    }
+    return undefined;
+  }
+
   path.push(node);
 
   if (check(node.value)) return [...path];
@@ -49,4 +57,38 @@ export function findMaxVersionPath(node: MessageTreeNode): MessageTreeNode[] {
   }
 
   return path;
+}
+
+export function appendParentsToFirstNode(
+  roots: MessageTreeNode[],
+  generatedThreadedChat: MessageTreeNode[],
+) {
+  if (generatedThreadedChat.length > 0) {
+    const firstNode = generatedThreadedChat[0];
+
+    firstNode.parent = {
+      value: roots[0].value,
+      children: roots,
+    };
+  }
+
+  return generatedThreadedChat;
+}
+
+export function createThreadedChat(
+  messages: MessageWithOptionalChainRow[],
+  aimAtMessageId: string,
+) {
+  const messageTree = createMessageTree(messages);
+
+  const path = findMessageTreePath(messageTree.roots, (val) => val.id === aimAtMessageId);
+
+  if (!path) {
+    return [];
+  }
+
+  const lastNode = path[path.length - 1];
+  const restThread = findMaxVersionPath(lastNode);
+
+  return appendParentsToFirstNode(messageTree.roots, [...path.slice(1), ...restThread.slice(1)]);
 }

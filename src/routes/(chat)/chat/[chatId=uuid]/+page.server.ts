@@ -42,7 +42,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   }
 
   const messages = fetchThreadMessagesRecursive(db, lastMessageInfo.latestThreadId, {
-    maxDepth: 10,
+    maxDepth: 15,
   });
 
   return {

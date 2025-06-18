@@ -5,7 +5,8 @@
     setCurrentChatState,
   } from "$lib/client/state/currentChatState.svelte";
   import type { ChatWithSettings, MessageWithOptionalChainRow } from "$lib/common/sharedTypes";
-  import { createMessageTree, findMaxVersionPath, type MessageTreeNode } from "$lib/utils/tree";
+  import { createThreadedChat, type MessageTreeNode } from "$lib/utils/tree";
+  import { untrack } from "svelte";
   import ChatMessage from "./ChatMessage.svelte";
 
   interface Props {
@@ -16,33 +17,40 @@
 
   const { messages, chatId, chat }: Props = $props();
 
-  const messageTree = $derived(createMessageTree(messages));
-
   let threadedChat = $state<MessageTreeNode[]>([]);
   let currentChatId = $state("");
 
-  function fixFirstNodes(generatedThreadedChat: MessageTreeNode[]) {
-    if (generatedThreadedChat.length >= 2) {
-      const firstNode = generatedThreadedChat[0];
-      const secondNode = generatedThreadedChat[1];
-
-      secondNode.parent = firstNode;
-    }
-
-    return generatedThreadedChat;
-  }
+  const lastMessage = $derived(
+    threadedChat.length > 0 ? threadedChat[threadedChat.length - 1].value : null,
+  );
+  const latestMessage = $derived(
+    messages.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0],
+  );
 
   $effect(() => {
-    currentChatId = chatId;
-    const generatedThreadedChat = findMaxVersionPath({
-      children: $state.snapshot(messageTree).roots,
-      value: messages[0],
-    });
+    if (currentChatId !== chatId) {
+      currentChatId = chatId;
+      threadedChat = createThreadedChat(messages, latestMessage?.id);
+    } else {
+      const untrackedLastMessage = untrack(() => lastMessage);
 
-    threadedChat = fixFirstNodes(generatedThreadedChat);
+      if (untrackedLastMessage) {
+        threadedChat = createThreadedChat(messages, untrackedLastMessage.id);
+      }
+    }
   });
 
-  const lastMessage = $derived(threadedChat[threadedChat.length - 1].value);
+  function changeThreadId(newThreadId: string) {
+    const firstThreadMessage = messages.find((message) => message.threadId === newThreadId);
+
+    if (!firstThreadMessage) {
+      return;
+    }
+
+    threadedChat = createThreadedChat(messages, firstThreadMessage.id);
+  }
+
+  // Global state stuff...
 
   onNavigate(() => {
     resetCurrentChatState();
@@ -65,30 +73,14 @@
 
   afterNavigate(() => updateGlobalState());
   $effect(() => updateGlobalState());
-
-  function changeThreadId(newThreadId: string, index: number) {
-    const newThread = threadedChat.slice(0, index + 1);
-
-    const newThredMessage = newThread[newThread.length - 1].children?.find(
-      (child) => child.value.threadId === newThreadId,
-    );
-
-    if (!newThredMessage) {
-      return;
-    }
-
-    const remainingMessage = findMaxVersionPath(newThredMessage);
-
-    threadedChat = fixFirstNodes([...newThread, ...remainingMessage]);
-  }
 </script>
 
 <div class="flex flex-col gap-2">
-  {#each threadedChat.slice(1) as node, index}
+  {#each threadedChat as node}
     <ChatMessage
       message={node.value}
       messageNode={node}
-      onChangeThreadId={(threadId) => changeThreadId(threadId, index)}
+      onChangeThreadId={(threadId) => changeThreadId(threadId)}
     />
   {/each}
 </div>

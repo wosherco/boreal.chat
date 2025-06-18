@@ -31,7 +31,6 @@
   const { message, messageNode, onChangeThreadId }: Props = $props();
 
   let editingMessage = $state(false);
-  let messageContainer = $state<HTMLDivElement>();
 
   const isUser = $derived(message.role === "user");
 
@@ -206,7 +205,7 @@
   }
 </script>
 
-<div class="group" bind:this={messageContainer}>
+<div class="group">
   {#if editingMessage && isUser}
     <ChatMessageInlineInput
       defaultValue={cleanedMessageText}
