@@ -1,10 +1,14 @@
 <script lang="ts">
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
-  import { Loader2Icon } from "@lucide/svelte";
+  import { ArrowRightIcon, Loader2Icon } from "@lucide/svelte";
   import { Card, CardContent, CardHeader, CardTitle } from "$lib/components/ui/card";
   import SvelteSeo from "svelte-seo";
+  import type { PageData } from "./$types";
+  import { Button } from "$lib/components/ui/button";
 
-  const user = useCurrentUser(null);
+  const { data }: { data: PageData } = $props();
+
+  const user = useCurrentUser(data);
 </script>
 
 <SvelteSeo title="Settings | boreal.chat" />
@@ -12,12 +16,14 @@
 <h1 class="text-xl font-semibold">Account Overview</h1>
 
 <div class="flex flex-col gap-2 pt-4">
-  {#if $user.loading || $user.data === null}
+  {#if $user.loading}
     <div class="flex items-center justify-center">
       <Loader2Icon class="size-4 animate-spin" />
     </div>
-  {:else if !$user.data.authenticated}
-    <a href="/auth">Please, log in first</a>
+  {:else if $user.data === null || !$user.data.authenticated}
+    <Button variant="link" href="/auth" class="w-fit"
+      >Please, log in first <ArrowRightIcon /></Button
+    >
   {:else}
     <p>👋 Welcome back, {$user.data.user.name}!</p>
 
