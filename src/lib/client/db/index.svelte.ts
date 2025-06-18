@@ -160,6 +160,9 @@ async function startShapesSync() {
             table: "user",
             columns: getTableColumnNames(schema.userTable),
           },
+          headers: {
+            "cache-control": "no-cache",
+          },
         },
         table: "user",
         primaryKey: ["id"],
@@ -170,6 +173,9 @@ async function startShapesSync() {
           params: {
             table: "chats",
             columns: getTableColumnNames(schema.chatTable),
+          },
+          headers: {
+            "cache-control": "no-cache",
           },
         },
         table: "chats",
@@ -182,6 +188,9 @@ async function startShapesSync() {
             table: "threads",
             columns: getTableColumnNames(schema.threadTable),
           },
+          headers: {
+            "cache-control": "no-cache",
+          },
         },
         table: "threads",
         primaryKey: ["id"],
@@ -192,6 +201,9 @@ async function startShapesSync() {
           params: {
             table: "messages",
             columns: getTableColumnNames(schema.messageTable),
+          },
+          headers: {
+            "cache-control": "no-cache",
           },
         },
         table: "messages",
@@ -204,6 +216,9 @@ async function startShapesSync() {
             table: "message_segments",
             columns: getTableColumnNames(schema.messageSegmentsTable),
           },
+          headers: {
+            "cache-control": "no-cache",
+          },
         },
         table: "message_segments",
         primaryKey: ["id"],
@@ -215,12 +230,15 @@ async function startShapesSync() {
             table: "message_tokens",
             columns: getTableColumnNames(schema.messageTokensTable),
           },
+          headers: {
+            "cache-control": "no-cache",
+          },
         },
         table: "message_tokens",
         primaryKey: ["id"],
       },
     },
-    key: "boreal  -chat-sync-v1",
+    key: "boreal-chat-sync-v1",
     onInitialSync: () => {
       dbInitialSyncComplete = true;
       invalidateAll();
