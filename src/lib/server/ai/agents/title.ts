@@ -1,11 +1,24 @@
 import { z } from "zod/v4";
 import { createOpenAIClient } from "../utils/client";
+import * as Sentry from "@sentry/sveltekit";
+
+export interface GenerateChatTitleContext {
+  userId: string;
+  chatId: string;
+  threadId: string;
+  userMessageId: string;
+}
 
 const schema = z.object({
   title: z.string().describe("A short, descriptive chat title"),
 });
 
-export async function generateChatTitle(firstMessage: string, apiKey: string, model: string) {
+export async function generateChatTitle(
+  context: GenerateChatTitleContext,
+  firstMessage: string,
+  apiKey: string,
+  model: string,
+) {
   const response = await createOpenAIClient(apiKey).chat.completions.create({
     model: model,
     messages: [
@@ -26,7 +39,14 @@ export async function generateChatTitle(firstMessage: string, apiKey: string, mo
   });
 
   if (!response.choices[0].message.content) {
-    // TODO: Log this to Sentry
+    Sentry.captureException(new Error("No content in chat title response"), {
+      user: { id: context.userId },
+      extra: {
+        chatId: context.chatId,
+        threadId: context.threadId,
+        userMessageId: context.userMessageId,
+      },
+    });
     console.error("No content in response", response);
     return null;
   }
@@ -34,7 +54,15 @@ export async function generateChatTitle(firstMessage: string, apiKey: string, mo
   const parsed = schema.safeParse(JSON.parse(response.choices[0].message.content));
 
   if (!parsed.success) {
-    // TODO: Log this to Sentry
+    Sentry.captureException(parsed.error, {
+      user: { id: context.userId },
+      extra: {
+        chatId: context.chatId,
+        threadId: context.threadId,
+        userMessageId: context.userMessageId,
+        rawResponse: response.choices[0].message.content,
+      },
+    });
     console.error("Invalid response", parsed.error);
     return null;
   }
