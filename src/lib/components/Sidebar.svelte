@@ -23,12 +23,15 @@
     MonitorIcon,
     Loader2,
   } from "@lucide/svelte";
-  import { goto } from "$app/navigation";
+  import { goto, invalidateAll } from "$app/navigation";
+  import { orpc } from "$lib/client/orpc";
+  import { toast } from "svelte-sonner";
   import { mode, setMode } from "mode-watcher";
   import type { Chat, HydratableDataResult } from "$lib/common/sharedTypes";
   import VirtualizedChatList from "./chatList/VirtualizedChatList.svelte";
   import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
   import BetaBadge from "./BetaBadge.svelte";
+  import { clearLocalDb } from "$lib/client/db/index.svelte";
 
   interface Props {
     loading: boolean;
@@ -49,6 +52,21 @@
   const isMac =
     typeof navigator !== "undefined" && navigator.platform.toUpperCase().indexOf("MAC") >= 0;
   const cmdKey = isMac ? "⌘" : "Ctrl";
+  let logoutLoading = $state(false);
+
+  async function onLogout() {
+    if (logoutLoading) return;
+    logoutLoading = true;
+    try {
+      await orpc.v1.auth.logout();
+      await clearLocalDb();
+      window.location.reload();
+    } catch (e) {
+      toast.error("Failed to log out");
+    } finally {
+      logoutLoading = false;
+    }
+  }
 </script>
 
 <TooltipProvider>
@@ -169,8 +187,12 @@
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onclick={() => console.log("TODO")} variant="destructive">
-              <LogOutIcon class="mr-2 size-4" />
+            <DropdownMenuItem onclick={onLogout} variant="destructive" disabled={logoutLoading}>
+              {#if logoutLoading}
+                <Loader2 class="mr-2 size-4 animate-spin" />
+              {:else}
+                <LogOutIcon class="mr-2 size-4" />
+              {/if}
               <span>Log out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
