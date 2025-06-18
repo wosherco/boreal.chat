@@ -8,6 +8,9 @@ import { env } from "$env/dynamic/private";
 Sentry.init({
   dsn: env.PUBLIC_SENTRY_DSN,
   tracesSampleRate: 1,
+  _experiments: {
+    enableLogs: true,
+  },
 });
 
 if (env.PUBLIC_ENVIRONMENT === "development") {
