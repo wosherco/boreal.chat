@@ -115,8 +115,6 @@
   {#if renderedCode}
     {@html renderedCode}
   {:else}
-    <pre class="shiki bg-muted p-2">
-      {codeProps?.code}
-    </pre>
+    <pre class="bg-muted p-2" style="background-color:#282c34;color:#abb2bf">{codeProps?.code}</pre>
   {/if}
 </div>
