@@ -7,6 +7,7 @@
   import { toast } from "svelte-sonner";
   import { invalidate } from "$app/navigation";
   import { page } from "$app/state";
+  import SvelteSeo from "svelte-seo";
   import {
     Card,
     CardContent,
@@ -36,6 +37,8 @@
     }
   }
 </script>
+
+<SvelteSeo title="Bring Your Own Key | boreal.chat" />
 
 <div class="space-y-6">
   <h1 class="text-2xl font-semibold">Bring Your Own Key</h1>

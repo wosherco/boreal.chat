@@ -1,6 +1,9 @@
 <script lang="ts">
   import { Card, CardContent, CardHeader, CardTitle } from "$lib/components/ui/card";
+  import SvelteSeo from "svelte-seo";
 </script>
+
+<SvelteSeo title="Contact Us | boreal.chat" />
 
 <h2 class="text-xl font-semibold">Contact Us</h2>
 <p class="text-muted-foreground">Reach out to us with any questions.</p>

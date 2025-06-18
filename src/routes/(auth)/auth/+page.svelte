@@ -2,7 +2,10 @@
   import { Button } from "$lib/components/ui/button";
   import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "$lib/components/ui/card";
   import { ArrowLeftIcon } from "@lucide/svelte";
+  import SvelteSeo from "svelte-seo";
 </script>
+
+<SvelteSeo title="Sign in | boreal.chat" />
 
 <Button variant="link" href="/" class="absolute top-4 left-4">
   <ArrowLeftIcon class="size-4" />

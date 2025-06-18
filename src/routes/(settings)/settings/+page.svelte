@@ -2,9 +2,12 @@
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { Loader2Icon } from "@lucide/svelte";
   import { Card, CardContent, CardHeader, CardTitle } from "$lib/components/ui/card";
+  import SvelteSeo from "svelte-seo";
 
   const user = useCurrentUser(null);
 </script>
+
+<SvelteSeo title="Settings | boreal.chat" />
 
 <h1 class="text-xl font-semibold">Account Overview</h1>
 

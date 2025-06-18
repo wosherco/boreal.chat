@@ -1,27 +1,11 @@
 <script lang="ts">
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
-  import {
-    BrainIcon,
-    CalculatorIcon,
-    CodeIcon,
-    FileTextIcon,
-    GlobeIcon,
-    HeartIcon,
-    LightbulbIcon,
-    MusicIcon,
-    PaintbrushIcon,
-    RocketIcon,
-    ZapIcon,
-    GamepadIcon,
-    ChefHatIcon,
-    BookIcon,
-    MapIcon,
-    TrendingUpIcon,
-  } from "@lucide/svelte";
+  import { BrainIcon, CalculatorIcon, CodeIcon, FileTextIcon } from "@lucide/svelte";
   import type { PageData } from "./$types";
   import type { Component } from "svelte";
   import { Button } from "$lib/components/ui/button";
   import { Card, CardContent } from "$lib/components/ui/card";
+  import SvelteSeo from "svelte-seo";
   import { goto } from "$app/navigation";
 
   const { data }: { data: PageData } = $props();
@@ -63,6 +47,8 @@
     goto(`/?prompt=${selectedText.prompt}&forcePrompt`);
   }
 </script>
+
+<SvelteSeo title="🌌 boreal.chat" description="Fast, reliable AI chat with open-source freedom" />
 
 {#snippet prewrittenPrompt(prompt: PrewrittenPrompt, Icon: Component)}
   <Button onclick={() => fillText(prompt)} variant="ghost">
