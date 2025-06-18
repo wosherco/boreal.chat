@@ -225,7 +225,7 @@ export async function createReplyUserMessageAndAssistantMessage(
       parentMessageId: params.parentMessageId,
       role: "user",
       status: "finished",
-      version: parentMessage.version + 1,
+      version: childMessagesCount + 1,
       model: params.model,
     })
     .returning({
