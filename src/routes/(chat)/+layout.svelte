@@ -111,8 +111,14 @@
   }
 </script>
 
-{#snippet sidebar()}
-  <Sidebar loading={$currentUser.loading} {...$currentUser.data} {onNewChat} chats={$chats} />
+{#snippet sidebar(isPhone = false)}
+  <Sidebar
+    loading={$currentUser.loading}
+    {...$currentUser.data}
+    {onNewChat}
+    chats={$chats}
+    {isPhone}
+  />
 {/snippet}
 
 <KeyboardShortcuts
@@ -145,13 +151,13 @@
   <div
     class={cn(
       "bg-accent/40 fixed z-50 m-2 rounded-lg p-1 backdrop-blur-lg transition-colors",
-      isSidebarCollapsed ? "sm:bg-accent/40" : "sm:bg-transparent",
+      isSidebarCollapsed ? "md:bg-accent/40" : "md:bg-transparent",
     )}
   >
     <Button
       variant="ghost"
       size="icon"
-      class="hidden sm:flex"
+      class="hidden md:flex"
       onclick={() => (isSidebarCollapsed = !isSidebarCollapsed)}
     >
       {#if isSidebarCollapsed}
@@ -163,18 +169,18 @@
 
     <!-- Phone Sidebar -->
     <Sheet>
-      <SheetTrigger class="block sm:hidden">
+      <SheetTrigger class="block md:hidden">
         <Button
           variant="ghost"
           size="icon"
-          class="sm:hidden"
+          class="md:hidden"
           onclick={() => (isSidebarCollapsed = !isSidebarCollapsed)}
         >
           <MenuIcon />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" class="w-fit">
-        {@render sidebar()}
+      <SheetContent side="left" class="w-fit" renderCloseButton={false}>
+        {@render sidebar(true)}
       </SheetContent>
     </Sheet>
   </div>

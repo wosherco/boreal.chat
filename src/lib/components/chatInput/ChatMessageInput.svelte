@@ -164,7 +164,7 @@
 
 <div class="mx-auto w-full max-w-screen-md">
   <div
-    class="bg-muted/50 group flex w-full flex-col gap-3 rounded-lg rounded-b-none border border-b-0 shadow backdrop-blur transition-all focus-within:rounded-b-lg focus-within:border-b sm:focus-within:-translate-y-1"
+    class="bg-muted/50 group flex w-full flex-col gap-3 rounded-lg rounded-b-none border border-b-0 shadow backdrop-blur transition-all md:focus-within:-translate-y-1 md:focus-within:rounded-b-lg md:focus-within:border-b"
   >
     <textarea
       disabled={loading}
@@ -196,7 +196,7 @@
           variant="outline"
         >
           <GlobeIcon />
-          <span class="hidden text-xs sm:block">Web Search</span>
+          <span class="hidden text-xs md:block">Web Search</span>
         </Toggle>
 
         {#if MODEL_DETAILS[actualSelectedModel].reasoning}

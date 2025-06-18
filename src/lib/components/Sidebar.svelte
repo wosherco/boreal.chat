@@ -16,12 +16,12 @@
     PlusIcon,
     SearchIcon,
     SettingsIcon,
-    MessageSquareIcon,
     ChevronsUpDownIcon,
     SunIcon,
     MoonIcon,
     MonitorIcon,
     Loader2,
+    XIcon,
   } from "@lucide/svelte";
   import { goto, invalidateAll } from "$app/navigation";
   import { orpc } from "$lib/client/orpc";
@@ -32,6 +32,7 @@
   import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
   import BetaBadge from "./BetaBadge.svelte";
   import { clearLocalDb } from "$lib/client/db/index.svelte";
+  import { SheetClose } from "./ui/sheet";
 
   interface Props {
     loading: boolean;
@@ -44,9 +45,18 @@
     chats: HydratableDataResult<Chat[]>;
     onSearchOpen?: () => void;
     onNewChat?: () => void;
+    isPhone?: boolean;
   }
 
-  const { user, loading, authenticated, chats, onSearchOpen, onNewChat }: Props = $props();
+  const {
+    user,
+    loading,
+    authenticated,
+    chats,
+    onSearchOpen,
+    onNewChat,
+    isPhone = false,
+  }: Props = $props();
 
   // Detect if user is on Mac or Windows/Linux for keyboard shortcuts
   const isMac =
@@ -73,7 +83,17 @@
   <div class="bg-sidebar text-sidebar-foreground flex h-full w-80 flex-col overflow-hidden">
     <!-- Header -->
     <a href="/" class="flex items-center justify-between p-4">
-      <h1 class="ml-12 text-lg font-semibold">boreal.chat</h1>
+      <div class="flex items-center gap-2">
+        {#if isPhone}
+          <SheetClose
+            class="ring-offset-background focus-visible:ring-ring rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none md:hidden"
+          >
+            <XIcon class="size-6" />
+            <span class="sr-only">Close</span>
+          </SheetClose>
+        {/if}
+        <h1 class="text-lg font-semibold md:ml-12">boreal.chat</h1>
+      </div>
       <BetaBadge />
     </a>
 

@@ -33,11 +33,13 @@
     side = "right",
     portalProps,
     children,
+    renderCloseButton = true,
     ...restProps
   }: WithoutChildrenOrChild<SheetPrimitive.ContentProps> & {
     portalProps?: SheetPrimitive.PortalProps;
     side?: Side;
     children: Snippet;
+    renderCloseButton?: boolean;
   } = $props();
 </script>
 
@@ -50,11 +52,13 @@
     {...restProps}
   >
     {@render children?.()}
-    <SheetPrimitive.Close
-      class="ring-offset-background focus-visible:ring-ring absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none"
-    >
-      <XIcon class="size-4" />
-      <span class="sr-only">Close</span>
-    </SheetPrimitive.Close>
+    {#if renderCloseButton}
+      <SheetPrimitive.Close
+        class="ring-offset-background focus-visible:ring-ring absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none"
+      >
+        <XIcon class="size-4" />
+        <span class="sr-only">Close</span>
+      </SheetPrimitive.Close>
+    {/if}
   </SheetPrimitive.Content>
 </SheetPrimitive.Portal>
