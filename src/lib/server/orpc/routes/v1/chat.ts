@@ -14,11 +14,12 @@ import {
   regenerateMessage,
 } from "$lib/server/services/messages";
 import { initializeChatContext } from "$lib/server/ai/state";
-import { generateChatTitle } from "$lib/server/ai/agents/title";
+import { generateChatTitle, type GenerateChatTitleContext } from "$lib/server/ai/agents/title";
 import { eq } from "drizzle-orm";
 import { chatTable } from "$lib/server/db/schema";
 import { ORPCError } from "@orpc/client";
 import { RateLimitError } from "openai";
+import * as Sentry from "@sentry/sveltekit";
 
 export const v1ChatRouter = osBase.router({
   newChat: osBase
@@ -63,6 +64,12 @@ export const v1ChatRouter = osBase.router({
       // Invoking the title agent
       try {
         const titlePromise = generateChatTitle(
+          {
+            userId: context.userCtx.user.id,
+            chatId: result.chatId,
+            threadId: result.threadId,
+            userMessageId: result.userMessage.id,
+          } satisfies GenerateChatTitleContext,
           input.message,
           context.openRouterKey.apiKey,
           input.model.endsWith(":free") ? LLAMA_3_3_8B_FREE : LLAMA_3_1_8B,
@@ -77,7 +84,14 @@ export const v1ChatRouter = osBase.router({
             }
           })
           .catch((error) => {
-            // TODO: Log to sentry
+            Sentry.captureException(error, {
+              user: { id: context.userCtx.user.id },
+              extra: {
+                chatId: result.chatId,
+                threadId: result.threadId,
+                userMessageId: result.userMessage.id,
+              },
+            });
             console.error("Error generating chat title: ", error);
           });
 
@@ -87,7 +101,14 @@ export const v1ChatRouter = osBase.router({
           void titlePromise;
         }
       } catch (e) {
-        // TODO: Log to sentry
+        Sentry.captureException(e, {
+          user: { id: context.userCtx.user.id },
+          extra: {
+            chatId: result.chatId,
+            threadId: result.threadId,
+            userMessageId: result.userMessage.id,
+          },
+        });
         console.error("Error generating chat title: ", e);
       }
 
@@ -124,7 +145,14 @@ export const v1ChatRouter = osBase.router({
 
         // Invoke the agent with the initialized context
         const agentPromise = invokeAgent(agent, chatContext).catch(async (error) => {
-          // TODO: Log to sentry
+          Sentry.captureException(error, {
+            user: { id: context.userCtx.user.id },
+            extra: {
+              chatId: result.chatId,
+              threadId: result.threadId,
+              assistantMessageId: result.assistantMessageId,
+            },
+          });
           await markMessageAsErrored(db, result.assistantMessageId, "Agent failed to create chat");
           console.error("Error invoking agent: ", error);
         });
@@ -142,7 +170,14 @@ export const v1ChatRouter = osBase.router({
           assistantMessageId: result.assistantMessageId,
         };
       } catch (e) {
-        // TODO: Log to sentry
+        Sentry.captureException(e, {
+          user: { id: context.userCtx.user.id },
+          extra: {
+            chatId: result.chatId,
+            threadId: result.threadId,
+            assistantMessageId: result.assistantMessageId,
+          },
+        });
         console.error("Failed to create chat: ", e);
         await markMessageAsErrored(db, result.assistantMessageId, "Failed to create chat");
         throw new ORPCError("INTERNAL_SERVER_ERROR", {
@@ -195,7 +230,12 @@ export const v1ChatRouter = osBase.router({
           };
         });
       } catch (e) {
-        // TODO: Log to sentry
+        Sentry.captureException(e, {
+          user: { id: context.userCtx.user.id },
+          extra: {
+            chatId: context.chat.id,
+          },
+        });
         console.error("Failed to create reply user message and assistant message: ", e);
         throw new ORPCError("INTERNAL_SERVER_ERROR", {
           message: "Failed to create message",
@@ -208,7 +248,15 @@ export const v1ChatRouter = osBase.router({
           lastMessageId: result.userMessageId,
         });
       } catch (e) {
-        // TODO: Log to sentry
+        Sentry.captureException(e, {
+          user: { id: context.userCtx.user.id },
+          extra: {
+            chatId: result.chatId,
+            threadId: result.threadId,
+            assistantMessageId: result.assistantMessageId,
+            userMessageId: result.userMessageId,
+          },
+        });
         console.error("Failed to retrieve messages: ", e);
         await markMessageAsErrored(db, result.assistantMessageId, "Failed to retrieve messages");
         throw new ORPCError("INTERNAL_SERVER_ERROR", {
@@ -239,7 +287,15 @@ export const v1ChatRouter = osBase.router({
               "Rate limit exceeded. If you're using a free model, try using a paid model.";
           }
 
-          // TODO: Log to sentry
+          Sentry.captureException(error, {
+            user: { id: context.userCtx.user.id },
+            extra: {
+              chatId: result.chatId,
+              threadId: result.threadId,
+              assistantMessageId: result.assistantMessageId,
+              userMessageId: result.userMessageId,
+            },
+          });
           await markMessageAsErrored(db, result.assistantMessageId, errorMessage);
           console.error("Failed to send message: ", error);
         });
@@ -257,7 +313,15 @@ export const v1ChatRouter = osBase.router({
           chatId: result.chatId,
         };
       } catch (e) {
-        // TODO: Log to sentry
+        Sentry.captureException(e, {
+          user: { id: context.userCtx.user.id },
+          extra: {
+            chatId: result.chatId,
+            threadId: result.threadId,
+            assistantMessageId: result.assistantMessageId,
+            userMessageId: result.userMessageId,
+          },
+        });
         console.error("Failed to send message: ", e);
         await markMessageAsErrored(db, result.assistantMessageId, "Failed to send message");
         throw new ORPCError("INTERNAL_SERVER_ERROR", {
@@ -298,7 +362,14 @@ export const v1ChatRouter = osBase.router({
           lastMessageId: result.parentMessage.id,
         });
       } catch (e) {
-        // TODO: Log to sentry
+        Sentry.captureException(e, {
+          user: { id: context.userCtx.user.id },
+          extra: {
+            chatId: result.message.chatId,
+            threadId: result.message.threadId,
+            messageId: result.message.id,
+          },
+        });
         console.error("Failed to retrieve messages", e);
         await markMessageAsErrored(db, result.message.id, "Failed to retrieve messages");
         throw new ORPCError("INTERNAL_SERVER_ERROR", {
@@ -322,7 +393,14 @@ export const v1ChatRouter = osBase.router({
         });
 
         const agentPromise = invokeAgent(agent, chatContext).catch(async (error) => {
-          // TODO: Log to sentry
+          Sentry.captureException(error, {
+            user: { id: context.userCtx.user.id },
+            extra: {
+              chatId: result.message.chatId,
+              threadId: result.message.threadId,
+              messageId: result.message.id,
+            },
+          });
           await markMessageAsErrored(db, result.message.id, "Agent failed to regenerate message");
           console.error("Error invoking agent: ", error);
         });
@@ -339,7 +417,14 @@ export const v1ChatRouter = osBase.router({
           chatId: result.message.chatId,
         };
       } catch (e) {
-        // TODO: Log to sentry
+        Sentry.captureException(e, {
+          user: { id: context.userCtx.user.id },
+          extra: {
+            chatId: result.message.chatId,
+            threadId: result.message.threadId,
+            messageId: result.message.id,
+          },
+        });
         console.error("Error invoking agent: ", e);
         await markMessageAsErrored(db, result.message.id, "Failed to regenerate message");
         throw new ORPCError("INTERNAL_SERVER_ERROR", {
