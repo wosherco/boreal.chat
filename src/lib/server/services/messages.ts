@@ -404,8 +404,7 @@ chain AS (                               -- <<< walk the parent chain
     SELECT p.*, depth + 1
     FROM   messages p
     JOIN   chain     c ON p.id = c.parent_message_id
-    WHERE  p.thread_id = ${threadId}          -- stay inside the same thread
-      AND  depth         < ${depth}        -- stop after n hops
+    WHERE  depth < ${depth}        -- stop after n hops
 )
 SELECT
     c.*,                          -- all message columns
