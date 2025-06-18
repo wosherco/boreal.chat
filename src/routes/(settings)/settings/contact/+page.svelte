@@ -20,13 +20,13 @@
     </Card>
   </a>
 
-  <a href="https://x.com/boreal_chat">
+  <a href="https://x.com/borealchat">
     <Card class="hover:bg-accent hover:text-accent-foreground w-[300px]">
       <CardHeader>
         <CardTitle>X</CardTitle>
       </CardHeader>
       <CardContent>
-        Find us on x at <p class="font-mono">@boreal_chat</p>
+        Find us on x at <p class="font-mono">@borealchat</p>
       </CardContent>
     </Card>
   </a>
