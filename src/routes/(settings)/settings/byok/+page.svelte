@@ -45,7 +45,6 @@
   <Card>
     <CardHeader>
       <CardTitle>OpenRouter</CardTitle>
-      <CardDescription>Connect your OpenRouter account to use your own models.</CardDescription>
     </CardHeader>
     <CardContent>
       {#if data.byok.openrouter === null}
