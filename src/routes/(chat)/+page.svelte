@@ -48,7 +48,7 @@
   }
 </script>
 
-<SvelteSeo title="boreal.chat 🚀" description="Fast, reliable AI chat with open-source freedom" />
+<SvelteSeo title="🌌 boreal.chat" description="Fast, reliable AI chat with open-source freedom" />
 
 {#snippet prewrittenPrompt(prompt: PrewrittenPrompt, Icon: Component)}
   <Button onclick={() => fillText(prompt)} variant="ghost">
