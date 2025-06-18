@@ -31,6 +31,7 @@
   import VirtualizedChatList from "./chatList/VirtualizedChatList.svelte";
   import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
   import BetaBadge from "./BetaBadge.svelte";
+  import { clearLocalDb } from "$lib/client/db/index.svelte";
 
   interface Props {
     loading: boolean;
@@ -58,7 +59,8 @@
     logoutLoading = true;
     try {
       await orpc.v1.auth.logout();
-      invalidateAll();
+      await clearLocalDb();
+      window.location.reload();
     } catch (e) {
       toast.error("Failed to log out");
     } finally {

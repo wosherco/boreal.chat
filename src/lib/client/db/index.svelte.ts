@@ -1,7 +1,7 @@
 import { PGliteWorker } from "@electric-sql/pglite/worker";
 import { drizzle } from "drizzle-orm/pglite";
 import { live } from "@electric-sql/pglite/live";
-import { electricSync } from "@electric-sql/pglite-sync";
+import { electricSync, type SyncShapesToTablesResult } from "@electric-sql/pglite-sync";
 import * as schema from "./schema";
 import AsyncLock from "async-lock";
 import { migrateClient } from "./migrator";
@@ -11,6 +11,7 @@ import { getTableColumnNames } from "./utils";
 import { orpc } from "../orpc";
 import { ORPCError } from "@orpc/client";
 import { invalidateAll } from "$app/navigation";
+import { getTableName, sql } from "drizzle-orm";
 
 const initializeDbLock = new AsyncLock();
 
@@ -20,6 +21,7 @@ let dbClientReady = $state(false);
 let dbInitialSyncComplete = $state(false);
 let pgliteState = $state<PGliteType | null>(null);
 const createDrizzleClient = (db: PGliteType) =>
+  // @ts-expect-error we're using the DB from a worker, which is not typed, but it's practically the same
   drizzle({ client: db, schema, casing: "snake_case" });
 const drizzleState = $derived(!pgliteState ? null : createDrizzleClient(pgliteState));
 export type ClientDBType = Exclude<typeof drizzleState, null>;
@@ -129,7 +131,16 @@ async function initializeClientDb() {
 
 export const initializeClientDbPromise = initializeClientDb();
 
+let currentStreams: SyncShapesToTablesResult | null = null;
+
 async function startShapesSync() {
+  if (currentStreams) {
+    console.log("Already syncing shapes");
+    return;
+  }
+
+  console.log("Starting shapes sync");
+
   try {
     await orpc.v1.auth.getUser();
   } catch (err) {
@@ -139,7 +150,8 @@ async function startShapesSync() {
       return;
     }
   }
-  await pglite().electric.syncShapesToTables({
+
+  currentStreams = await pglite().electric.syncShapesToTables({
     shapes: {
       user: {
         shape: {
@@ -208,19 +220,33 @@ async function startShapesSync() {
         primaryKey: ["id"],
       },
     },
-    key: "pl-chat-sync-v1",
+    key: "boreal  -chat-sync-v1",
     onInitialSync: () => {
       dbInitialSyncComplete = true;
       invalidateAll();
       console.log("Initial sync done. Invalidating everything...");
     },
   });
+
+  console.log("Shapes sync done");
 }
 
-async function clearLocalDb() {
+export async function clearLocalDb() {
+  if (currentStreams) {
+    currentStreams.unsubscribe();
+    currentStreams = null;
+  }
+
+  console.log("Clearing local db...");
+
   await Promise.all(
-    Object.keys(schema).map(async (key) => {
-      await pglite().exec(`DELETE FROM ${key}`);
+    Object.values(schema).map(async (table) => {
+      await clientDb().execute(
+        sql`TRUNCATE TABLE ${sql.identifier(getTableName(table))}
+        RESTART IDENTITY   -- resets sequences to their start values
+        CASCADE;           -- also truncates any tables that have FKs pointing here
+       `,
+      );
     }),
   );
 
