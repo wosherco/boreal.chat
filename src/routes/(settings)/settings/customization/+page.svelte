@@ -1,5 +1,8 @@
 <script lang="ts">
+  import SvelteSeo from "svelte-seo";
 </script>
+
+<SvelteSeo title="Customization | boreal.chat" />
 
 <h2 class="text-xl font-semibold">Customization</h2>
 <p class="text-muted-foreground">Customization options will go here.</p>
