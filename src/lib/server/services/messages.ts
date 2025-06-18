@@ -4,6 +4,7 @@ import { chatTable, messageSegmentsTable, messageTable, threadTable } from "../d
 import type { MessageChainRow } from "$lib/common/sharedTypes";
 import { transformKeyToCamelCaseRecursive } from "$lib/client/hooks/utils";
 import type { ModelId } from "$lib/common/ai/models";
+import { addSeconds } from "date-fns";
 
 export async function createChat(
   tx: TransactableDBType,
@@ -103,6 +104,9 @@ export async function createUserMessageAndStartAssistantMessage(
 ) {
   const { userId, chatId, threadId, parentMessageId, message, model } = params;
 
+  const userMessageCreated = new Date();
+  const assistantMessageCreated = addSeconds(userMessageCreated, 1);
+
   const [userMessage] = await tx
     .insert(messageTable)
     .values({
@@ -114,6 +118,7 @@ export async function createUserMessageAndStartAssistantMessage(
       status: "finished",
       parentMessageId: parentMessageId,
       model: model,
+      createdAt: userMessageCreated,
     })
     .returning();
 
@@ -131,6 +136,7 @@ export async function createUserMessageAndStartAssistantMessage(
         parentMessageId: userMessage.id,
         role: "assistant",
         model: model,
+        createdAt: assistantMessageCreated,
       })
       .returning({
         id: messageTable.id,
@@ -169,6 +175,9 @@ export async function createReplyUserMessageAndAssistantMessage(
   },
 ) {
   const isUpdatingFirstMessage = params.parentMessageId === null;
+
+  const userMessageCreated = new Date();
+  const assistantMessageCreated = addSeconds(userMessageCreated, 1);
 
   const [[parentMessage], childMessagesCount] = await Promise.all([
     // With this query we're checking that the user has access to this chat
@@ -227,6 +236,7 @@ export async function createReplyUserMessageAndAssistantMessage(
       status: "finished",
       version: childMessagesCount + 1,
       model: params.model,
+      createdAt: userMessageCreated,
     })
     .returning({
       id: messageTable.id,
@@ -248,6 +258,7 @@ export async function createReplyUserMessageAndAssistantMessage(
         status: "processing",
         version: 1,
         model: params.model,
+        createdAt: assistantMessageCreated,
       })
       .returning({
         id: messageTable.id,

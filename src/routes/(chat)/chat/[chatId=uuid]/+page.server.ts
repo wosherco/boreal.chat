@@ -16,7 +16,6 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   // Getting the last message in the chat
   const [lastMessageInfo] = await db
     .select({
-      latestThreadId: messageTable.threadId,
       lastMessage: {
         messageId: messageTable.id,
         threadId: messageTable.threadId,
@@ -41,7 +40,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     throw error(404, "Chat not found");
   }
 
-  const messages = fetchThreadMessagesRecursive(db, lastMessageInfo.latestThreadId, {
+  const messages = fetchThreadMessagesRecursive(db, lastMessageInfo.lastMessage.threadId, {
+    lastMessageId: lastMessageInfo.lastMessage.messageId,
     maxDepth: 15,
   });
 
