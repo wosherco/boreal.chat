@@ -7,13 +7,19 @@ import { cors } from "hono/cors";
 import { appRouter } from "$lib/server/orpc/router";
 import { RPCHandler } from "@orpc/server/fetch";
 import type { StatusCode } from "hono/utils/http-status";
+import type { Cookies } from "@sveltejs/kit";
 
 export interface UserContext {
   user: User | null;
   session: Session | null;
 }
 
-export function createApi(ctx?: ExecutionContext) {
+export interface CreateApiParams {
+  ctx?: ExecutionContext;
+  cookies?: Cookies;
+}
+
+export function createApi({ ctx, cookies }: CreateApiParams = {}) {
   const api = new Hono<{
     Bindings: object;
     Variables: { userCtx: UserContext; ctx?: ExecutionContext };
@@ -114,6 +120,7 @@ export function createApi(ctx?: ExecutionContext) {
         headers: c.req.raw.headers,
         userCtx: c.get("userCtx"),
         ctx: c.get("ctx"),
+        cookies,
       },
     });
 
