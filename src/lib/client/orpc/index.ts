@@ -2,10 +2,10 @@ import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { RouterClient } from "@orpc/server";
 import type { appRouter } from "$lib/server/orpc/router";
-import { PUBLIC_URL } from "$env/static/public";
+import { env } from "$env/dynamic/public";
 
 const link = new RPCLink({
-  url: `${PUBLIC_URL}/api/rpc`,
+  url: `${env.PUBLIC_URL}/api/rpc`,
   // headers: () => ({
   //   authorization: 'Bearer token',
   // }),

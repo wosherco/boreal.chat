@@ -3,14 +3,14 @@ import { sequence } from "@sveltejs/kit/hooks";
 import * as auth from "$lib/server/auth.js";
 import type { Handle } from "@sveltejs/kit";
 import { paraglideMiddleware } from "$lib/paraglide/server";
-import { PUBLIC_ENVIRONMENT, PUBLIC_SENTRY_DSN } from "$env/static/public";
+import { env } from "$env/dynamic/private";
 
 Sentry.init({
-  dsn: PUBLIC_SENTRY_DSN,
+  dsn: env.PUBLIC_SENTRY_DSN,
   tracesSampleRate: 1,
 });
 
-if (PUBLIC_ENVIRONMENT === "development") {
+if (env.PUBLIC_ENVIRONMENT === "development") {
   // Not initializing Sentry in development to avoid sending events to Sentry
   Sentry.init({});
 }

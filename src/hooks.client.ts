@@ -1,11 +1,11 @@
 import { handleErrorWithSentry, replayIntegration } from "@sentry/sveltekit";
 import * as Sentry from "@sentry/sveltekit";
-import { PUBLIC_ENVIRONMENT, PUBLIC_SENTRY_DSN } from "$env/static/public";
 import type { ClientInit } from "@sveltejs/kit";
 import { initializeClientDbPromise } from "$lib/client/db/index.svelte";
+import { env } from "$env/dynamic/public";
 
 Sentry.init({
-  dsn: PUBLIC_SENTRY_DSN,
+  dsn: env.PUBLIC_SENTRY_DSN,
 
   tracesSampleRate: 1.0,
 
@@ -21,7 +21,7 @@ Sentry.init({
   integrations: [replayIntegration()],
 });
 
-if (PUBLIC_ENVIRONMENT === "development") {
+if (env.PUBLIC_ENVIRONMENT === "development") {
   // Not initializing Sentry in development to avoid sending events to Sentry
   Sentry.init({});
 }

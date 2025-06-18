@@ -4,7 +4,6 @@ import { sessionCookieName, validateSessionToken } from "../auth";
 import type { Session, User } from "../db/schema";
 import { env } from "$env/dynamic/private";
 import { cors } from "hono/cors";
-import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 import { appRouter } from "$lib/server/orpc/router";
 import { RPCHandler } from "@orpc/server/fetch";
 import type { StatusCode } from "hono/utils/http-status";
@@ -23,7 +22,7 @@ export function createApi(ctx?: ExecutionContext) {
   api.use(
     "*",
     cors({
-      origin: PUBLIC_ENVIRONMENT === "development" ? "*" : (env.PUBLIC_URL ?? "*"),
+      origin: env.PUBLIC_ENVIRONMENT === "development" ? "*" : (env.PUBLIC_URL ?? "*"),
       allowHeaders: ["Authorization", "Content-Type", "Cookie"],
       allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       credentials: true,
