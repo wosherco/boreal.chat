@@ -6,7 +6,7 @@
 
   interface Props {
     defaultValue: string;
-    onSubmit: (newThreadId: string) => void;
+    onSubmit: (newThreadId: string, newMessageId: string) => Promise<void> | void;
     parentMessageId: string | null;
     chatId: string;
     onCancel: () => void;
@@ -62,7 +62,7 @@
         chatId,
       });
 
-      onSubmit(result.threadId);
+      await onSubmit(result.threadId, result.userMessageId);
     } finally {
       loading = false;
     }

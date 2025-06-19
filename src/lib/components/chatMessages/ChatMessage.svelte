@@ -207,8 +207,19 @@
     onChangeThreadId?.(result.threadId);
   }
 
-  function onSubmitEdit(newThreadId: string) {
+  async function onSubmitEdit(newThreadId: string, newMessageId: string) {
     onChangeThreadId?.(newThreadId);
+
+    const messageStream = syncStreams()?.streams.message;
+
+    if (messageStream) {
+      try {
+        await matchStream(messageStream, ["insert"], matchBy("id", newMessageId), 5000);
+      } catch (e) {
+        console.error("Waiting for message sync failed", e);
+      }
+    }
+
     editingMessage = false;
   }
 
