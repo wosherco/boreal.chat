@@ -33,5 +33,22 @@
     "tag": "0002_charming_union_jack",
     "hash": "00c91d9c42f42258ced12af5a83468aab56e3e5086b192d7ad395197aff18b73",
     "sql": ["ALTER TABLE \"messages\" ADD COLUMN \"error\" text;"]
+  },
+  {
+    "idx": 3,
+    "when": 1750320339694,
+    "tag": "0003_shiny_blockbuster",
+    "hash": "fc27e97b9a61877f7f59d59a69c8c0bd2cd3271bc44b9f208800ed458d18a10b",
+    "sql": ["CREATE EXTENSION IF NOT EXISTS pg_trgm;"]
+  },
+  {
+    "idx": 4,
+    "when": 1750321541702,
+    "tag": "0004_nostalgic_cargill",
+    "hash": "dfeb709137621886b90d845835d3a29167621f4e9fc8d776c83a4bfa0b40e566",
+    "sql": [
+      "CREATE INDEX \"chat_title_trgm_index\" ON \"chats\" USING gin (\"title\" gin_trgm_ops);",
+      "CREATE INDEX \"message_segments_content_trgm_index\" ON \"message_segments\" USING gin (\"content\" gin_trgm_ops);"
+    ]
   }
 ]

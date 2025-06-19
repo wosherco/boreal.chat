@@ -15,6 +15,7 @@
   import { afterNavigate, goto } from "$app/navigation";
   import { useChats } from "$lib/client/hooks/useChats.svelte";
   import { fade } from "svelte/transition";
+  import SearchCommand from "$lib/components/SearchCommand.svelte";
 
   const { data, children }: { data: LayoutData; children: Snippet } = $props();
 
@@ -22,6 +23,7 @@
   const chats = useChats(data.lastChats);
 
   let isSidebarCollapsed = $state(data?.sidebarCollapsed ?? false);
+  let searchOpen = $state(false);
 
   onMount(() => {
     if (!browser) return;
@@ -48,6 +50,10 @@
       chatMessageInputElement.value = "";
       chatMessageInputElement.focus();
     }
+  }
+
+  function onSearchOpen() {
+    searchOpen = true;
   }
 
   // Auto scroll functionality
@@ -116,6 +122,7 @@
     loading={$currentUser.loading}
     {...$currentUser.data}
     {onNewChat}
+    {onSearchOpen}
     chats={$chats}
     {isPhone}
   />
@@ -132,9 +139,7 @@
     {
       key: "k",
       isControl: true,
-      callback: () => {
-        console.log("TODO: SEARCH");
-      },
+      callback: onSearchOpen,
     },
     {
       key: "b",
@@ -215,3 +220,5 @@
     </div>
   </div>
 </div>
+
+<SearchCommand bind:open={searchOpen} chats={$chats} />

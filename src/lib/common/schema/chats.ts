@@ -33,6 +33,7 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
       updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     },
     (t) => [
+      isClient && index("chat_title_trgm_index").using("gin", t.title.op("gin_trgm_ops")),
       !isClient &&
         foreignKey({
           columns: [t.userId],
@@ -130,6 +131,8 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
     },
     (t) => [
       index().on(t.messageId, t.ordinal),
+      isClient &&
+        index("message_segments_content_trgm_index").using("gin", t.content.op("gin_trgm_ops")),
       !isClient &&
         foreignKey({
           columns: [t.userId],

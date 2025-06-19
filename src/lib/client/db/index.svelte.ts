@@ -2,6 +2,7 @@ import { PGliteWorker } from "@electric-sql/pglite/worker";
 import { drizzle } from "drizzle-orm/pglite";
 import { live } from "@electric-sql/pglite/live";
 import { electricSync, type SyncShapesToTablesResult } from "@electric-sql/pglite-sync";
+import { pg_trgm } from "@electric-sql/pglite/dist/contrib/pg_trgm";
 import * as schema from "./schema";
 import AsyncLock from "async-lock";
 import { migrateClient } from "./migrator";
@@ -73,6 +74,7 @@ async function initializeClientDb() {
         extensions: {
           electric: electricSync(),
           live,
+          pg_trgm,
         },
       },
     );
