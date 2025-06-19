@@ -11,7 +11,7 @@
   import KeyboardShortcuts from "../utils/KeyboardShortcuts.svelte";
   import ModelPickerPopover from "./ModelPickerPopover.svelte";
   import { afterNavigate, goto } from "$app/navigation";
-  import { electricStreams } from "$lib/client/db/index.svelte";
+  import { syncStreams } from "$lib/client/db/index.svelte";
   import { matchBy, matchStream } from "@electric-sql/experimental";
   import { getCurrentChatState } from "$lib/client/state/currentChatState.svelte";
   import { Toggle } from "../ui/toggle";
@@ -110,12 +110,12 @@
           });
           value = "";
 
-          const chatStream = electricStreams()?.chat;
+          const chatStream = syncStreams()?.streams.chat;
           if (chatStream) {
             try {
-              await matchStream(chatStream, ['insert'], matchBy('id', chatDetails.chatId));
+              await matchStream(chatStream, ["insert"], matchBy("id", chatDetails.chatId), 5000);
             } catch (err) {
-              console.error('Waiting for chat sync failed', err);
+              console.error("Waiting for chat sync failed", err);
             }
           }
 

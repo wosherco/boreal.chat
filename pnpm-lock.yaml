@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@electric-sql/experimental':
+        specifier: ^1.0.4
+        version: 1.0.4(@electric-sql/client@1.0.0)
       '@electric-sql/pglite':
         specifier: ^0.3.3
         version: 0.3.3
@@ -354,6 +357,11 @@ packages:
     resolution: {integrity: sha512-wOKZyph3cvJ4J5fDwqDpR7nilPOHEFwAtbAM5X/PhV3JZCSzmkbosaQRWsxbHQ80MJv7gNFP960+TyqGAjqouQ==}
     peerDependencies:
       '@electric-sql/client': 1.0.0
+
+  '@electric-sql/experimental@1.0.4':
+    resolution: {integrity: sha512-BznyyRv0iUD8Dgg3dNrlQfFfMW/DLy0LSbHxv/4lZJ+v//lvyhJsmasevEvc96imfnH4zE5/7yxe73DTe7j9AA==}
+    peerDependencies:
+      '@electric-sql/client': 1.0.4
 
   '@electric-sql/pglite-sync@0.3.6':
     resolution: {integrity: sha512-fZDfoLlfYBBBPwPWV+PSskzW8jQR3hpHxWomovcYxCnP0+dAz4i+N+ybwFeDbYW8VoflGQatC4g+sJPYImoFEA==}
@@ -4604,6 +4612,12 @@ snapshots:
       '@rollup/rollup-darwin-arm64': 4.42.0
 
   '@electric-sql/experimental@1.0.0(@electric-sql/client@1.0.0)':
+    dependencies:
+      '@electric-sql/client': 1.0.0
+    optionalDependencies:
+      '@rollup/rollup-darwin-arm64': 4.42.0
+
+  '@electric-sql/experimental@1.0.4(@electric-sql/client@1.0.0)':
     dependencies:
       '@electric-sql/client': 1.0.0
     optionalDependencies:

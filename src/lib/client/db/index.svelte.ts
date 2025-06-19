@@ -133,7 +133,6 @@ export const initializeClientDbPromise = initializeClientDb();
 
 let currentStreams: SyncShapesToTablesResult | null = null;
 
-export const electricStreams = () => currentStreams?.streams ?? null;
 export const syncStreams = () => currentStreams;
 
 async function startShapesSync() {
