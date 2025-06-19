@@ -58,10 +58,9 @@
     isPhone = false,
   }: Props = $props();
 
-  // Detect if user is on Mac or Windows/Linux for keyboard shortcuts
-  const isMac =
-    typeof navigator !== "undefined" && navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-  const cmdKey = isMac ? "⌘" : "Ctrl";
+  import { controlKeyName } from "$lib/utils/platform";
+  import { browser } from "$app/environment";
+
   let logoutLoading = $state(false);
 
   async function onLogout() {
@@ -107,7 +106,7 @@
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>New chat ({cmdKey}+Shift+O)</p>
+          <p>New chat ({controlKeyName}+Shift+O)</p>
         </TooltipContent>
       </Tooltip>
 
@@ -121,9 +120,11 @@
           <SearchIcon class="size-4" />
           <span>Search...</span>
         </div>
-        <div class="bg-muted/80 border-border rounded border px-1.5 py-0.5 font-mono text-xs">
-          {cmdKey}+K
-        </div>
+        {#if browser}
+          <div class="bg-muted/80 border-border rounded border px-1.5 py-0.5 font-mono text-xs">
+            {controlKeyName}+K
+          </div>
+        {/if}
       </Button>
     </div>
 
