@@ -13,11 +13,16 @@
 
   let { combos }: Props = $props();
 
+  const isMac =
+    typeof navigator !== "undefined" && navigator.platform.toUpperCase().includes("MAC");
+
   function handleKeyDown(event: KeyboardEvent) {
+    const ctrlPressed = isMac ? event.metaKey : event.ctrlKey;
+
     const combo = combos.find((combo) => {
       return (
         combo.key.toLowerCase() === event.key.toLowerCase() &&
-        (combo.isControl ?? false) === event.ctrlKey &&
+        (combo.isControl ?? false) === ctrlPressed &&
         (combo.isShift ?? false) === event.shiftKey &&
         (combo.isAlt ?? false) === event.altKey &&
         (combo.validate?.(event) ?? true) &&

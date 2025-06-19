@@ -58,10 +58,9 @@
     isPhone = false,
   }: Props = $props();
 
-  // Detect if user is on Mac or Windows/Linux for keyboard shortcuts
-  const isMac =
-    typeof navigator !== "undefined" && navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-  const cmdKey = isMac ? "⌘" : "Ctrl";
+  import { isMac, controlKeyName } from "$lib/utils.js";
+
+  const cmdKey = controlKeyName;
   let logoutLoading = $state(false);
 
   async function onLogout() {
