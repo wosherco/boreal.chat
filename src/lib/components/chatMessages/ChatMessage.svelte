@@ -21,6 +21,8 @@
   import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
   import Markdown from "../markdown/Markdown.svelte";
   import ChatMessageInlineInput from "./ChatMessageInlineInput.svelte";
+  import { syncStreams } from "$lib/client/db/index.svelte";
+  import { matchBy, matchStream } from "@electric-sql/experimental";
 
   interface Props {
     message: MessageWithOptionalChainRow;
@@ -191,6 +193,16 @@
       model: newModel,
       messageId: message.id,
     });
+
+    const messageStream = syncStreams()?.streams.message;
+
+    if (messageStream) {
+      try {
+        await matchStream(messageStream, ["insert"], matchBy("id", result.messageId), 5000);
+      } catch (e) {
+        console.error("Waiting for message sync failed", e);
+      }
+    }
 
     onChangeThreadId?.(result.threadId);
   }
