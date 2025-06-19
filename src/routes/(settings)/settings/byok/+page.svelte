@@ -73,7 +73,7 @@
         {/await}
       {/if}
     </CardContent>
-    <CardFooter class="flex justify-end border-t px-6 py-4">
+    <CardFooter class="justify-end">
       {#if data.byok.openrouter === null}
         <Button href="/auth">Log In</Button>
       {:else}

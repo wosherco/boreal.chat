@@ -11,6 +11,8 @@
   import KeyboardShortcuts from "../utils/KeyboardShortcuts.svelte";
   import ModelPickerPopover from "./ModelPickerPopover.svelte";
   import { afterNavigate, goto } from "$app/navigation";
+  import { syncStreams } from "$lib/client/db/index.svelte";
+  import { matchBy, matchStream } from "@electric-sql/experimental";
   import { getCurrentChatState } from "$lib/client/state/currentChatState.svelte";
   import { Toggle } from "../ui/toggle";
   import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
@@ -108,7 +110,15 @@
           });
           value = "";
 
-          // Maybe we should wait for the local DB to have this chatId, but since for now we're doing SSR, it should be fine...
+          const chatStream = syncStreams()?.streams.chat;
+          if (chatStream) {
+            try {
+              await matchStream(chatStream, ["insert"], matchBy("id", chatDetails.chatId), 5000);
+            } catch (err) {
+              console.error("Waiting for chat sync failed", err);
+            }
+          }
+
           await goto(`/chat/${chatDetails.chatId}`);
         } catch (e) {
           if (e instanceof ORPCError) {

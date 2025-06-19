@@ -27,7 +27,7 @@ export const v1ChatRouter = osBase.router({
     .input(
       z.object({
         model: z.enum(MODELS),
-        message: z.string().min(1).max(4096),
+        message: z.string().min(1).max(10000),
         webSearchEnabled: z.boolean().optional(),
         reasoningLevel: z.enum(REASONING_LEVELS).optional(),
       }),
@@ -193,7 +193,7 @@ export const v1ChatRouter = osBase.router({
         chatId: z.string().uuid(),
         model: z.enum(MODELS).optional(),
         parentMessageId: z.string().uuid().nullable(),
-        message: z.string().min(1).max(4096),
+        message: z.string().min(1).max(10000),
         webSearchEnabled: z.boolean().optional(),
         reasoningLevel: z.enum(REASONING_LEVELS).optional(),
       }),
