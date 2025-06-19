@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { isMac } from "$lib/utils/platform";
+
   interface Props {
     combos: {
       key: string;
@@ -12,9 +14,6 @@
   }
 
   let { combos }: Props = $props();
-
-  const isMac =
-    typeof navigator !== "undefined" && navigator.platform.toUpperCase().includes("MAC");
 
   function handleKeyDown(event: KeyboardEvent) {
     const ctrlPressed = isMac ? event.metaKey : event.ctrlKey;
