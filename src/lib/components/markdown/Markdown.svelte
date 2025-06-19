@@ -3,6 +3,9 @@
   import { gfmPlugin } from "svelte-exmarkdown/gfm";
   import Codeblock from "./Codeblock.svelte";
   import { cn } from "$lib/utils";
+  import remarkMath from "remark-math";
+  import rehypeKatex from "rehype-katex";
+  import "katex/dist/katex.min.css";
 
   interface Props {
     content: string;
@@ -18,6 +21,7 @@
       },
     },
     gfmPlugin(),
+    { remarkPlugin: [remarkMath], rehypePlugin: [rehypeKatex] },
   ];
 </script>
 
