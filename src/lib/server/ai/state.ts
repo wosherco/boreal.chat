@@ -124,5 +124,5 @@ Instructions:
   console.log("hello");
   \`\`\`
 
-- Use LaTeX for mathematical expressions if it helps communicate complex ideas.
+- Use LaTeX for mathematical expressions if it helps communicate complex ideas. It can be inline or in a block.
 `;
