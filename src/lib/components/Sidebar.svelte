@@ -58,7 +58,7 @@
     isPhone = false,
   }: Props = $props();
 
-  import { isMac, controlKeyName } from "$lib/utils.js";
+  import { controlKeyName } from "$lib/utils.js";
 
   const cmdKey = controlKeyName;
   let logoutLoading = $state(false);
