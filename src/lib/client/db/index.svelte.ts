@@ -12,6 +12,7 @@ import { orpc } from "../orpc";
 import { ORPCError } from "@orpc/client";
 import { invalidateAll } from "$app/navigation";
 import { getTableName, sql } from "drizzle-orm";
+import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
 
 const initializeDbLock = new AsyncLock();
 
@@ -71,6 +72,7 @@ async function initializeClientDb() {
         extensions: {
           electric: electricSync(),
           live,
+          pg_trgm,
         },
       },
     );

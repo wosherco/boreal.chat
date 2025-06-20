@@ -32,6 +32,18 @@
     "when": 1749999276314,
     "tag": "0002_charming_union_jack",
     "hash": "00c91d9c42f42258ced12af5a83468aab56e3e5086b192d7ad395197aff18b73",
-    "sql": ["ALTER TABLE \"messages\" ADD COLUMN \"error\" text;"]
+    "sql": [
+      "ALTER TABLE \"messages\" ADD COLUMN \"error\" text;"
+    ]
+  },
+  {
+    "idx": 3,
+    "when": 1750451386203,
+    "tag": "0003_perpetual_scalphunter",
+    "hash": "d579813f532ffb1016f53c7427bb77b11addb4f7c2030c533637ec8ef8f6fb6e",
+    "sql": [
+      "CREATE INDEX \"title_search_index\" ON \"chats\" USING gin (to_tsvector('english', \"title\"));",
+      "CREATE INDEX \"content_search_index\" ON \"message_segments\" USING gin (to_tsvector('english', \"content\"));"
+    ]
   }
 ]

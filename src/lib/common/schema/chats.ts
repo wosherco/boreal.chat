@@ -15,6 +15,7 @@ import {
 import { MESSAGE_SEGMENT_KINDS, MESSAGE_STATUS, MESSAGE_TYPES } from "../index";
 import type { userTable } from "../../client/db/schema";
 import { MODELS, REASONING_LEVELS, REASONING_NONE } from "../ai/models";
+import { sql } from "drizzle-orm";
 
 export const createChatTables = (userTableFromSchema: typeof userTable, isClient: boolean) => {
   const chatTable = pgTable(
@@ -38,6 +39,7 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
           columns: [t.userId],
           foreignColumns: [userTableFromSchema.id],
         }).onDelete("cascade"),
+      isClient && index("title_search_index").using("gin", sql`to_tsvector('english', ${t.title})`),
     ],
   );
 
@@ -140,6 +142,8 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
           columns: [t.messageId],
           foreignColumns: [messageTable.id],
         }).onDelete("cascade"),
+      isClient &&
+        index("content_search_index").using("gin", sql`to_tsvector('english', ${t.content})`),
     ],
   );
 

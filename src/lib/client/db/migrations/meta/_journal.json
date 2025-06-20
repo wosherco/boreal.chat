@@ -22,6 +22,13 @@
       "when": 1749999276314,
       "tag": "0002_charming_union_jack",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1750451386203,
+      "tag": "0003_perpetual_scalphunter",
+      "breakpoints": true
     }
   ]
 }
