@@ -18,7 +18,6 @@ const initializeDbLock = new AsyncLock();
 export type PGliteType = NonNullable<Awaited<ReturnType<typeof initializeClientDb>>>;
 
 let dbClientReady = $state(false);
-let dbInitialSyncComplete = $state(false);
 let pgliteState = $state<PGliteType | null>(null);
 const createDrizzleClient = (db: PGliteType) =>
   // @ts-expect-error we're using the DB from a worker, which is not typed, but it's practically the same
@@ -27,7 +26,6 @@ const drizzleState = $derived(!pgliteState ? null : createDrizzleClient(pgliteSt
 export type ClientDBType = Exclude<typeof drizzleState, null>;
 
 export const isDbReady = () => dbClientReady;
-export const isDbInitialSyncComplete = () => dbInitialSyncComplete;
 export const pglite = () => {
   if (!browser) {
     throw new Error("PGlite is not available on the server");
@@ -242,9 +240,8 @@ async function startShapesSync() {
     },
     key: "boreal-chat-sync-v1",
     onInitialSync: () => {
-      dbInitialSyncComplete = true;
+      console.log("Sync done. Invalidating everything...");
       invalidateAll();
-      console.log("Initial sync done. Invalidating everything...");
     },
   });
 
