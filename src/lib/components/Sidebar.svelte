@@ -34,6 +34,7 @@
   import BetaBadge from "./BetaBadge.svelte";
   import { clearLocalDb } from "$lib/client/db/index.svelte";
   import { SheetClose } from "./ui/sheet";
+  import { openSearchCommand } from "./SearchCommand.svelte";
 
   interface Props {
     loading: boolean;
@@ -44,7 +45,6 @@
     };
     authenticated?: boolean;
     chats: HydratableDataResult<Chat[]>;
-    onSearchOpen?: () => void;
     onNewChat?: () => void;
     isPhone?: boolean;
   }
@@ -54,7 +54,6 @@
     loading,
     authenticated,
     chats,
-    onSearchOpen,
     onNewChat,
     isPhone = false,
   }: Props = $props();
@@ -119,7 +118,7 @@
       <!-- Search Button -->
       <Button
         variant="secondary"
-        onclick={onSearchOpen}
+        onclick={openSearchCommand}
         class="bg-input/50 border-input hover:bg-input/70 text-foreground/70 hover:text-foreground flex-1 justify-between border"
       >
         <div class="flex items-center gap-2">
