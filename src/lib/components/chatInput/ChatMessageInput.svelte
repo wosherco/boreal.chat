@@ -155,6 +155,8 @@
       value = urlPrompt;
     }
   });
+
+  let modelPickerOpen = $state(false);
 </script>
 
 <KeyboardShortcuts
@@ -177,6 +179,13 @@
       isControl: true,
       callback: () => {
         textAreaElement?.focus();
+      },
+    },
+    {
+      key: "m",
+      isControl: true,
+      callback: () => {
+        modelPickerOpen = !modelPickerOpen;
       },
     },
   ]}
@@ -206,6 +215,7 @@
             selectedModel = newModel;
             setLastSelectedModel(newModel);
           }}
+          bind:open={modelPickerOpen}
         >
           <Button variant="ghost">
             {MODEL_DETAILS[actualSelectedModel].displayName}

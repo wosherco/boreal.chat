@@ -10,16 +10,23 @@
     /**
      * @bindable
      */
+    open?: boolean;
+    /**
+     * @bindable
+     */
     selectedModel: ModelId;
     onSelect?: (modelId: ModelId) => void;
   }
 
-  let { children, selectedModel = $bindable(), onSelect }: Props = $props();
-
-  let popoverOpen = $state(false);
+  let {
+    children,
+    selectedModel = $bindable(),
+    onSelect,
+    open = $bindable(false),
+  }: Props = $props();
 </script>
 
-<Popover bind:open={popoverOpen}>
+<Popover bind:open>
   <PopoverTrigger>
     {@render children()}
   </PopoverTrigger>
@@ -35,7 +42,7 @@
               onSelect={() => {
                 selectedModel = model;
                 onSelect?.(model);
-                popoverOpen = false;
+                open = false;
               }}
             >
               <ModelPickerModelEntry {model} />
