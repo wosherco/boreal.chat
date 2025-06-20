@@ -13,7 +13,7 @@
   const chat = $derived(useChat(data.chat.id, data.chat));
 </script>
 
-<SvelteSeo title={`${data.chat.title} | boreal.chat`} />
+<SvelteSeo title={`${$chat.data?.title} | boreal.chat`} />
 
 <div class="mx-auto flex max-w-screen-md flex-col gap-4 px-4 pt-16 pb-36">
   {#if $messages.loading || !$messages.data}

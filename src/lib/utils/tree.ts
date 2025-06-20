@@ -40,9 +40,28 @@ export function findMessageTreePath(
  * Given a starting node, returns the path from it
  * down to a leaf by always choosing the child with max ordinal.
  */
-export function findMaxVersionPath(node: MessageTreeNode): MessageTreeNode[] {
-  const path: MessageTreeNode[] = [node];
-  let current = node;
+export function findMaxVersionPath(node: MessageTreeNode | MessageTreeNode[]): MessageTreeNode[] {
+  let startNode: MessageTreeNode;
+
+  if (Array.isArray(node)) {
+    if (node.length === 0) {
+      return [];
+    }
+
+    // Pick the node with the highest version as the starting point
+    let maxVersionNode = node[0];
+    for (let i = 1; i < node.length; i++) {
+      if (node[i].value.version > maxVersionNode.value.version) {
+        maxVersionNode = node[i];
+      }
+    }
+    startNode = maxVersionNode;
+  } else {
+    startNode = node;
+  }
+
+  const path: MessageTreeNode[] = [startNode];
+  let current = startNode;
 
   while (current.children && current.children.length > 0) {
     // pick the child with the highest ordinal
@@ -77,18 +96,27 @@ export function appendParentsToFirstNode(
 
 export function createThreadedChat(
   messages: MessageWithOptionalChainRow[],
-  aimAtMessageId: string,
+  aimAtMessageId?: string,
 ) {
   const messageTree = createMessageTree(messages);
 
-  const path = findMessageTreePath(messageTree.roots, (val) => val.id === aimAtMessageId);
+  let path: MessageTreeNode[] | undefined = undefined;
+  let lastNode: MessageTreeNode | undefined = undefined;
 
-  if (!path) {
-    return [];
+  if (aimAtMessageId) {
+    path = findMessageTreePath(messageTree.roots, (val) => val.id === aimAtMessageId);
+
+    if (!path) {
+      return [];
+    }
+
+    lastNode = path[path.length - 1];
   }
 
-  const lastNode = path[path.length - 1];
-  const restThread = findMaxVersionPath(lastNode);
+  const restThread = findMaxVersionPath(lastNode ?? messageTree.roots);
 
-  return appendParentsToFirstNode(messageTree.roots, [...path.slice(1), ...restThread.slice(1)]);
+  return appendParentsToFirstNode(messageTree.roots, [
+    ...(path ?? []).slice(1),
+    ...restThread.slice(1),
+  ]);
 }

@@ -23,7 +23,7 @@
     Loader2,
     XIcon,
   } from "@lucide/svelte";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { goto } from "$app/navigation";
   import { orpc } from "$lib/client/orpc";
   import { toast } from "svelte-sonner";
   import { mode, setMode } from "mode-watcher";

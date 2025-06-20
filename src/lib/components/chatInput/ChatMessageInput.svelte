@@ -20,6 +20,7 @@
   import { browser } from "$app/environment";
   import { toast } from "svelte-sonner";
   import { page } from "$app/state";
+  import { getLastSelectedModel, setLastSelectedModel } from "$lib/utils/localStorage";
 
   interface Props {
     /**
@@ -33,7 +34,7 @@
   let value = $state(page.url.searchParams.get("prompt") ?? "");
   let loading = $state(false);
 
-  const defaultSelectedModel = GEMINI_FLASH_2_5;
+  const defaultSelectedModel = browser ? getLastSelectedModel() : GEMINI_FLASH_2_5;
   const defaultWebSearchEnabled = false;
   const defaultReasoningLevel = "low";
 
@@ -111,9 +112,18 @@
           value = "";
 
           const chatStream = syncStreams()?.streams.chat;
-          if (chatStream) {
+          const messagesStream = syncStreams()?.streams.message;
+          if (chatStream && messagesStream) {
             try {
-              await matchStream(chatStream, ["insert"], matchBy("id", chatDetails.chatId), 5000);
+              await Promise.all([
+                matchStream(chatStream, ["insert"], matchBy("id", chatDetails.chatId), 5000),
+                matchStream(
+                  messagesStream,
+                  ["insert"],
+                  matchBy("id", chatDetails.userMessageId),
+                  5000,
+                ),
+              ]);
             } catch (err) {
               console.error("Waiting for chat sync failed", err);
             }
@@ -191,6 +201,7 @@
           selectedModel={actualSelectedModel}
           onSelect={(newModel) => {
             selectedModel = newModel;
+            setLastSelectedModel(newModel);
           }}
         >
           <Button variant="ghost">

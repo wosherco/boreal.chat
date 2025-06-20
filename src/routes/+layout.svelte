@@ -8,6 +8,15 @@
 
   let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
+  function onCopy(event: ClipboardEvent) {
+    event.preventDefault();
+    const raw = window.getSelection()?.toString();
+    const trimmed = raw?.replace(/[\r\n]+$/, "");
+    if (trimmed) {
+      event.clipboardData?.setData("text/plain", trimmed);
+    }
+  }
+
   $effect(() => {
     if (data.authenticated) {
       posthog.identify(data.user.id, {
@@ -19,6 +28,8 @@
     }
   });
 </script>
+
+<svelte:window on:copy={onCopy} />
 
 <ModeWatcher />
 <Toaster />

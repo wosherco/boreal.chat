@@ -34,9 +34,7 @@
     } else {
       const untrackedLastMessage = untrack(() => lastMessage);
 
-      if (untrackedLastMessage) {
-        threadedChat = createThreadedChat(messages, untrackedLastMessage.id);
-      }
+      threadedChat = createThreadedChat(messages, untrackedLastMessage?.id);
     }
   });
 
