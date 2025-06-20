@@ -130,13 +130,6 @@
       callback: onNewChat,
     },
     {
-      key: "k",
-      isControl: true,
-      callback: () => {
-        console.log("TODO: SEARCH");
-      },
-    },
-    {
       key: "b",
       isControl: true,
       callback: () => {
