@@ -22,6 +22,7 @@
     MonitorIcon,
     Loader2,
     XIcon,
+    KeyboardIcon,
   } from "@lucide/svelte";
   import { goto } from "$app/navigation";
   import { orpc } from "$lib/client/orpc";
@@ -60,6 +61,9 @@
 
   import { controlKeyName } from "$lib/utils/platform";
   import { browser } from "$app/environment";
+  import ShortcutsCheatsheetDialog from "./ShortcutsCheatsheetDialog.svelte";
+
+  let shortcutsCheatsheetOpen = $state(false);
 
   let logoutLoading = $state(false);
 
@@ -77,6 +81,8 @@
     }
   }
 </script>
+
+<ShortcutsCheatsheetDialog bind:open={shortcutsCheatsheetOpen} />
 
 <TooltipProvider>
   <div class="bg-sidebar text-sidebar-foreground flex h-full w-80 flex-col overflow-hidden">
@@ -203,6 +209,10 @@
               </div>
             </div>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onclick={() => (shortcutsCheatsheetOpen = true)}>
+              <KeyboardIcon class="mr-2 size-4" />
+              <span>Shortcuts</span>
+            </DropdownMenuItem>
             <DropdownMenuItem onclick={() => goto("/settings")}>
               <SettingsIcon class="mr-2 size-4" />
               <span>Settings</span>
