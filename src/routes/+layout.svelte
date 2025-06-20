@@ -5,6 +5,7 @@
   import type { Snippet } from "svelte";
   import type { LayoutData } from "./$types";
   import posthog from "posthog-js";
+  import SearchCommand from "$lib/components/SearchCommand.svelte";
 
   let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
@@ -33,6 +34,7 @@
 
 <ModeWatcher />
 <Toaster />
+<SearchCommand />
 <main class="flex h-[100dvh] w-full">
   {@render children()}
 </main>

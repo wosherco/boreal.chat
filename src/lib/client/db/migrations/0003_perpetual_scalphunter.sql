@@ -1,0 +1,2 @@
+CREATE INDEX "title_search_index" ON "chats" USING gin (to_tsvector('english', "title"));--> statement-breakpoint
+CREATE INDEX "content_search_index" ON "message_segments" USING gin (to_tsvector('english', "content"));
