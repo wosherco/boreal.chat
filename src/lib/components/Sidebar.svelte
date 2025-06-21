@@ -49,14 +49,7 @@
     isPhone?: boolean;
   }
 
-  const {
-    user,
-    loading,
-    authenticated,
-    chats,
-    onNewChat,
-    isPhone = false,
-  }: Props = $props();
+  const { user, loading, authenticated, chats, onNewChat, isPhone = false }: Props = $props();
 
   import { controlKeyName } from "$lib/utils/platform";
   import { browser } from "$app/environment";
