@@ -11,7 +11,12 @@ import { dispatchCustomEvent } from "@langchain/core/callbacks/dispatch";
 import type { ChatCompletionChunk } from "openai/resources/chat/completions";
 import BufferedTokenInsert from "../utils/BufferedTokenInsert";
 import { db } from "../../db";
-import { messageSegmentsTable, messageTable, messageTokensTable } from "../../db/schema";
+import {
+  messageSegmentsTable,
+  messageSegmentMetadataTable,
+  messageTable,
+  messageTokensTable,
+} from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { createOpenAIClient } from "../utils/client";
 
@@ -46,6 +51,7 @@ const STREAMED_REASONING_TOKEN = "streamed_reasoning_token";
 const STREAMED_TOKEN = "streamed_token";
 const STREAMED_TOOL_CALL_CHUNK = "streamed_tool_call_chunk";
 const MESSAGE_FINISHED = "message_finished";
+const USAGE_INFO = "usage_info";
 
 type StreamedReasoningTokenEvent = {
   name: typeof STREAMED_REASONING_TOKEN;
@@ -75,11 +81,19 @@ type MessageFinishedEvent = {
   };
 };
 
+type UsageInfoEvent = {
+  name: typeof USAGE_INFO;
+  data: {
+    usage: OpenAI.ChatCompletionUsage;
+  };
+};
+
 type StreamEvent =
   | StreamedReasoningTokenEvent
   | StreamedTokenEvent
   | StreamedToolCallChunkEvent
-  | MessageFinishedEvent;
+  | MessageFinishedEvent
+  | UsageInfoEvent;
 
 export function createAgent(
   model: ModelId,
@@ -101,6 +115,7 @@ export function createAgent(
       model: actualModel,
       messages: state.messages,
       stream: true,
+      usage: { include: true },
       reasoning_effort:
         parameters.thinking === undefined
           ? undefined
@@ -117,6 +132,7 @@ export function createAgent(
     let toolCallId: string | undefined;
     let toolCallName: string | undefined;
     let toolCallArgs = "";
+    let usageInfo: OpenAI.ChatCompletionUsage | undefined;
 
     for await (const chunk of stream) {
       const delta = chunk.choices[0].delta;
@@ -155,6 +171,10 @@ export function createAgent(
         } satisfies StreamedToolCallChunkEvent["data"]);
         toolCallArgs += toolCall.function?.arguments ?? "";
       }
+
+      if ((chunk as { usage?: OpenAI.ChatCompletionUsage }).usage) {
+        usageInfo = (chunk as { usage: OpenAI.ChatCompletionUsage }).usage;
+      }
     }
 
     // At this point the LLM stream has finished. We're just getting stuff together.
@@ -184,6 +204,12 @@ export function createAgent(
       message: responseMessage as OpenAI.ChatCompletionMessageParam,
     } satisfies MessageFinishedEvent["data"]);
 
+    if (usageInfo) {
+      await dispatchCustomEvent(USAGE_INFO, {
+        usage: usageInfo,
+      } satisfies UsageInfoEvent["data"]);
+    }
+
     // TODO: https://langchain-ai.github.io/langgraphjs/how-tos/streaming-tokens-without-langchain/#define-tools-and-a-tool-calling-node
 
     return { messages: [responseMessage] };
@@ -200,6 +226,7 @@ export function createAgent(
 export async function invokeAgent(agent: ReturnType<typeof createAgent>, context: ChatContext) {
   const stream = await agent.streamEvents(context, { version: "v2" });
   const bufferedTokenInsert = new BufferedTokenInsert(context.userId, context.currentMessageId);
+  let usageInfo: OpenAI.ChatCompletionUsage | null = null;
 
   for await (const eventData of stream) {
     const { name, data } = eventData as unknown as StreamEvent;
@@ -213,6 +240,9 @@ export async function invokeAgent(agent: ReturnType<typeof createAgent>, context
         break;
       case STREAMED_TOOL_CALL_CHUNK:
         // TODO: Add support for tool calls.
+        break;
+      case USAGE_INFO:
+        usageInfo = data.usage;
         break;
       case MESSAGE_FINISHED:
         {
@@ -272,22 +302,41 @@ export async function invokeAgent(agent: ReturnType<typeof createAgent>, context
             i++;
           }
 
-          const promises = [
-            db
-              .update(messageTable)
-              .set({
-                status: "finished",
-              })
-              .where(eq(messageTable.id, context.currentMessageId))
-              .execute(),
-          ];
+          const updatePromise = db
+            .update(messageTable)
+            .set({
+              status: "finished",
+            })
+            .where(eq(messageTable.id, context.currentMessageId))
+            .execute();
 
+          let insertedSegments: { id: string }[] = [];
           if (toInsertMessages.length > 0) {
-            promises.push(db.insert(messageSegmentsTable).values(toInsertMessages).execute());
+            insertedSegments = await db
+              .insert(messageSegmentsTable)
+              .values(toInsertMessages)
+              .returning({ id: messageSegmentsTable.id });
           }
 
-          // Inserting the message into the database.
-          await Promise.all(promises);
+          await updatePromise;
+
+          if (usageInfo && insertedSegments.length > 0) {
+            await Promise.all(
+              insertedSegments.map((seg) =>
+                db.insert(messageSegmentMetadataTable).values({
+                  messageSegmentId: seg.id,
+                  promptTokens: usageInfo.prompt_tokens,
+                  completionTokens: usageInfo.completion_tokens,
+                  reasoningTokens: usageInfo.completion_tokens_details?.reasoning_tokens ?? 0,
+                  cachedTokens: usageInfo.prompt_tokens_details?.cached_tokens ?? 0,
+                  totalTokens: usageInfo.total_tokens,
+                  cost: usageInfo.cost,
+                  upstreamInferenceCost: usageInfo.cost_details?.upstream_inference_cost ?? null,
+                })
+              )
+            );
+            usageInfo = null;
+          }
 
           // Cleaning up temporal tokens
           await db

@@ -13,7 +13,20 @@ export const userTable = pgTable("user", {
   subscribedUntil: timestamp({ withTimezone: true }),
 });
 
-const { chatTable, threadTable, messageTable, messageSegmentsTable, messageTokensTable } =
-  createChatTables(userTable, true);
+const {
+  chatTable,
+  threadTable,
+  messageTable,
+  messageSegmentsTable,
+  messageSegmentMetadataTable,
+  messageTokensTable,
+} = createChatTables(userTable, true);
 
-export { chatTable, threadTable, messageTable, messageSegmentsTable, messageTokensTable };
+export {
+  chatTable,
+  threadTable,
+  messageTable,
+  messageSegmentsTable,
+  messageSegmentMetadataTable,
+  messageTokensTable,
+};

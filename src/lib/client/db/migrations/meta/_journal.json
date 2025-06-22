@@ -29,6 +29,13 @@
       "when": 1750451386203,
       "tag": "0003_perpetual_scalphunter",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1750626043522,
+      "tag": "0004_usage_metadata",
+      "breakpoints": true
     }
   ]
 }

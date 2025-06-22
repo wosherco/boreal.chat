@@ -29,6 +29,13 @@
       "when": 1750079556088,
       "tag": "0003_crazy_ogun",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1750625629040,
+      "tag": "0004_usage_metadata",
+      "breakpoints": true
     }
   ]
 }

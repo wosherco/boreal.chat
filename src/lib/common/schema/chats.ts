@@ -4,6 +4,7 @@ import {
   text,
   varchar,
   integer,
+  doublePrecision,
   timestamp,
   jsonb,
   index,
@@ -78,7 +79,6 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
       role: varchar({ length: 50, enum: MESSAGE_TYPES }).notNull(),
       status: varchar({ length: 50, enum: MESSAGE_STATUS }).notNull().default("processing"),
       error: text(),
-      metadata: jsonb(),
       model: varchar({ length: 50, enum: MODELS }).notNull(),
       reasoningLevel: varchar({ length: 50, enum: REASONING_LEVELS })
         .notNull()
@@ -147,6 +147,23 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
     ],
   );
 
+  const messageSegmentMetadataTable = pgTable(
+    "message_segment_metadata",
+    {
+      messageSegmentId: uuid()
+        .primaryKey()
+        .references(() => messageSegmentsTable.id)
+        .onDelete("cascade"),
+      promptTokens: integer().notNull(),
+      completionTokens: integer().notNull(),
+      reasoningTokens: integer().notNull().default(0),
+      cachedTokens: integer().notNull().default(0),
+      totalTokens: integer().notNull(),
+      cost: doublePrecision().notNull(),
+      upstreamInferenceCost: doublePrecision(),
+    },
+  );
+
   /**
    * THIS TABLE IS MEANT TO BE USED FOR TOKENS WHILE STREAMING. ONCE THE MESSAGE IS DONE, IT WILL BE MOVED TO message_segments.
    */
@@ -181,6 +198,7 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
     threadTable,
     messageTable,
     messageSegmentsTable,
+    messageSegmentMetadataTable,
     messageTokensTable,
   };
 };
