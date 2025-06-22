@@ -28,7 +28,7 @@
   import { orpc } from "$lib/client/orpc";
   import { toast } from "svelte-sonner";
   import { mode, setMode } from "mode-watcher";
-  import type { Chat, HydratableDataResult } from "$lib/common/sharedTypes";
+  import type { Chat, CurrentUserInfo, HydratableDataResult } from "$lib/common/sharedTypes";
   import VirtualizedChatList from "./chatList/VirtualizedChatList.svelte";
   import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
   import BetaBadge from "./BetaBadge.svelte";
@@ -38,18 +38,13 @@
 
   interface Props {
     loading: boolean;
-    user?: {
-      name: string;
-      email: string;
-      profilePicture: string;
-    };
-    authenticated?: boolean;
+    user: CurrentUserInfo | null;
     chats: HydratableDataResult<Chat[]>;
     onNewChat?: () => void;
     isPhone?: boolean;
   }
 
-  const { user, loading, authenticated, chats, onNewChat, isPhone = false }: Props = $props();
+  const { user, loading, chats, onNewChat, isPhone = false }: Props = $props();
 
   import { controlKeyName } from "$lib/utils/platform";
   import { browser } from "$app/environment";
@@ -149,10 +144,10 @@
             <Skeleton class="h-3 w-16" />
           </div>
         </div>
-      {:else if !authenticated}
+      {:else if !user}
         <!-- Login Button -->
         <Button href="/auth" class="w-full" variant="default">Sign In</Button>
-      {:else if user}
+      {:else}
         <!-- User Dropdown -->
         <DropdownMenu>
           <DropdownMenuTrigger class="w-full">

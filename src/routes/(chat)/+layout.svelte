@@ -114,7 +114,7 @@
 {#snippet sidebar(isPhone = false)}
   <Sidebar
     loading={$currentUser.loading}
-    {...$currentUser.data}
+    user={$currentUser.data}
     {onNewChat}
     chats={$chats}
     {isPhone}
