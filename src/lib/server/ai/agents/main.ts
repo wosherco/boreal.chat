@@ -100,6 +100,7 @@ export function createAgent(
     const stream = await createOpenAIClient(openRouterKey).chat.completions.create({
       model: actualModel,
       messages: state.messages,
+      user: state.userId,
       stream: true,
       reasoning_effort:
         parameters.thinking === undefined

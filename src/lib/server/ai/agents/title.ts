@@ -31,6 +31,7 @@ export async function generateChatTitle(
         content: firstMessage,
       },
     ],
+    user: context.userId,
     response_format: {
       type: "json_schema",
       json_schema: { name: "title", schema: z.toJSONSchema(schema), strict: true },
