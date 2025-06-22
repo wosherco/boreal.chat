@@ -10,10 +10,13 @@
     "build": "vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
+    "pretypecheck": "pnpm i18n",
     "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "typecheck:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "preformat": "pnpm i18n",
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
+    "prelint": "pnpm i18n",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "db:push": "drizzle-kit push",
@@ -26,7 +29,8 @@
     "db:build": "pnpm db:generate && pnpm db:client:build && pnpm db:migrate",
     "prebuild": "pnpm db:client:compile",
     "add-ui": "pnpm dlx shadcn-svelte@latest add",
-    "build:docker": "docker build -t boreal.chat ."
+    "build:docker": "docker build -t boreal.chat .",
+    "i18n": "paraglide-js compile --outdir src/lib/paraglide"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250607.0",
