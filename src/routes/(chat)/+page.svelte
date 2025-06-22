@@ -51,10 +51,13 @@
 <SvelteSeo title="🌌 boreal.chat" description="Fast, reliable AI chat with open-source freedom" />
 
 {#snippet prewrittenPrompt(prompt: PrewrittenPrompt, Icon: Component)}
-  <Button onclick={() => fillText(prompt)} variant="ghost">
+  <button
+    onclick={() => fillText(prompt)}
+    class="hover:bg-accent flex cursor-pointer flex-row items-start justify-start gap-2 rounded-md p-2 text-start text-sm"
+  >
     <Icon />
     {prompt.prompt}
-  </Button>
+  </button>
 {/snippet}
 
 <div class="flex h-full w-full flex-col items-center justify-center pb-24">
