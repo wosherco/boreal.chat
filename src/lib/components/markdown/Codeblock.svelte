@@ -11,7 +11,7 @@
   import { Button } from "../ui/button";
   import { CopyIcon, DownloadIcon, TextIcon, WrapTextIcon } from "@lucide/svelte";
   import { cn } from "$lib/utils";
-  import { onDestroy, onMount } from "svelte";
+  import { onMount } from "svelte";
   import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 
   const astContext = getAstNode();
@@ -55,6 +55,8 @@
 
         renderedCode = currentRenderedCode;
       }
+
+      resolve(true);
     });
   });
 
@@ -113,6 +115,7 @@
   </div>
 
   {#if renderedCode}
+    <!-- eslint-disable-line svelte/no-at-html-tags -->
     {@html renderedCode}
   {:else}
     <pre class="bg-muted p-2" style="background-color:#282c34;color:#abb2bf">{codeProps?.code}</pre>

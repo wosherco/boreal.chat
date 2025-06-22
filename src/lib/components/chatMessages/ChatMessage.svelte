@@ -255,7 +255,7 @@
             : "mr-auto",
         )}
       >
-        {#each cleanedSegments as segment}
+        {#each cleanedSegments as segment (segment.ordinal)}
           {#if segment.kind === "text"}
             <Markdown content={segment.content ?? ""} />
           {:else if segment.kind === "reasoning"}

@@ -1,16 +1,15 @@
 <script lang="ts">
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { BrainIcon, CalculatorIcon, CodeIcon, FileTextIcon } from "@lucide/svelte";
-  import type { PageData } from "./$types";
+  import type { PageProps } from "./$types";
   import type { Component } from "svelte";
   import { Button } from "$lib/components/ui/button";
-  import { Card, CardContent } from "$lib/components/ui/card";
   import SvelteSeo from "svelte-seo";
   import { goto } from "$app/navigation";
 
-  const { data }: { data: PageData } = $props();
+  const { data }: PageProps = $props();
 
-  const currentUser = $derived(useCurrentUser(data));
+  const currentUser = $derived(useCurrentUser(data.auth.currentUserInfo));
 
   interface PrewrittenPrompt {
     prompt: string;
@@ -58,12 +57,12 @@
 {/snippet}
 
 <div class="flex h-full w-full flex-col items-center justify-center pb-24">
-  {#if $currentUser.data?.authenticated}
-    <h1 class="text-2xl font-bold">👋 Welcome back, {$currentUser.data?.user?.name}!</h1>
+  {#if $currentUser.data?.authenticated && $currentUser.data?.data}
+    <h1 class="text-2xl font-bold">👋 Welcome back, {$currentUser.data.data.name}!</h1>
     <h2 class="text-muted-foreground text-lg">What do you want to do?</h2>
 
     <div class="flex flex-col items-start gap-1 py-4">
-      {#each prewrittenPrompts as prompt}
+      {#each prewrittenPrompts as prompt (prompt.prompt)}
         {@render prewrittenPrompt(prompt, iconMap[prompt.type])}
       {/each}
     </div>

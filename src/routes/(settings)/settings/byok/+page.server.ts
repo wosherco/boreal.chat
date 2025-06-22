@@ -1,9 +1,7 @@
-import { db } from "$lib/server/db";
-import { openRouterKeyTable } from "$lib/server/db/schema";
-import { eq } from "drizzle-orm";
 import type { PageServerLoad } from "./$types";
+import { createORPCServerLink } from "$lib/server/orpc/client";
 
-export const load: PageServerLoad = ({ locals }) => {
+export const load: PageServerLoad = ({ locals, request, cookies }) => {
   if (!locals.user) {
     return {
       byok: {
@@ -12,20 +10,15 @@ export const load: PageServerLoad = ({ locals }) => {
     };
   }
 
-  const openrouterAccount = db
-    .select({
-      createdAt: openRouterKeyTable.createdAt,
-      updatedAt: openRouterKeyTable.updatedAt,
-    })
-    .from(openRouterKeyTable)
-    .where(eq(openRouterKeyTable.userId, locals.user.id))
-    .limit(1)
-    .execute()
-    .then(([openrouterAccount]) => openrouterAccount ?? null);
+  const openRouterAccount = createORPCServerLink({
+    headers: request.headers,
+    locals,
+    cookies,
+  }).v1.byok.get();
 
   return {
     byok: {
-      openrouter: openrouterAccount,
+      openrouter: openRouterAccount,
     },
   };
 };
