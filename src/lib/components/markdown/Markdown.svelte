@@ -29,7 +29,7 @@
   class={cn(
     reasoning
       ? "text-muted-foreground prose-sm mb-0"
-      : "prose dark:prose-invert text-foreground max-w-screen-md",
+      : "prose-sm md:prose dark:prose-invert text-foreground max-w-screen-md",
   )}
 >
   <Markdown md={content} {plugins} />

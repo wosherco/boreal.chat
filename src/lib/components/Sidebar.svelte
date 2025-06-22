@@ -49,6 +49,7 @@
   import { controlKeyName } from "$lib/utils/platform";
   import { browser } from "$app/environment";
   import ShortcutsCheatsheetDialog from "./ShortcutsCheatsheetDialog.svelte";
+  import SheetClosableOnlyOnPhone from "./utils/SheetClosableOnlyOnPhone.svelte";
 
   let shortcutsCheatsheetOpen = $state(false);
 
@@ -74,52 +75,59 @@
 
 <TooltipProvider>
   <div class="bg-sidebar text-sidebar-foreground flex h-full w-80 flex-col overflow-hidden">
-    <!-- Header -->
-    <a href="/" class="flex items-center justify-between p-4">
-      <div class="flex items-center gap-2">
-        {#if isPhone}
-          <SheetClose
-            class="ring-offset-background focus-visible:ring-ring rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none md:hidden"
-          >
-            <XIcon class="size-6" />
-            <span class="sr-only">Close</span>
-          </SheetClose>
-        {/if}
-        <h1 class="text-lg font-semibold md:ml-12">boreal.chat</h1>
-      </div>
-      <BetaBadge />
-    </a>
+    <div class="flex w-full items-center justify-start px-4">
+      <!-- Header -->
+      {#if isPhone}
+        <SheetClose
+          class="ring-offset-background focus-visible:ring-ring rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none md:hidden"
+        >
+          <XIcon class="size-6" />
+          <span class="sr-only">Close</span>
+        </SheetClose>
+      {/if}
+
+      <a href="/" class="flex w-full items-center justify-between p-4">
+        <div class="flex items-center gap-2">
+          <h1 class="text-lg font-semibold md:ml-12">boreal.chat</h1>
+        </div>
+        <BetaBadge />
+      </a>
+    </div>
 
     <!-- New Chat and Search Row -->
     <div class="flex items-center gap-2 p-3">
       <!-- New Chat Button -->
-      <Tooltip>
-        <TooltipTrigger>
-          <Button variant="default" size="icon" onclick={onNewChat} class="flex-shrink-0">
-            <PlusIcon class="size-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>New chat ({controlKeyName}+Shift+O)</p>
-        </TooltipContent>
-      </Tooltip>
+      <SheetClosableOnlyOnPhone {isPhone}>
+        <Tooltip>
+          <TooltipTrigger>
+            <Button variant="default" size="icon" onclick={onNewChat} class="flex-shrink-0">
+              <PlusIcon class="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>New chat ({controlKeyName}+Shift+O)</p>
+          </TooltipContent>
+        </Tooltip>
+      </SheetClosableOnlyOnPhone>
 
       <!-- Search Button -->
-      <Button
-        variant="secondary"
-        onclick={openSearchCommand}
-        class="bg-input/50 border-input hover:bg-input/70 text-foreground/70 hover:text-foreground flex-1 justify-between border"
-      >
-        <div class="flex items-center gap-2">
-          <SearchIcon class="size-4" />
-          <span>Search...</span>
-        </div>
-        {#if browser}
-          <div class="bg-muted/80 border-border rounded border px-1.5 py-0.5 font-mono text-xs">
-            {controlKeyName}+K
+      <SheetClosableOnlyOnPhone {isPhone} class="flex-1">
+        <Button
+          variant="secondary"
+          onclick={openSearchCommand}
+          class="bg-input/50 border-input hover:bg-input/70 text-foreground/70 hover:text-foreground w-full flex-1 justify-between border"
+        >
+          <div class="flex items-center gap-2">
+            <SearchIcon class="size-4" />
+            <span>Search...</span>
           </div>
-        {/if}
-      </Button>
+          {#if browser}
+            <div class="bg-muted/80 border-border rounded border px-1.5 py-0.5 font-mono text-xs">
+              {controlKeyName}+K
+            </div>
+          {/if}
+        </Button>
+      </SheetClosableOnlyOnPhone>
     </div>
 
     <!-- Chat List -->
@@ -129,7 +137,7 @@
           <Loader2 class="size-4 animate-spin" />
         </div>
       {:else}
-        <VirtualizedChatList chats={chats.data} />
+        <VirtualizedChatList chats={chats.data} {isPhone} />
       {/if}
     </div>
 

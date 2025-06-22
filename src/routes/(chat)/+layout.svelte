@@ -139,45 +139,45 @@
   ]}
 />
 
-<div class="flex h-[100dvh] w-full">
-  <!-- Floating buttons -->
-  <div
-    class={cn(
-      "bg-accent/40 fixed z-50 m-2 rounded-lg p-1 backdrop-blur-lg transition-colors",
-      isSidebarCollapsed ? "md:bg-accent/40" : "md:bg-transparent",
-    )}
+<!-- Floating buttons -->
+<div
+  class={cn(
+    "bg-accent/40 fixed z-50 m-2 rounded-lg p-1 backdrop-blur-lg transition-colors",
+    isSidebarCollapsed ? "md:bg-accent/40" : "md:bg-transparent",
+  )}
+>
+  <Button
+    variant="ghost"
+    size="icon"
+    class="hidden md:flex"
+    onclick={() => (isSidebarCollapsed = !isSidebarCollapsed)}
   >
-    <Button
-      variant="ghost"
-      size="icon"
-      class="hidden md:flex"
-      onclick={() => (isSidebarCollapsed = !isSidebarCollapsed)}
-    >
-      {#if isSidebarCollapsed}
-        <SidebarOpenIcon />
-      {:else}
-        <SidebarCloseIcon />
-      {/if}
-    </Button>
+    {#if isSidebarCollapsed}
+      <SidebarOpenIcon />
+    {:else}
+      <SidebarCloseIcon />
+    {/if}
+  </Button>
 
-    <!-- Phone Sidebar -->
-    <Sheet>
-      <SheetTrigger class="block md:hidden">
-        <Button
-          variant="ghost"
-          size="icon"
-          class="md:hidden"
-          onclick={() => (isSidebarCollapsed = !isSidebarCollapsed)}
-        >
-          <MenuIcon />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="left" class="w-fit" renderCloseButton={false}>
-        {@render sidebar(true)}
-      </SheetContent>
-    </Sheet>
-  </div>
+  <!-- Phone Sidebar -->
+  <Sheet>
+    <SheetTrigger class="block md:hidden">
+      <Button
+        variant="ghost"
+        size="icon"
+        class="md:hidden"
+        onclick={() => (isSidebarCollapsed = !isSidebarCollapsed)}
+      >
+        <MenuIcon />
+      </Button>
+    </SheetTrigger>
+    <SheetContent side="left" class="w-fit" renderCloseButton={false}>
+      {@render sidebar(true)}
+    </SheetContent>
+  </Sheet>
+</div>
 
+<div class="flex h-[100dvh] flex-row">
   <!-- Desktop Sidebar -->
   <div
     class={cn(
@@ -187,7 +187,8 @@
   >
     {@render sidebar()}
   </div>
-  <div class="relative flex-1">
+
+  <div class="relative flex-1 flex-grow">
     <main class="h-full overflow-y-auto" bind:this={chatContainer} onscroll={handleScroll}>
       {@render children()}
     </main>
