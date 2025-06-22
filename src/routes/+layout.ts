@@ -4,11 +4,12 @@ import type { LayoutLoad } from "./$types";
 import { pickSSRorSPAPromise } from "$lib/client/hooks/pickSSRorSPA.svelte";
 import { orpc } from "$lib/client/orpc";
 import { ORPCError } from "@orpc/client";
+import { env } from "$env/dynamic/public";
 
 export const load: LayoutLoad = async ({ data }) => {
   if (browser) {
-    posthog.init("phc_a2qpwc0fnaCPlkK4kBZe0mZrdQiFSBbdCE0pNtCnGpZ", {
-      api_host: "https://eu.i.posthog.com",
+    posthog.init(env.PUBLIC_POSTHOG_API_KEY, {
+      api_host: env.PUBLIC_POSTHOG_HOST,
       person_profiles: "identified_only",
     });
   }

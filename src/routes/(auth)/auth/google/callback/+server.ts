@@ -9,6 +9,7 @@ import {
 import { db } from "$lib/server/db";
 import { accountTable, userTable } from "$lib/server/db/schema";
 import { and, eq } from "drizzle-orm";
+import { posthog } from "$lib/server/posthog";
 
 export const GET: RequestHandler = async (event) => {
   const code = event.url.searchParams.get("code");
@@ -89,6 +90,18 @@ export const GET: RequestHandler = async (event) => {
       platform: "GOOGLE",
       platformId: googleUserId,
       userId: user.id,
+    });
+
+    posthog.capture({
+      distinctId: user.id,
+      event: "user_signed_up",
+      properties: {
+        $set: {
+          name: user.name,
+          email: user.email,
+          profilePicture: user.profilePicture,
+        },
+      },
     });
 
     return user;
