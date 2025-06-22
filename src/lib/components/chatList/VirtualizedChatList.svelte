@@ -19,11 +19,11 @@
 </script>
 
 {#snippet chatButton(chat: Chat)}
-  <SheetClosableOnlyOnPhone {isPhone} class="text-start">
+  <SheetClosableOnlyOnPhone {isPhone} class="w-full text-start">
     <Button
       variant="ghost"
       size="sm"
-      class={cn("justify-start", page.params.chatId === chat.id && "bg-accent")}
+      class={cn("w-full justify-start", page.params.chatId === chat.id && "bg-accent")}
       href={`/chat/${chat.id}`}
     >
       <MessageSquareIcon class="text-muted-foreground h-4 w-4 flex-shrink-0" />

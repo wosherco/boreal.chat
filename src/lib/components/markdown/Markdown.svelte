@@ -27,9 +27,10 @@
 
 <div
   class={cn(
+    "break-words",
     reasoning
       ? "text-muted-foreground prose-sm mb-0"
-      : "prose-sm md:prose dark:prose-invert text-foreground max-w-screen-md",
+      : "prose dark:prose-invert text-foreground max-w-none",
   )}
 >
   <Markdown md={content} {plugins} />

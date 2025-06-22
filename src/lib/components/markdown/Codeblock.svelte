@@ -115,7 +115,6 @@
   </div>
 
   {#if renderedCode}
-    <!-- eslint-disable-line svelte/no-at-html-tags -->
     {@html renderedCode}
   {:else}
     <pre class="bg-muted p-2" style="background-color:#282c34;color:#abb2bf">{codeProps?.code}</pre>

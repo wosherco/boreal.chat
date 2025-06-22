@@ -86,7 +86,7 @@
         </SheetClose>
       {/if}
 
-      <a href="/" class="flex w-full items-center justify-between p-4">
+      <a href="/" class="flex w-full items-center justify-between p-4 pr-0">
         <div class="flex items-center gap-2">
           <h1 class="text-lg font-semibold md:ml-12">boreal.chat</h1>
         </div>

@@ -1,3 +1,12 @@
+<script lang="ts" module>
+  let sidebarCollapsed = $state(false);
+
+  export const isSidebarCollapsed = () => sidebarCollapsed;
+  export const setSidebarCollapsed = (collapsed: boolean) => {
+    sidebarCollapsed = collapsed;
+  };
+</script>
+
 <script lang="ts">
   import { onMount } from "svelte";
   import type { LayoutProps } from "./$types";
@@ -21,20 +30,20 @@
   const currentUser = useCurrentUser(data.auth.currentUserInfo);
   const chats = useChats(data.lastChats ?? null);
 
-  let isSidebarCollapsed = $state(data.sidebarCollapsed);
+  setSidebarCollapsed(data.sidebarCollapsed);
 
   onMount(() => {
     if (!browser) return;
 
     const sidebarCollapsed = Cookies.get(SIDEBAR_COLLAPSED_COOKIE) === "true";
 
-    isSidebarCollapsed = sidebarCollapsed;
+    setSidebarCollapsed(sidebarCollapsed);
   });
 
   $effect(() => {
     if (!browser) return;
 
-    Cookies.set(SIDEBAR_COLLAPSED_COOKIE, isSidebarCollapsed.toString());
+    Cookies.set(SIDEBAR_COLLAPSED_COOKIE, isSidebarCollapsed().toString());
   });
 
   let chatMessageInputElement = $state<HTMLTextAreaElement>();
@@ -133,7 +142,7 @@
       key: "b",
       isControl: true,
       callback: () => {
-        isSidebarCollapsed = !isSidebarCollapsed;
+        setSidebarCollapsed(!isSidebarCollapsed());
       },
     },
   ]}
@@ -143,16 +152,16 @@
 <div
   class={cn(
     "bg-accent/40 fixed z-50 m-2 rounded-lg p-1 backdrop-blur-lg transition-colors",
-    isSidebarCollapsed ? "md:bg-accent/40" : "md:bg-transparent",
+    isSidebarCollapsed() ? "md:bg-accent/40" : "md:bg-transparent",
   )}
 >
   <Button
     variant="ghost"
     size="icon"
     class="hidden md:flex"
-    onclick={() => (isSidebarCollapsed = !isSidebarCollapsed)}
+    onclick={() => setSidebarCollapsed(!isSidebarCollapsed())}
   >
-    {#if isSidebarCollapsed}
+    {#if isSidebarCollapsed()}
       <SidebarOpenIcon />
     {:else}
       <SidebarCloseIcon />
@@ -166,7 +175,7 @@
         variant="ghost"
         size="icon"
         class="md:hidden"
-        onclick={() => (isSidebarCollapsed = !isSidebarCollapsed)}
+        onclick={() => setSidebarCollapsed(!isSidebarCollapsed())}
       >
         <MenuIcon />
       </Button>
@@ -177,12 +186,12 @@
   </Sheet>
 </div>
 
-<div class="flex h-[100dvh] flex-row">
+<div class="flex h-[100dvh] w-full flex-row">
   <!-- Desktop Sidebar -->
   <div
     class={cn(
       "hidden flex-shrink-0 overflow-hidden transition-all md:block",
-      isSidebarCollapsed ? "w-0" : "w-80",
+      isSidebarCollapsed() ? "w-0" : "w-80",
     )}
   >
     {@render sidebar()}
@@ -194,7 +203,7 @@
     </main>
 
     <!-- Chat message input -->
-    <div class="absolute right-0 bottom-0 left-0">
+    <div class="pointer-events-none absolute right-0 bottom-0 left-0">
       {#if !autoscroll}
         <button
           onclick={resumeAutoScroll}

@@ -6,6 +6,8 @@
   import RecursiveMessageRendering from "$lib/components/chatMessages/RecursiveMessageRendering.svelte";
   import SvelteSeo from "svelte-seo";
   import type { PageProps } from "./$types";
+  import { cn } from "$lib/utils";
+  import { isSidebarCollapsed } from "../../+layout.svelte";
 
   const { data }: PageProps = $props();
 
@@ -15,11 +17,16 @@
 
 <SvelteSeo title={`${$chat.data?.title} | boreal.chat`} />
 
-<div class="mx-auto flex max-w-screen-md flex-col gap-4 px-4 pt-16 pb-36">
+<div
+  class={cn(
+    "mx-auto flex w-full max-w-screen min-w-0 flex-col gap-2 overflow-x-hidden px-4 pt-16 pb-36",
+    isSidebarCollapsed()
+      ? "md:max-w-screen-md"
+      : "md:max-w-[min(var(--breakpoint-md),calc(100vw-var(--spacing)*80)))]",
+  )}
+>
   {#if $messages.loading || !$messages.data}
-    <div class="flex h-full w-full flex-col gap-4">
-      <ChatSkeleton />
-    </div>
+    <ChatSkeleton />
   {:else if $messages.ssr}
     {#each $messages.data as value (value.id)}
       <ChatMessage message={value} />

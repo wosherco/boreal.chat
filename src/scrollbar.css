@@ -1,0 +1,53 @@
+/*
+  This CSS creates a simple, thin, transparent scrollbar that becomes
+  more visible on hover. It's designed to be an overlay, meaning it
+  doesn't take up any page width.
+
+  Regarding z-index: Scrollbar pseudo-elements like ::-webkit-scrollbar
+  don't accept the z-index property. Your request for `z-1000` is interpreted
+  as wanting the scrollbar to appear on top of other content without affecting
+  layout, which is what an overlay scrollbar does.
+*/
+
+/* For WebKit-based browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  transition: background-color 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+/* For Firefox */
+/* Note: Firefox support for custom scrollbars is more limited */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+}
+
+/* Dark theme adjustments (when .dark class is on the <html> element) */
+
+/* For WebKit-based browsers */
+html.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+/* For Firefox */
+html.dark {
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}

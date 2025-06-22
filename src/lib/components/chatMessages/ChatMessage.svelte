@@ -228,7 +228,7 @@
   }
 </script>
 
-<div class="group">
+<div class="group min-w-0 flex-1 break-words">
   {#if editingMessage && isUser}
     <ChatMessageInlineInput
       defaultValue={cleanedMessageText}
@@ -237,37 +237,36 @@
       chatId={message.chatId}
       onCancel={onCancelEdit}
     />
+  {:else if message.status === "error"}
+    <Alert variant="destructive">
+      <AlertCircleIcon />
+      <AlertTitle>Error</AlertTitle>
+      <AlertDescription>
+        <p>{message.error ?? "Unknown error"}</p>
+        <p>Please try again later by regenerating the message.</p>
+      </AlertDescription>
+    </Alert>
   {:else}
-    {#if message.status === "error"}
-      <Alert variant="destructive">
-        <AlertCircleIcon />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>
-          <p>{message.error ?? "Unknown error"}</p>
-          <p>Please try again later by regenerating the message.</p>
-        </AlertDescription>
-      </Alert>
-    {:else}
-      <div
-        class={cn(
-          isUser
-            ? "bg-muted border-input ml-auto w-fit rounded-lg border px-4 py-2 shadow-sm"
-            : "mr-auto",
-        )}
-      >
-        {#each cleanedSegments as segment (segment.ordinal)}
-          {#if segment.kind === "text"}
-            <Markdown content={segment.content ?? ""} />
-          {:else if segment.kind === "reasoning"}
-            <ReasoningSegment reasoning={segment.content ?? ""} isReasoning={segment.streamed} />
-          {:else if segment.kind === "tool_call"}
-            TODO: Tool call
-          {:else if segment.kind === "tool_result"}
-            TODO: Tool result
-          {/if}
-        {/each}
-      </div>
-    {/if}
+    <div
+      class={cn(
+        isUser
+          ? "bg-muted border-input ml-auto w-fit rounded-lg border px-4 py-2 shadow-sm"
+          : "mr-auto",
+        "max-w-full",
+      )}
+    >
+      {#each cleanedSegments as segment (segment.ordinal)}
+        {#if segment.kind === "text"}
+          <Markdown content={segment.content ?? ""} />
+        {:else if segment.kind === "reasoning"}
+          <ReasoningSegment reasoning={segment.content ?? ""} isReasoning={segment.streamed} />
+        {:else if segment.kind === "tool_call"}
+          TODO: Tool call
+        {:else if segment.kind === "tool_result"}
+          TODO: Tool result
+        {/if}
+      {/each}
+    </div>
 
     {#if message.status !== "processing"}
       <TooltipProvider>

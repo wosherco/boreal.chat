@@ -191,9 +191,9 @@
   ]}
 />
 
-<div class="mx-auto w-full max-w-screen-md">
+<div class="mx-auto w-full max-w-screen-md px-4">
   <div
-    class="bg-muted/50 group flex w-full flex-col gap-3 rounded-lg rounded-b-none border border-b-0 shadow backdrop-blur transition-all md:focus-within:-translate-y-1 md:focus-within:rounded-b-lg md:focus-within:border-b"
+    class="bg-muted/50 group pointer-events-auto z-50 flex w-full flex-col gap-3 rounded-lg rounded-b-none border border-b-0 shadow backdrop-blur transition-colors focus-within:border-white"
   >
     <!-- svelte-ignore a11y_autofocus -->
     <textarea

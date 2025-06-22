@@ -73,12 +73,10 @@
   $effect(() => updateGlobalState());
 </script>
 
-<div class="flex flex-col gap-2">
-  {#each threadedChat as node (node.value.id)}
-    <ChatMessage
-      message={node.value}
-      messageNode={node}
-      onChangeThreadId={(threadId) => changeThreadId(threadId)}
-    />
-  {/each}
-</div>
+{#each threadedChat as node (node.value.id)}
+  <ChatMessage
+    message={node.value}
+    messageNode={node}
+    onChangeThreadId={(threadId) => changeThreadId(threadId)}
+  />
+{/each}
