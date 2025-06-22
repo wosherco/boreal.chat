@@ -2,7 +2,6 @@
   import "../app.css";
   import { Toaster } from "$lib/components/ui/sonner";
   import { ModeWatcher } from "mode-watcher";
-  import type { Snippet } from "svelte";
   import type { LayoutProps } from "./$types";
   import posthog from "posthog-js";
   import SearchCommand from "$lib/components/SearchCommand.svelte";

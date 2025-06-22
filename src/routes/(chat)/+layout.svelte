@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, type Snippet } from "svelte";
+  import { onMount } from "svelte";
   import type { LayoutProps } from "./$types";
   import Sidebar from "$lib/components/Sidebar.svelte";
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";

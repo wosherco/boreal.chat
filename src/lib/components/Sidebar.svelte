@@ -67,6 +67,7 @@
       await clearLocalDb();
       window.location.reload();
     } catch (e) {
+      console.error(e);
       toast.error("Failed to log out");
     } finally {
       logoutLoading = false;

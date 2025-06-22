@@ -15,11 +15,7 @@
   const { defaultValue, onSubmit, parentMessageId, chatId, onCancel }: Props = $props();
 
   let editTextAreaElement = $state<HTMLTextAreaElement>();
-  let editValue = $state(defaultValue);
-
-  $effect(() => {
-    editValue = defaultValue;
-  });
+  let editValue = $derived(defaultValue);
 
   // Auto-growing textarea logic for editing
   const lineHeight = 24; // Line height in pixels

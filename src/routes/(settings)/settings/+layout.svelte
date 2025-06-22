@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
   import { page } from "$app/state";
   import { Button } from "$lib/components/ui/button";
   import { ArrowLeftIcon } from "@lucide/svelte";

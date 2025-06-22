@@ -21,7 +21,7 @@
       <ChatSkeleton />
     </div>
   {:else if $messages.ssr}
-    {#each $messages.data as value}
+    {#each $messages.data as value (value.id)}
       <ChatMessage message={value} />
     {/each}
   {:else}
