@@ -18,10 +18,11 @@
   }
 
   $effect(() => {
-    if (data.auth.currentUserInfo) {
-      posthog.identify(data.auth.currentUserInfo.id, {
-        email: data.auth.currentUserInfo.email,
-        name: data.auth.currentUserInfo.name,
+    // TODO: This should use useCurrentUser hook
+    if (data.auth.currentUserInfo?.data) {
+      posthog.identify(data.auth.currentUserInfo.data.id, {
+        email: data.auth.currentUserInfo.data.email,
+        name: data.auth.currentUserInfo.data.name,
       });
     } else {
       posthog.reset();
