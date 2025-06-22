@@ -62,7 +62,7 @@ export const v1ChatRouter = osBase.router({
         };
       });
 
-      posthog.capture({
+      posthog?.capture({
         distinctId: context.userCtx.user.id,
         event: "v1_new_chat",
         properties: {
@@ -161,7 +161,7 @@ export const v1ChatRouter = osBase.router({
         // Invoke the agent with the initialized context
         const agentPromise = invokeAgent(agent, chatContext)
           .then(() => {
-            posthog.capture({
+            posthog?.capture({
               distinctId: context.userCtx.user.id,
               event: "agent_invocation_succeeded",
               properties: {
@@ -181,7 +181,7 @@ export const v1ChatRouter = osBase.router({
                 assistantMessageId: result.assistantMessageId,
               },
             });
-            posthog.capture({
+            posthog?.capture({
               distinctId: context.userCtx.user.id,
               event: "agent_invocation_failed",
               properties: {
@@ -284,7 +284,7 @@ export const v1ChatRouter = osBase.router({
         });
       }
 
-      posthog.capture({
+      posthog?.capture({
         distinctId: context.userCtx.user.id,
         event: "v1_message_sent",
         properties: {
@@ -336,7 +336,7 @@ export const v1ChatRouter = osBase.router({
 
         const agentPromise = invokeAgent(agent, chatContext)
           .then(() => {
-            posthog.capture({
+            posthog?.capture({
               distinctId: context.userCtx.user.id,
               event: "agent_invocation_succeeded",
               properties: {
@@ -364,7 +364,7 @@ export const v1ChatRouter = osBase.router({
                 userMessageId: result.userMessageId,
               },
             });
-            posthog.capture({
+            posthog?.capture({
               distinctId: context.userCtx.user.id,
               event: "agent_invocation_failed",
               properties: {
@@ -428,7 +428,7 @@ export const v1ChatRouter = osBase.router({
           model: input.model,
         });
 
-        posthog.capture({
+        posthog?.capture({
           distinctId: context.userCtx.user.id,
           event: "v1_message_regenerated",
           properties: {
@@ -482,7 +482,7 @@ export const v1ChatRouter = osBase.router({
 
         const agentPromise = invokeAgent(agent, chatContext)
           .then(() => {
-            posthog.capture({
+            posthog?.capture({
               distinctId: context.userCtx.user.id,
               event: "agent_invocation_succeeded",
               properties: {
@@ -502,7 +502,7 @@ export const v1ChatRouter = osBase.router({
                 messageId: result.message.id,
               },
             });
-            posthog.capture({
+            posthog?.capture({
               distinctId: context.userCtx.user.id,
               event: "agent_invocation_failed",
               properties: {
