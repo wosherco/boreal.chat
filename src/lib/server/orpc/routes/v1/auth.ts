@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { osBase } from "../../context";
 import { authenticatedMiddleware } from "../../middlewares";
 import { invalidateSession, sessionCookieName } from "$lib/server/auth";
@@ -8,6 +7,8 @@ export const v1AuthRouter = osBase.router({
     return {
       id: context.userCtx.user.id,
       name: context.userCtx.user.name,
+      email: context.userCtx.user.email,
+      profilePicture: context.userCtx.user.profilePicture,
     };
   }),
   logout: osBase.use(authenticatedMiddleware).handler(async ({ context }) => {

@@ -5,8 +5,13 @@ import type { PageServerLoad } from "./$types";
 import { error, redirect } from "@sveltejs/kit";
 import { fetchThreadMessagesRecursive } from "$lib/server/services/messages";
 import type { ChatWithSettings } from "$lib/common/sharedTypes";
+import { building } from "$app/environment";
 
 export const load: PageServerLoad = async ({ params, locals }) => {
+  if (building) {
+    return {};
+  }
+
   if (!locals.user) {
     throw redirect(302, "/auth");
   }
@@ -46,9 +51,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   });
 
   return {
-    lastMessages: messages,
-    lastMessage: lastMessageInfo.lastMessage,
-    chatId,
-    chat: lastMessageInfo.chat satisfies ChatWithSettings,
+    currentChat: {
+      lastMessages: messages,
+      lastMessage: lastMessageInfo.lastMessage,
+      chat: lastMessageInfo.chat satisfies ChatWithSettings,
+    },
   };
 };

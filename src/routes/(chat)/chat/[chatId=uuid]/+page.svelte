@@ -5,12 +5,12 @@
   import ChatSkeleton from "$lib/components/chatMessages/ChatSkeleton.svelte";
   import RecursiveMessageRendering from "$lib/components/chatMessages/RecursiveMessageRendering.svelte";
   import SvelteSeo from "svelte-seo";
-  import type { PageData } from "./$types";
+  import type { PageProps } from "./$types";
 
-  const { data }: { data: PageData } = $props();
+  const { data }: PageProps = $props();
 
-  const messages = $derived(useChatMessages(data.chatId, data.lastMessages));
-  const chat = $derived(useChat(data.chat.id, data.chat));
+  const messages = $derived(useChatMessages(data.chatId, data.currentChat?.lastMessages ?? null));
+  const chat = $derived(useChat(data.chatId, data.currentChat?.chat ?? null));
 </script>
 
 <SvelteSeo title={`${$chat.data?.title} | boreal.chat`} />
@@ -27,7 +27,7 @@
   {:else}
     <RecursiveMessageRendering
       messages={$messages.data}
-      chatId={data.chat.id}
+      chatId={data.chatId}
       chat={$chat.data ?? null}
     />
   {/if}

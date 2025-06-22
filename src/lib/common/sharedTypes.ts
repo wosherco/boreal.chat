@@ -14,21 +14,12 @@ export interface HydratableDataResult<T> {
   data: T | null;
 }
 
-export type BasicUserInfo = {
+export type CurrentUserInfo = {
   id: string;
   name: string;
   email: string;
   profilePicture: string | null;
 };
-
-export type CurrentUserInfo =
-  | {
-      authenticated: false;
-    }
-  | {
-      authenticated: true;
-      user: BasicUserInfo;
-    };
 
 export interface Chat {
   id: string;

@@ -1,16 +1,16 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import type { LayoutData } from "./$types";
+  import type { LayoutProps } from "./$types";
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { Loader2Icon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
 
-  const { data, children }: { data: LayoutData; children: Snippet } = $props();
+  const { data, children }: LayoutProps = $props();
 
-  const currentUser = useCurrentUser(data);
+  const currentUser = useCurrentUser(data.auth.currentUserInfo);
 
   $effect(() => {
-    if (!$currentUser.loading && $currentUser.data?.authenticated) {
+    if (!$currentUser.loading && $currentUser.data) {
       goto("/");
     }
   });
@@ -22,6 +22,6 @@
       <Loader2Icon class="size-10 animate-spin" />
     </div>
   </div>
-{:else if !$currentUser.data?.authenticated}
+{:else if !$currentUser.data}
   {@render children()}
 {/if}

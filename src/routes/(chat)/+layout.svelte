@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, type Snippet } from "svelte";
-  import type { LayoutData } from "./$types";
+  import type { LayoutProps } from "./$types";
   import Sidebar from "$lib/components/Sidebar.svelte";
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { browser } from "$app/environment";
@@ -16,12 +16,12 @@
   import { useChats } from "$lib/client/hooks/useChats.svelte";
   import { fade } from "svelte/transition";
 
-  const { data, children }: { data: LayoutData; children: Snippet } = $props();
+  const { data, children }: LayoutProps = $props();
 
-  const currentUser = useCurrentUser(data.authenticated !== undefined ? data : undefined);
-  const chats = useChats(data.lastChats);
+  const currentUser = useCurrentUser(data.auth.currentUserInfo);
+  const chats = useChats(data.lastChats ?? null);
 
-  let isSidebarCollapsed = $state(data?.sidebarCollapsed ?? false);
+  let isSidebarCollapsed = $state(data.sidebarCollapsed);
 
   onMount(() => {
     if (!browser) return;
