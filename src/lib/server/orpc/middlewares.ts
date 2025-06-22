@@ -6,7 +6,9 @@ import { ORPCError } from "@orpc/client";
 
 export const authenticatedMiddleware = osBase.middleware(async ({ context, next }) => {
   if (!context.userCtx.user || !context.userCtx.session) {
-    throw new Error("Unauthorized");
+    throw new ORPCError("UNAUTHORIZED", {
+      message: "Unauthorized",
+    });
   }
 
   return next({

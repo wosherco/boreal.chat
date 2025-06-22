@@ -72,7 +72,7 @@
   <Command.Input placeholder="Type to search..." bind:value={searchInput} />
   <Command.List>
     <Command.Group heading="Chats">
-      {#each searchedChats ?? [] as chat}
+      {#each searchedChats ?? [] as chat (chat.chatId)}
         <Command.Item
           onclick={() => {
             searchCommandOpen = false;

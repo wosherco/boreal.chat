@@ -1,9 +1,10 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
   import { page } from "$app/state";
   import { Button } from "$lib/components/ui/button";
   import { ArrowLeftIcon } from "@lucide/svelte";
-  const { children }: { children: Snippet } = $props();
+  import type { LayoutProps } from "./$types";
+
+  const { children }: LayoutProps = $props();
 </script>
 
 <div class="mx-auto w-full max-w-screen-lg space-y-4 p-4">

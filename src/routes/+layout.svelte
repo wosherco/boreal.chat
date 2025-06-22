@@ -2,12 +2,11 @@
   import "../app.css";
   import { Toaster } from "$lib/components/ui/sonner";
   import { ModeWatcher } from "mode-watcher";
-  import type { Snippet } from "svelte";
-  import type { LayoutData } from "./$types";
+  import type { LayoutProps } from "./$types";
   import posthog from "posthog-js";
   import SearchCommand from "$lib/components/SearchCommand.svelte";
 
-  let { children, data }: { children: Snippet; data: LayoutData } = $props();
+  let { children, data }: LayoutProps = $props();
 
   function onCopy(event: ClipboardEvent) {
     event.preventDefault();
@@ -19,10 +18,11 @@
   }
 
   $effect(() => {
-    if (data.authenticated) {
-      posthog.identify(data.user.id, {
-        email: data.user.email,
-        name: data.user.name,
+    // TODO: This should use useCurrentUser hook
+    if (data.auth.currentUserInfo?.data) {
+      posthog.identify(data.auth.currentUserInfo.data.id, {
+        email: data.auth.currentUserInfo.data.email,
+        name: data.auth.currentUserInfo.data.name,
       });
     } else {
       posthog.reset();

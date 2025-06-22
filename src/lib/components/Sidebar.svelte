@@ -28,7 +28,7 @@
   import { orpc } from "$lib/client/orpc";
   import { toast } from "svelte-sonner";
   import { mode, setMode } from "mode-watcher";
-  import type { Chat, HydratableDataResult } from "$lib/common/sharedTypes";
+  import type { Chat, CurrentUserInfo, HydratableDataResult } from "$lib/common/sharedTypes";
   import VirtualizedChatList from "./chatList/VirtualizedChatList.svelte";
   import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
   import BetaBadge from "./BetaBadge.svelte";
@@ -38,18 +38,13 @@
 
   interface Props {
     loading: boolean;
-    user?: {
-      name: string;
-      email: string;
-      profilePicture: string;
-    };
-    authenticated?: boolean;
+    user: CurrentUserInfo | null;
     chats: HydratableDataResult<Chat[]>;
     onNewChat?: () => void;
     isPhone?: boolean;
   }
 
-  const { user, loading, authenticated, chats, onNewChat, isPhone = false }: Props = $props();
+  const { user, loading, chats, onNewChat, isPhone = false }: Props = $props();
 
   import { controlKeyName } from "$lib/utils/platform";
   import { browser } from "$app/environment";
@@ -68,6 +63,7 @@
       await clearLocalDb();
       window.location.reload();
     } catch (e) {
+      console.error(e);
       toast.error("Failed to log out");
     } finally {
       logoutLoading = false;
@@ -147,7 +143,7 @@
 
     <!-- Account Section -->
     <div class="p-3">
-      {#if loading}
+      {#if loading || !user}
         <!-- Skeleton State -->
         <div class="flex items-center gap-2">
           <Skeleton class="size-8 rounded-full" />
@@ -156,23 +152,23 @@
             <Skeleton class="h-3 w-16" />
           </div>
         </div>
-      {:else if !authenticated}
+      {:else if !user.data || !user.authenticated}
         <!-- Login Button -->
         <Button href="/auth" class="w-full" variant="default">Sign In</Button>
-      {:else if user}
+      {:else}
         <!-- User Dropdown -->
         <DropdownMenu>
           <DropdownMenuTrigger class="w-full">
             <Button variant="ghost" class="h-auto w-full justify-start p-2 text-start">
               <div class="flex w-full items-center gap-2">
                 <Avatar class="size-8">
-                  <AvatarImage src={user.profilePicture} />
+                  <AvatarImage src={user.data.profilePicture} />
                   <AvatarFallback class="text-xs">
-                    {user.name.slice(0, 2).toUpperCase()}
+                    {user.data.name.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div class="flex min-w-0 flex-1 flex-col items-start">
-                  <p class="w-full truncate text-sm font-medium">{user.name}</p>
+                  <p class="w-full truncate text-sm font-medium">{user.data.name}</p>
                   <p class="text-muted-foreground text-xs">Free</p>
                 </div>
                 <ChevronsUpDownIcon class="size-4" />
@@ -182,8 +178,8 @@
           <DropdownMenuContent align="end" class="w-56">
             <DropdownMenuLabel>
               <div class="flex flex-col space-y-1">
-                <p class="text-sm leading-none font-medium">{user.name}</p>
-                <p class="text-muted-foreground text-xs leading-none">{user.email}</p>
+                <p class="text-sm leading-none font-medium">{user.data.name}</p>
+                <p class="text-muted-foreground text-xs leading-none">{user.data.email}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

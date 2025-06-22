@@ -3,12 +3,12 @@
   import { ArrowRightIcon, Loader2Icon } from "@lucide/svelte";
   import { Card, CardContent, CardHeader, CardTitle } from "$lib/components/ui/card";
   import SvelteSeo from "svelte-seo";
-  import type { PageData } from "./$types";
+  import type { PageProps } from "./$types";
   import { Button } from "$lib/components/ui/button";
 
-  const { data }: { data: PageData } = $props();
+  const { data }: PageProps = $props();
 
-  const user = useCurrentUser(data);
+  const user = useCurrentUser(data.auth.currentUserInfo);
 </script>
 
 <SvelteSeo title="Settings | boreal.chat" />
@@ -20,12 +20,12 @@
     <div class="flex items-center justify-center">
       <Loader2Icon class="size-4 animate-spin" />
     </div>
-  {:else if $user.data === null || !$user.data.authenticated}
+  {:else if !$user.data?.authenticated || !$user.data?.data}
     <Button variant="link" href="/auth" class="w-fit"
       >Please, log in first <ArrowRightIcon /></Button
     >
   {:else}
-    <p>👋 Welcome back, {$user.data.user.name}!</p>
+    <p>👋 Welcome back, {$user.data.data.name}!</p>
 
     <Card class="w-fit">
       <CardHeader>
@@ -35,13 +35,13 @@
         <div class="flex flex-row items-center gap-4">
           <!-- svelte-ignore a11y_img_redundant_alt -->
           <img
-            src={$user.data.user.profilePicture}
+            src={$user.data.data.profilePicture}
             alt="Profile Picture"
             class="size-16 rounded-full"
           />
           <div class="flex flex-col gap-1">
-            <p class="font-semibold">{$user.data.user.name}</p>
-            <p class="text-muted-foreground text-sm">{$user.data.user.email}</p>
+            <p class="font-semibold">{$user.data.data.name}</p>
+            <p class="text-muted-foreground text-sm">{$user.data.data.email}</p>
           </div>
         </div>
       </CardContent>

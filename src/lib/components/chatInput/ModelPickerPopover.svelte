@@ -36,7 +36,7 @@
       <Command.List>
         <Command.Empty>No framework found.</Command.Empty>
         <Command.Group>
-          {#each MODELS as model}
+          {#each MODELS as model (model)}
             <Command.Item
               value={model}
               onSelect={() => {

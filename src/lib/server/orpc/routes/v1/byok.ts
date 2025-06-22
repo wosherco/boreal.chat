@@ -6,6 +6,18 @@ import { authenticatedMiddleware } from "../../middlewares";
 import { ORPCError } from "@orpc/client";
 
 export const v1ByokRouter = osBase.router({
+  get: osBase.use(authenticatedMiddleware).handler(async ({ context }) => {
+    const [openrouterAccount] = await db
+      .select({
+        createdAt: openRouterKeyTable.createdAt,
+        updatedAt: openRouterKeyTable.updatedAt,
+      })
+      .from(openRouterKeyTable)
+      .where(eq(openRouterKeyTable.userId, context.userCtx.user.id));
+
+    return openrouterAccount ?? null;
+  }),
+
   delete: osBase.use(authenticatedMiddleware).handler(async ({ context }) => {
     const [openrouterAccount] = await db
       .delete(openRouterKeyTable)

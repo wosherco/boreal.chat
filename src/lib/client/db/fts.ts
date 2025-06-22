@@ -15,7 +15,7 @@ export async function searchChats(query: string) {
   const rankedMessagesSubquery = clientDb()
     .select({
       chatId: chatTable.id,
-      messageId: sql`${messageTable.id}`.as("messageId"),
+      messageId: sql<string>`${messageTable.id}`.as("messageId"),
       threadId: messageTable.threadId,
       title: chatTable.title,
       segmentContent: messageSegmentsTable.content,

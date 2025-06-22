@@ -4,6 +4,7 @@ import { toCamelCase } from "drizzle-orm/casing";
  * Recursively transforms all object keys to camelCase
  * Optimized for performance with minimal object creation
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function transformKeyToCamelCaseRecursive(obj: any): any {
   if (obj === null || obj === undefined) {
     return obj;
