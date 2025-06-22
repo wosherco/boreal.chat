@@ -135,7 +135,7 @@
 
     <!-- Account Section -->
     <div class="p-3">
-      {#if loading}
+      {#if loading || !user}
         <!-- Skeleton State -->
         <div class="flex items-center gap-2">
           <Skeleton class="size-8 rounded-full" />
@@ -144,7 +144,7 @@
             <Skeleton class="h-3 w-16" />
           </div>
         </div>
-      {:else if !user}
+      {:else if !user.data || !user.authenticated}
         <!-- Login Button -->
         <Button href="/auth" class="w-full" variant="default">Sign In</Button>
       {:else}
@@ -154,13 +154,13 @@
             <Button variant="ghost" class="h-auto w-full justify-start p-2 text-start">
               <div class="flex w-full items-center gap-2">
                 <Avatar class="size-8">
-                  <AvatarImage src={user.profilePicture} />
+                  <AvatarImage src={user.data.profilePicture} />
                   <AvatarFallback class="text-xs">
-                    {user.name.slice(0, 2).toUpperCase()}
+                    {user.data.name.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div class="flex min-w-0 flex-1 flex-col items-start">
-                  <p class="w-full truncate text-sm font-medium">{user.name}</p>
+                  <p class="w-full truncate text-sm font-medium">{user.data.name}</p>
                   <p class="text-muted-foreground text-xs">Free</p>
                 </div>
                 <ChevronsUpDownIcon class="size-4" />
@@ -170,8 +170,8 @@
           <DropdownMenuContent align="end" class="w-56">
             <DropdownMenuLabel>
               <div class="flex flex-col space-y-1">
-                <p class="text-sm leading-none font-medium">{user.name}</p>
-                <p class="text-muted-foreground text-xs leading-none">{user.email}</p>
+                <p class="text-sm leading-none font-medium">{user.data.name}</p>
+                <p class="text-muted-foreground text-xs leading-none">{user.data.email}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

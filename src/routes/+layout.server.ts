@@ -10,7 +10,7 @@ export const load: LayoutServerLoad = async ({ locals, request, cookies }) => {
   })
     .v1.auth.getUser()
     .catch((err) => {
-      if (err instanceof ORPCError && err.code === "UNAUTHORIZED") {
+      if (err instanceof ORPCError && err.status === 401) {
         return null;
       }
 

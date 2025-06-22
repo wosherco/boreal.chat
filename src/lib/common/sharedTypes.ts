@@ -15,6 +15,11 @@ export interface HydratableDataResult<T> {
 }
 
 export type CurrentUserInfo = {
+  authenticated: boolean;
+  data: UserInfo | null;
+};
+
+export type UserInfo = {
   id: string;
   name: string;
   email: string;

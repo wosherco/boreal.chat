@@ -1,4 +1,4 @@
-import type { CurrentUserInfo, ServerData } from "$lib/common/sharedTypes";
+import type { CurrentUserInfo, ServerData, UserInfo } from "$lib/common/sharedTypes";
 import { clientDb } from "../db/index.svelte";
 import { userTable } from "../db/schema";
 import { createHydratableData } from "./localDbHook.svelte";
@@ -19,10 +19,14 @@ export const useCurrentUser = (serverData: ServerData<CurrentUserInfo>) =>
           .from(userTable)
           .limit(1)
           .toSQL(),
-      transform: ([userData]) =>
-        transformKeyToCamelCaseRecursive(
-          userData as Record<string, unknown>,
-        ) as unknown as CurrentUserInfo,
+      transform: ([userData]) => ({
+        authenticated: userData ? true : false,
+        data: userData
+          ? (transformKeyToCamelCaseRecursive(
+              userData as Record<string, unknown>,
+            ) as unknown as UserInfo)
+          : null,
+      }),
     },
     serverData ?? null,
     undefined,

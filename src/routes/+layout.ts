@@ -17,7 +17,7 @@ export const load: LayoutLoad = async ({ data }) => {
     Promise.resolve(data.auth.currentUserInfo),
     () =>
       orpc.v1.auth.getUser().catch((err) => {
-        if (err instanceof ORPCError && err.code === "UNAUTHORIZED") {
+        if (err instanceof ORPCError && err.status === 401) {
           return null;
         }
 

@@ -20,12 +20,12 @@
     <div class="flex items-center justify-center">
       <Loader2Icon class="size-4 animate-spin" />
     </div>
-  {:else if $user.data === null}
+  {:else if !$user.data?.authenticated || !$user.data?.data}
     <Button variant="link" href="/auth" class="w-fit"
       >Please, log in first <ArrowRightIcon /></Button
     >
   {:else}
-    <p>👋 Welcome back, {$user.data.name}!</p>
+    <p>👋 Welcome back, {$user.data.data.name}!</p>
 
     <Card class="w-fit">
       <CardHeader>
@@ -34,10 +34,14 @@
       <CardContent>
         <div class="flex flex-row items-center gap-4">
           <!-- svelte-ignore a11y_img_redundant_alt -->
-          <img src={$user.data.profilePicture} alt="Profile Picture" class="size-16 rounded-full" />
+          <img
+            src={$user.data.data.profilePicture}
+            alt="Profile Picture"
+            class="size-16 rounded-full"
+          />
           <div class="flex flex-col gap-1">
-            <p class="font-semibold">{$user.data.name}</p>
-            <p class="text-muted-foreground text-sm">{$user.data.email}</p>
+            <p class="font-semibold">{$user.data.data.name}</p>
+            <p class="text-muted-foreground text-sm">{$user.data.data.email}</p>
           </div>
         </div>
       </CardContent>
