@@ -92,7 +92,7 @@ export const GET: RequestHandler = async (event) => {
       userId: user.id,
     });
 
-    posthog.capture({
+    posthog?.capture({
       distinctId: user.id,
       event: "user_signed_up",
       properties: {
