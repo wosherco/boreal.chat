@@ -99,6 +99,7 @@ export function createAgent(
   model: ModelId,
   openRouterKey: string,
   parameters: AgentParameters = {},
+  options: { signal?: AbortSignal } = {},
 ) {
   async function callModel(state: ChatContext) {
     let actualModel: string = model;
@@ -115,6 +116,7 @@ export function createAgent(
       model: actualModel,
       messages: state.messages,
       stream: true,
+      signal: options.signal,
       usage: { include: true },
       reasoning_effort:
         parameters.thinking === undefined
@@ -227,123 +229,139 @@ export async function invokeAgent(agent: ReturnType<typeof createAgent>, context
   const stream = await agent.streamEvents(context, { version: "v2" });
   const bufferedTokenInsert = new BufferedTokenInsert(context.userId, context.currentMessageId);
   let usageInfo: OpenAI.ChatCompletionUsage | null = null;
+  try {
+    for await (const eventData of stream) {
+      const { name, data } = eventData as unknown as StreamEvent;
 
-  for await (const eventData of stream) {
-    const { name, data } = eventData as unknown as StreamEvent;
+      switch (name) {
+        case STREAMED_REASONING_TOKEN:
+          bufferedTokenInsert.insert("reasoning", data.reasoning);
+          break;
+        case STREAMED_TOKEN:
+          bufferedTokenInsert.insert("text", data.content);
+          break;
+        case STREAMED_TOOL_CALL_CHUNK:
+          // TODO: Add support for tool calls.
+          break;
+        case USAGE_INFO:
+          usageInfo = data.usage;
+          break;
+        case MESSAGE_FINISHED:
+          {
+            await bufferedTokenInsert.flushImmediate();
+            await bufferedTokenInsert.destroy();
 
-    switch (name) {
-      case STREAMED_REASONING_TOKEN:
-        bufferedTokenInsert.insert("reasoning", data.reasoning);
-        break;
-      case STREAMED_TOKEN:
-        bufferedTokenInsert.insert("text", data.content);
-        break;
-      case STREAMED_TOOL_CALL_CHUNK:
-        // TODO: Add support for tool calls.
-        break;
-      case USAGE_INFO:
-        usageInfo = data.usage;
-        break;
-      case MESSAGE_FINISHED:
-        {
-          await bufferedTokenInsert.flushImmediate();
-          await bufferedTokenInsert.destroy();
-
-          if (data.message.role !== "assistant") {
-            throw new Error("Message is not an assistant message");
-          }
-
-          const reasoning = (data.message as { reasoning?: string }).reasoning;
-
-          const getTextFromMessage = (
-            message: OpenAI.ChatCompletionMessageParam,
-          ): string | null => {
-            if (message.content) {
-              if (typeof message.content === "string") {
-                return message.content;
-              }
-              if (Array.isArray(message.content)) {
-                return message.content
-                  .map((part) =>
-                    "text" in part ? part.text : "refusal" in part ? part.refusal : null,
-                  )
-                  .filter((text) => text !== null)
-                  .join("");
-              }
+            if (data.message.role !== "assistant") {
+              throw new Error("Message is not an assistant message");
             }
-            return null;
-          };
-          const content = getTextFromMessage(data.message);
 
-          let i = 0;
-          const toInsertMessages: (typeof messageSegmentsTable.$inferInsert)[] = [];
+            const reasoning = (data.message as { reasoning?: string }).reasoning;
 
-          if (reasoning) {
-            toInsertMessages.push({
-              userId: context.userId,
-              messageId: context.currentMessageId,
-              // TODO: Ordinal will need a more complex logic when we implement tools.
-              ordinal: i,
-              kind: "reasoning",
-              content: reasoning,
-            });
+            const getTextFromMessage = (
+              message: OpenAI.ChatCompletionMessageParam,
+            ): string | null => {
+              if (message.content) {
+                if (typeof message.content === "string") {
+                  return message.content;
+                }
+                if (Array.isArray(message.content)) {
+                  return message.content
+                    .map((part) =>
+                      "text" in part ? part.text : "refusal" in part ? part.refusal : null,
+                    )
+                    .filter((text) => text !== null)
+                    .join("");
+                }
+              }
+              return null;
+            };
+            const content = getTextFromMessage(data.message);
 
-            i++;
+            let i = 0;
+            const toInsertMessages: (typeof messageSegmentsTable.$inferInsert)[] = [];
+
+            if (reasoning) {
+              toInsertMessages.push({
+                userId: context.userId,
+                messageId: context.currentMessageId,
+                // TODO: Ordinal will need a more complex logic when we implement tools.
+                ordinal: i,
+                kind: "reasoning",
+                content: reasoning,
+              });
+
+              i++;
+            }
+
+            if (content) {
+              toInsertMessages.push({
+                userId: context.userId,
+                messageId: context.currentMessageId,
+                ordinal: i,
+                kind: "text",
+                content: content,
+              });
+              i++;
+            }
+
+            const updatePromise = db
+              .update(messageTable)
+              .set({
+                status: "finished",
+              })
+              .where(eq(messageTable.id, context.currentMessageId))
+              .execute();
+
+            let insertedSegments: { id: string }[] = [];
+            if (toInsertMessages.length > 0) {
+              insertedSegments = await db
+                .insert(messageSegmentsTable)
+                .values(toInsertMessages)
+                .returning({ id: messageSegmentsTable.id });
+            }
+
+            await updatePromise;
+
+            if (usageInfo && insertedSegments.length > 0) {
+              await Promise.all(
+                insertedSegments.map((seg) =>
+                  db.insert(messageSegmentMetadataTable).values({
+                    messageSegmentId: seg.id,
+                    promptTokens: usageInfo.prompt_tokens,
+                    completionTokens: usageInfo.completion_tokens,
+                    reasoningTokens: usageInfo.completion_tokens_details?.reasoning_tokens ?? 0,
+                    cachedTokens: usageInfo.prompt_tokens_details?.cached_tokens ?? 0,
+                    totalTokens: usageInfo.total_tokens,
+                    cost: usageInfo.cost,
+                    upstreamInferenceCost: usageInfo.cost_details?.upstream_inference_cost ?? null,
+                  }),
+                ),
+              );
+              usageInfo = null;
+            }
+
+            // Cleaning up temporal tokens
+            await db
+              .delete(messageTokensTable)
+              .where(eq(messageTokensTable.messageId, context.currentMessageId));
           }
-
-          if (content) {
-            toInsertMessages.push({
-              userId: context.userId,
-              messageId: context.currentMessageId,
-              ordinal: i,
-              kind: "text",
-              content: content,
-            });
-            i++;
-          }
-
-          const updatePromise = db
-            .update(messageTable)
-            .set({
-              status: "finished",
-            })
-            .where(eq(messageTable.id, context.currentMessageId))
-            .execute();
-
-          let insertedSegments: { id: string }[] = [];
-          if (toInsertMessages.length > 0) {
-            insertedSegments = await db
-              .insert(messageSegmentsTable)
-              .values(toInsertMessages)
-              .returning({ id: messageSegmentsTable.id });
-          }
-
-          await updatePromise;
-
-          if (usageInfo && insertedSegments.length > 0) {
-            await Promise.all(
-              insertedSegments.map((seg) =>
-                db.insert(messageSegmentMetadataTable).values({
-                  messageSegmentId: seg.id,
-                  promptTokens: usageInfo.prompt_tokens,
-                  completionTokens: usageInfo.completion_tokens,
-                  reasoningTokens: usageInfo.completion_tokens_details?.reasoning_tokens ?? 0,
-                  cachedTokens: usageInfo.prompt_tokens_details?.cached_tokens ?? 0,
-                  totalTokens: usageInfo.total_tokens,
-                  cost: usageInfo.cost,
-                  upstreamInferenceCost: usageInfo.cost_details?.upstream_inference_cost ?? null,
-                })
-              )
-            );
-            usageInfo = null;
-          }
-
-          // Cleaning up temporal tokens
-          await db
-            .delete(messageTokensTable)
-            .where(eq(messageTokensTable.messageId, context.currentMessageId));
-        }
-        break;
+          break;
+      }
     }
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      await bufferedTokenInsert.flushImmediate();
+      await bufferedTokenInsert.destroy();
+      await db
+        .update(messageTable)
+        .set({ status: "cancelled" })
+        .where(eq(messageTable.id, context.currentMessageId))
+        .execute();
+      await db
+        .delete(messageTokensTable)
+        .where(eq(messageTokensTable.messageId, context.currentMessageId));
+      return;
+    }
+    throw err;
   }
 }

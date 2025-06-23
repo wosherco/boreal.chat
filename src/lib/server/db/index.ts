@@ -8,8 +8,8 @@ import type { PgTransaction } from "drizzle-orm/pg-core";
 
 if (!env.DATABASE_URL) throw new Error("DATABASE_URL is not set");
 
-const client = postgres(env.DATABASE_URL);
-export const db = drizzle(client, {
+export const sql = postgres(env.DATABASE_URL);
+export const db = drizzle(sql, {
   schema,
   casing: "snake_case",
 });
