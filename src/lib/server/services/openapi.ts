@@ -1,3 +1,5 @@
+import { backOff } from "exponential-backoff";
+
 export interface OpenRouterGeneration {
   id: string;
   total_cost: number;
@@ -38,18 +40,26 @@ export async function getUsageData(
   const url = new URL("https://openrouter.ai/api/v1/generation");
   url.searchParams.append("id", generationId);
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
-  });
+  const response = await backOff(
+    async () => {
+      const response = await fetch(url.href, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      });
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(
-      `Failed to fetch usage data: ${response.status} ${response.statusText} - ${errorBody}`,
-    );
-  }
+      if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(
+          `Failed to fetch usage data: ${response.status} ${response.statusText} - ${errorBody}`,
+        );
+      }
+      return response;
+    },
+    {
+      numOfAttempts: 5,
+    },
+  );
 
   const result = (await response.json()) as OpenRouterGenerationAPIResponse;
 
