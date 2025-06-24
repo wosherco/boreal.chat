@@ -120,7 +120,7 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
     "message_segments",
     {
       id: uuid().defaultRandom().primaryKey(),
-      generationId: uuid().notNull(),
+      generationId: uuid(),
       userId: uuid().notNull(),
       messageId: uuid().notNull(),
       ordinal: integer().notNull(),
@@ -182,7 +182,7 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
     "message_tokens",
     {
       id: uuid().defaultRandom().primaryKey(),
-      generationId: uuid().notNull(),
+      generationId: uuid(),
       // We need this here because, for now, we're just filtering syncing by user id.
       userId: uuid().notNull(),
       messageId: uuid().notNull(),
