@@ -20,6 +20,7 @@ import { chatTable } from "$lib/server/db/schema";
 import { ORPCError } from "@orpc/client";
 import { RateLimitError } from "openai";
 import * as Sentry from "@sentry/sveltekit";
+import { posthog } from "$lib/server/posthog";
 
 export const v1ChatRouter = osBase.router({
   newChat: osBase
@@ -59,6 +60,20 @@ export const v1ChatRouter = osBase.router({
           userMessage,
           assistantMessageId,
         };
+      });
+
+      posthog?.capture({
+        distinctId: context.userCtx.user.id,
+        event: "v1_new_chat",
+        properties: {
+          model: input.model,
+          webSearchEnabled: input.webSearchEnabled ?? false,
+          reasoningLevel: input.reasoningLevel ?? "none",
+          chatId: result.chatId,
+          threadId: result.threadId,
+          userMessageId: result.userMessage.id,
+          assistantMessageId: result.assistantMessageId,
+        },
       });
 
       // Invoking the title agent
@@ -144,18 +159,45 @@ export const v1ChatRouter = osBase.router({
         });
 
         // Invoke the agent with the initialized context
-        const agentPromise = invokeAgent(agent, chatContext).catch(async (error) => {
-          Sentry.captureException(error, {
-            user: { id: context.userCtx.user.id },
-            extra: {
-              chatId: result.chatId,
-              threadId: result.threadId,
-              assistantMessageId: result.assistantMessageId,
-            },
+        const agentPromise = invokeAgent(agent, chatContext)
+          .then(() => {
+            posthog?.capture({
+              distinctId: context.userCtx.user.id,
+              event: "agent_invocation_succeeded",
+              properties: {
+                type: "newChat",
+                chatId: result.chatId,
+                assistantMessageId: result.assistantMessageId,
+                model: input.model,
+              },
+            });
+          })
+          .catch(async (error) => {
+            Sentry.captureException(error, {
+              user: { id: context.userCtx.user.id },
+              extra: {
+                chatId: result.chatId,
+                threadId: result.threadId,
+                assistantMessageId: result.assistantMessageId,
+              },
+            });
+            posthog?.capture({
+              distinctId: context.userCtx.user.id,
+              event: "agent_invocation_failed",
+              properties: {
+                type: "newChat",
+                chatId: result.chatId,
+                assistantMessageId: result.assistantMessageId,
+                model: input.model,
+              },
+            });
+            await markMessageAsErrored(
+              db,
+              result.assistantMessageId,
+              "Agent failed to create chat",
+            );
+            console.error("Error invoking agent: ", error);
           });
-          await markMessageAsErrored(db, result.assistantMessageId, "Agent failed to create chat");
-          console.error("Error invoking agent: ", error);
-        });
 
         if (context.ctx?.waitUntil) {
           context.ctx.waitUntil(agentPromise);
@@ -242,6 +284,19 @@ export const v1ChatRouter = osBase.router({
         });
       }
 
+      posthog?.capture({
+        distinctId: context.userCtx.user.id,
+        event: "v1_message_sent",
+        properties: {
+          chatId: input.chatId,
+          model: actualModel,
+          webSearchEnabled: actualWebSearchEnabled,
+          reasoningLevel: actualReasoningLevel,
+          userMessageId: result.userMessageId,
+          assistantMessageId: result.assistantMessageId,
+          threadId: result.threadId,
+        },
+      });
       let messages;
       try {
         messages = await fetchThreadMessagesRecursive(db, result.threadId, {
@@ -279,26 +334,49 @@ export const v1ChatRouter = osBase.router({
           messages: messages,
         });
 
-        const agentPromise = invokeAgent(agent, chatContext).catch(async (error) => {
-          let errorMessage = "Agent failed to send message";
+        const agentPromise = invokeAgent(agent, chatContext)
+          .then(() => {
+            posthog?.capture({
+              distinctId: context.userCtx.user.id,
+              event: "agent_invocation_succeeded",
+              properties: {
+                type: "sendMessage",
+                chatId: result.chatId,
+                assistantMessageId: result.assistantMessageId,
+                model: actualModel,
+              },
+            });
+          })
+          .catch(async (error) => {
+            let errorMessage = "Agent failed to send message";
 
-          if (error instanceof RateLimitError) {
-            errorMessage =
-              "Rate limit exceeded. If you're using a free model, try using a paid model.";
-          }
+            if (error instanceof RateLimitError) {
+              errorMessage =
+                "Rate limit exceeded. If you're using a free model, try using a paid model.";
+            }
 
-          Sentry.captureException(error, {
-            user: { id: context.userCtx.user.id },
-            extra: {
-              chatId: result.chatId,
-              threadId: result.threadId,
-              assistantMessageId: result.assistantMessageId,
-              userMessageId: result.userMessageId,
-            },
+            Sentry.captureException(error, {
+              user: { id: context.userCtx.user.id },
+              extra: {
+                chatId: result.chatId,
+                threadId: result.threadId,
+                assistantMessageId: result.assistantMessageId,
+                userMessageId: result.userMessageId,
+              },
+            });
+            posthog?.capture({
+              distinctId: context.userCtx.user.id,
+              event: "agent_invocation_failed",
+              properties: {
+                type: "sendMessage",
+                chatId: result.chatId,
+                assistantMessageId: result.assistantMessageId,
+                model: actualModel,
+              },
+            });
+            await markMessageAsErrored(db, result.assistantMessageId, errorMessage);
+            console.error("Failed to send message: ", error);
           });
-          await markMessageAsErrored(db, result.assistantMessageId, errorMessage);
-          console.error("Failed to send message: ", error);
-        });
 
         if (context.ctx?.waitUntil) {
           context.ctx.waitUntil(agentPromise);
@@ -350,6 +428,16 @@ export const v1ChatRouter = osBase.router({
           model: input.model,
         });
 
+        posthog?.capture({
+          distinctId: context.userCtx.user.id,
+          event: "v1_message_regenerated",
+          properties: {
+            chatId: message.chatId,
+            messageId: input.messageId,
+            model: input.model,
+          },
+        });
+
         return {
           message,
           parentMessage,
@@ -392,18 +480,41 @@ export const v1ChatRouter = osBase.router({
           messages: messages,
         });
 
-        const agentPromise = invokeAgent(agent, chatContext).catch(async (error) => {
-          Sentry.captureException(error, {
-            user: { id: context.userCtx.user.id },
-            extra: {
-              chatId: result.message.chatId,
-              threadId: result.message.threadId,
-              messageId: result.message.id,
-            },
+        const agentPromise = invokeAgent(agent, chatContext)
+          .then(() => {
+            posthog?.capture({
+              distinctId: context.userCtx.user.id,
+              event: "agent_invocation_succeeded",
+              properties: {
+                type: "regenerateMessage",
+                chatId: result.message.chatId,
+                messageId: result.message.id,
+                model: input.model,
+              },
+            });
+          })
+          .catch(async (error) => {
+            Sentry.captureException(error, {
+              user: { id: context.userCtx.user.id },
+              extra: {
+                chatId: result.message.chatId,
+                threadId: result.message.threadId,
+                messageId: result.message.id,
+              },
+            });
+            posthog?.capture({
+              distinctId: context.userCtx.user.id,
+              event: "agent_invocation_failed",
+              properties: {
+                type: "regenerateMessage",
+                chatId: result.message.chatId,
+                messageId: result.message.id,
+                model: input.model,
+              },
+            });
+            await markMessageAsErrored(db, result.message.id, "Agent failed to regenerate message");
+            console.error("Error invoking agent: ", error);
           });
-          await markMessageAsErrored(db, result.message.id, "Agent failed to regenerate message");
-          console.error("Error invoking agent: ", error);
-        });
 
         if (context.ctx?.waitUntil) {
           context.ctx.waitUntil(agentPromise);

@@ -4,6 +4,17 @@ import * as auth from "$lib/server/auth.js";
 import type { Handle } from "@sveltejs/kit";
 import { paraglideMiddleware } from "$lib/paraglide/server";
 import { env } from "$env/dynamic/private";
+import { posthog } from "$lib/server/posthog";
+
+process.on("SIGINT", async () => {
+  await posthog?.shutdown();
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
+  await posthog?.shutdown();
+  process.exit(0);
+});
 
 Sentry.init({
   dsn: env.PUBLIC_SENTRY_DSN,
