@@ -11,9 +11,16 @@ import { dispatchCustomEvent } from "@langchain/core/callbacks/dispatch";
 import type { ChatCompletionChunk } from "openai/resources/chat/completions";
 import BufferedTokenInsert from "../utils/BufferedTokenInsert";
 import { db } from "../../db";
-import { messageSegmentsTable, messageTable, messageTokensTable } from "../../db/schema";
+import {
+  messageSegmentsTable,
+  messageSegmentUsageTable,
+  messageTable,
+  messageTokensTable,
+} from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { createOpenAIClient } from "../utils/client";
+import { getUsageData } from "$lib/server/services/openapi";
+import * as Sentry from "@sentry/sveltekit";
 
 // Custom context interface that extends beyond just messages
 
@@ -51,6 +58,7 @@ type StreamedReasoningTokenEvent = {
   name: typeof STREAMED_REASONING_TOKEN;
   data: {
     reasoning: string;
+    generationId: string;
   };
 };
 
@@ -58,6 +66,7 @@ type StreamedTokenEvent = {
   name: typeof STREAMED_TOKEN;
   data: {
     content: string;
+    generationId: string;
   };
 };
 
@@ -72,6 +81,7 @@ type MessageFinishedEvent = {
   name: typeof MESSAGE_FINISHED;
   data: {
     message: OpenAI.ChatCompletionMessageParam;
+    generationId: string;
   };
 };
 
@@ -112,6 +122,7 @@ export function createAgent(
       max_tokens: parameters.maxTokens ?? 8192,
     });
 
+    let generationId: string | undefined;
     let responseReasoning = "";
     let responseContent = "";
     let role: OpenAI.ChatCompletionMessageParam["role"] = "assistant";
@@ -122,6 +133,10 @@ export function createAgent(
     for await (const chunk of stream) {
       const delta = chunk.choices[0].delta;
 
+      if (chunk.id !== undefined) {
+        generationId = chunk.id;
+      }
+
       if (delta.role !== undefined) {
         role = delta.role;
       }
@@ -131,6 +146,7 @@ export function createAgent(
 
         await dispatchCustomEvent(STREAMED_REASONING_TOKEN, {
           reasoning: (delta as { reasoning: string }).reasoning,
+          generationId: chunk.id,
         } satisfies StreamedReasoningTokenEvent["data"]);
       }
 
@@ -139,6 +155,7 @@ export function createAgent(
 
         await dispatchCustomEvent(STREAMED_TOKEN, {
           content: delta.content,
+          generationId: chunk.id,
         } satisfies StreamedTokenEvent["data"]);
       }
 
@@ -173,6 +190,10 @@ export function createAgent(
       ];
     }
 
+    if (generationId === undefined) {
+      throw new Error("Generation ID is undefined");
+    }
+
     const responseMessage = {
       role: role,
       content: responseContent,
@@ -183,6 +204,7 @@ export function createAgent(
 
     await dispatchCustomEvent(MESSAGE_FINISHED, {
       message: responseMessage as OpenAI.ChatCompletionMessageParam,
+      generationId,
     } satisfies MessageFinishedEvent["data"]);
 
     // TODO: https://langchain-ai.github.io/langgraphjs/how-tos/streaming-tokens-without-langchain/#define-tools-and-a-tool-calling-node
@@ -195,10 +217,16 @@ export function createAgent(
     .addEdge("__start__", "agent")
     .addEdge("agent", "__end__");
 
-  return workflow.compile();
+  return {
+    agent: workflow.compile(),
+    openRouterKey,
+  };
 }
 
-export async function invokeAgent(agent: ReturnType<typeof createAgent>, context: ChatContext) {
+export async function invokeAgent(
+  { agent, openRouterKey }: ReturnType<typeof createAgent>,
+  context: ChatContext,
+) {
   const stream = await agent.streamEvents(context, { version: "v2" });
   const bufferedTokenInsert = new BufferedTokenInsert(context.userId, context.currentMessageId);
 
@@ -207,10 +235,10 @@ export async function invokeAgent(agent: ReturnType<typeof createAgent>, context
 
     switch (name) {
       case STREAMED_REASONING_TOKEN:
-        bufferedTokenInsert.insert("reasoning", data.reasoning);
+        bufferedTokenInsert.insert(data.generationId, "reasoning", data.reasoning);
         break;
       case STREAMED_TOKEN:
-        bufferedTokenInsert.insert("text", data.content);
+        bufferedTokenInsert.insert(data.generationId, "text", data.content);
         break;
       case STREAMED_TOOL_CALL_CHUNK:
         // TODO: Add support for tool calls.
@@ -253,6 +281,7 @@ export async function invokeAgent(agent: ReturnType<typeof createAgent>, context
             toInsertMessages.push({
               userId: context.userId,
               messageId: context.currentMessageId,
+              generationId: data.generationId,
               // TODO: Ordinal will need a more complex logic when we implement tools.
               ordinal: i,
               kind: "reasoning",
@@ -266,6 +295,7 @@ export async function invokeAgent(agent: ReturnType<typeof createAgent>, context
             toInsertMessages.push({
               userId: context.userId,
               messageId: context.currentMessageId,
+              generationId: data.generationId,
               ordinal: i,
               kind: "text",
               content: content,
@@ -294,6 +324,37 @@ export async function invokeAgent(agent: ReturnType<typeof createAgent>, context
           await db
             .delete(messageTokensTable)
             .where(eq(messageTokensTable.messageId, context.currentMessageId));
+
+          // Getting usage and saving it to DB
+          try {
+            const generationUsage = await getUsageData(openRouterKey, data.generationId);
+
+            await db.insert(messageSegmentUsageTable).values({
+              userId: context.userId,
+              generationId: data.generationId,
+
+              isByok: generationUsage.is_byok,
+              model: generationUsage.model,
+              origin: generationUsage.origin,
+              providerName: generationUsage.provider_name,
+              usage: generationUsage.usage,
+              cacheDiscount: generationUsage.cache_discount,
+              tokensPrompt: generationUsage.tokens_prompt,
+              tokensCompletion: generationUsage.tokens_completion,
+              numMediaPrompt: generationUsage.num_media_prompt,
+              numMediaCompletion: generationUsage.num_media_completion,
+              numSearchResults: generationUsage.num_search_results,
+            });
+          } catch (e) {
+            console.error("Failed to get usage data", e);
+            Sentry.captureException(e, {
+              user: { id: context.userId },
+              extra: {
+                chatId: context.chatId,
+                threadId: context.threadId,
+              },
+            });
+          }
         }
         break;
     }

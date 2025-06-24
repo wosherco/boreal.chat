@@ -4,11 +4,13 @@ import { messageTokensTable } from "$lib/server/db/schema";
 import PQueue from "p-queue";
 
 interface TokenData {
+  generationId: string;
   kind: MessageSegmentKind;
   content: string;
 }
 
 interface FlushData {
+  generationId: string;
   kind: MessageSegmentKind;
   content: string;
   timestamp: Date;
@@ -19,6 +21,7 @@ class BufferedTokenInsert {
   private messageId: string;
 
   private currentKind: MessageSegmentKind | null = null;
+  private currentGenerationId: string | null = null;
   private queue: PQueue;
   private lastInsert: number = 0;
   private buffer: string = "";
@@ -41,27 +44,31 @@ class BufferedTokenInsert {
   /**
    * Insert a token with the specified kind and content
    */
-  async insert(kind: MessageSegmentKind, content: string): Promise<void> {
+  async insert(generationId: string, kind: MessageSegmentKind, content: string): Promise<void> {
     if (this.isDestroyed) {
       throw new Error("BufferedTokenInsert has been destroyed");
     }
 
     return this.queue.add(async () => {
-      await this.processToken({ kind, content });
+      await this.processToken({ generationId, kind, content });
     });
   }
 
   private async processToken(tokenData: TokenData): Promise<void> {
-    const { kind, content } = tokenData;
+    const { generationId, kind, content } = tokenData;
     const now = Date.now();
 
     // Check if kind has changed and we need to flush
-    if (this.currentKind !== null && this.currentKind !== kind) {
+    if (
+      (this.currentKind !== null && this.currentKind !== kind) ||
+      (this.currentGenerationId !== null && this.currentGenerationId !== generationId)
+    ) {
       await this.scheduleFlush();
     }
 
     // Update current kind and add content to buffer
     this.currentKind = kind;
+    this.currentGenerationId = generationId;
     this.buffer += content;
     this.lastInsert = now;
 
@@ -111,6 +118,7 @@ class BufferedTokenInsert {
     }
 
     const flushData: FlushData = {
+      generationId: this.currentGenerationId!,
       kind: this.currentKind!,
       content: this.buffer,
       timestamp: new Date(),
@@ -151,6 +159,7 @@ class BufferedTokenInsert {
       flushBatch.map((flush) => ({
         userId: this.userId,
         messageId: this.messageId,
+        generationId: flush.generationId,
         kind: flush.kind,
         tokens: flush.content,
         createdAt: flush.timestamp,
@@ -238,6 +247,7 @@ class BufferedTokenInsert {
   getStatus() {
     return {
       currentKind: this.currentKind,
+      currentGenerationId: this.currentGenerationId,
       bufferLength: this.buffer.length,
       queueSize: this.queue.size,
       queuePending: this.queue.pending,

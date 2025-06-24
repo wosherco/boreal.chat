@@ -1,7 +1,20 @@
 import { createChatTables } from "../../../common/schema/chats";
 import { userTable } from "./users";
 
-const { chatTable, threadTable, messageTable, messageSegmentsTable, messageTokensTable } =
-  createChatTables(userTable, false);
+const {
+  chatTable,
+  threadTable,
+  messageTable,
+  messageSegmentsTable,
+  messageTokensTable,
+  messageSegmentUsageTable,
+} = createChatTables(userTable, false);
 
-export { chatTable, threadTable, messageTable, messageSegmentsTable, messageTokensTable };
+export {
+  chatTable,
+  threadTable,
+  messageTable,
+  messageSegmentsTable,
+  messageTokensTable,
+  messageSegmentUsageTable,
+};

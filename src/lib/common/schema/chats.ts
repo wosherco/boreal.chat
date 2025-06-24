@@ -10,6 +10,7 @@ import {
   uniqueIndex,
   boolean,
   foreignKey,
+  doublePrecision,
 } from "drizzle-orm/pg-core";
 
 import { MESSAGE_SEGMENT_KINDS, MESSAGE_STATUS, MESSAGE_TYPES } from "../index";
@@ -78,7 +79,6 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
       role: varchar({ length: 50, enum: MESSAGE_TYPES }).notNull(),
       status: varchar({ length: 50, enum: MESSAGE_STATUS }).notNull().default("processing"),
       error: text(),
-      metadata: jsonb(),
       model: varchar({ length: 50, enum: MODELS }).notNull(),
       reasoningLevel: varchar({ length: 50, enum: REASONING_LEVELS })
         .notNull()
@@ -120,6 +120,7 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
     "message_segments",
     {
       id: uuid().defaultRandom().primaryKey(),
+      generationId: uuid().notNull(),
       userId: uuid().notNull(),
       messageId: uuid().notNull(),
       ordinal: integer().notNull(),
@@ -147,6 +148,33 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
     ],
   );
 
+  const messageSegmentUsageTable = pgTable(
+    "message_segment_usage",
+    {
+      id: uuid().defaultRandom().primaryKey(),
+      userId: uuid().notNull(),
+      generationId: uuid().notNull().unique(),
+      isByok: boolean().notNull().default(false),
+      model: text(),
+      origin: text(),
+      providerName: text(),
+      usage: doublePrecision(),
+      cacheDiscount: doublePrecision(),
+      tokensPrompt: integer(),
+      tokensCompletion: integer(),
+      numMediaPrompt: integer(),
+      numMediaCompletion: integer(),
+      numSearchResults: integer(),
+    },
+    (t) => [
+      !isClient &&
+        foreignKey({
+          columns: [t.userId],
+          foreignColumns: [userTableFromSchema.id],
+        }).onDelete("cascade"),
+    ],
+  );
+
   /**
    * THIS TABLE IS MEANT TO BE USED FOR TOKENS WHILE STREAMING. ONCE THE MESSAGE IS DONE, IT WILL BE MOVED TO message_segments.
    */
@@ -154,6 +182,7 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
     "message_tokens",
     {
       id: uuid().defaultRandom().primaryKey(),
+      generationId: uuid().notNull(),
       // We need this here because, for now, we're just filtering syncing by user id.
       userId: uuid().notNull(),
       messageId: uuid().notNull(),
@@ -181,6 +210,7 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
     threadTable,
     messageTable,
     messageSegmentsTable,
+    messageSegmentUsageTable,
     messageTokensTable,
   };
 };
