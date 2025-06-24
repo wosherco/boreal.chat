@@ -36,6 +36,13 @@
       "when": 1750797808889,
       "tag": "0004_eager_crystal",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1750798013998,
+      "tag": "0005_neat_zodiak",
+      "breakpoints": true
     }
   ]
 }

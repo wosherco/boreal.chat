@@ -57,5 +57,16 @@
       "ALTER TABLE \"message_tokens\" ADD COLUMN \"generation_id\" uuid;",
       "ALTER TABLE \"messages\" DROP COLUMN \"metadata\";"
     ]
+  },
+  {
+    "idx": 5,
+    "when": 1750798013998,
+    "tag": "0005_neat_zodiak",
+    "hash": "e712cd45634900b2db28bb31c47e238268c8f21c58a98b30e9049d7c5ab74370",
+    "sql": [
+      "ALTER TABLE \"message_segment_usage\" ALTER COLUMN \"generation_id\" SET DATA TYPE varchar(50);",
+      "ALTER TABLE \"message_segments\" ALTER COLUMN \"generation_id\" SET DATA TYPE varchar(50);",
+      "ALTER TABLE \"message_tokens\" ALTER COLUMN \"generation_id\" SET DATA TYPE varchar(50);"
+    ]
   }
 ]
