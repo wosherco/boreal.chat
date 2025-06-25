@@ -23,6 +23,7 @@
   import ChatMessageInlineInput from "./ChatMessageInlineInput.svelte";
   import { syncStreams } from "$lib/client/db/index.svelte";
   import { matchBy, matchStream } from "@electric-sql/experimental";
+  import { isFinishedMessageStatus } from "$lib/common";
 
   interface Props {
     message: MessageWithOptionalChainRow;
@@ -237,15 +238,6 @@
       chatId={message.chatId}
       onCancel={onCancelEdit}
     />
-  {:else if message.status === "error"}
-    <Alert variant="destructive">
-      <AlertCircleIcon />
-      <AlertTitle>Error</AlertTitle>
-      <AlertDescription>
-        <p>{message.error ?? "Unknown error"}</p>
-        <p>Please try again later by regenerating the message.</p>
-      </AlertDescription>
-    </Alert>
   {:else}
     <div
       class={cn(
@@ -268,21 +260,30 @@
       {/each}
     </div>
 
-    {#if message.status !== "processing"}
+    {#if message.status === "error"}
+      <Alert variant="destructive">
+        <AlertCircleIcon />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>
+          <p>{message.error ?? "Unknown error"}</p>
+          <p>Please try again later by regenerating the message.</p>
+        </AlertDescription>
+      </Alert>
+    {/if}
+
+    {#if isFinishedMessageStatus(message.status)}
       <TooltipProvider>
         <div
           class={cn("flex w-fit flex-row items-center gap-1 pt-2", isUser ? "ml-auto" : "mr-auto")}
         >
-          {#if message.status === "finished"}
-            <Tooltip>
-              <TooltipTrigger>
-                <Button variant="ghost" size="small-icon" onclick={copyToClipboard}>
-                  <CopyIcon />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Copy</TooltipContent>
-            </Tooltip>
-          {/if}
+          <Tooltip>
+            <TooltipTrigger>
+              <Button variant="ghost" size="small-icon" onclick={copyToClipboard}>
+                <CopyIcon />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Copy</TooltipContent>
+          </Tooltip>
 
           {#if isUser}
             <Tooltip>
