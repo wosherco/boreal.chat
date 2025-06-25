@@ -145,8 +145,6 @@
     }
   }
 
-  $effect(() => {});
-
   afterNavigate(({ to }) => {
     if (!to) return;
 

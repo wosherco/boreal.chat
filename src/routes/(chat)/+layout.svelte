@@ -59,63 +59,26 @@
     }
   }
 
-  // Auto scroll functionality
+  // Scroll functionality
   let chatContainer = $state<HTMLElement>();
-  let autoscroll = $state(true);
-
-  $effect(() => {
-    if (!chatContainer) return;
-
-    // Create MutationObserver to watch for new content (messages)
-    const mutationObserver = new MutationObserver((mutations) => {
-      // Only trigger if we're adding new content and autoscroll is enabled
-      const hasNewContent = mutations.some(
-        (mutation) => mutation.type === "childList" && mutation.addedNodes.length > 0,
-      );
-
-      if (hasNewContent && autoscroll) {
-        if (chatContainer && autoscroll) {
-          chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-      }
-    });
-
-    // Start observing the chat container for child changes
-    mutationObserver.observe(chatContainer, {
-      childList: true,
-      subtree: true,
-    });
-
-    // Cleanup function
-    return () => mutationObserver.disconnect();
-  });
-
-  onMount(() => {
-    resumeAutoScroll();
-  });
-
-  afterNavigate(() => {
-    resumeAutoScroll();
-  });
+  let showScrollToBottom = $state(false);
 
   function handleScroll() {
     if (!chatContainer) return;
 
-    // Calculate if user scrolled up (with 50px threshold)
-    const isAtBottom =
-      chatContainer.scrollTop + chatContainer.clientHeight >= chatContainer.scrollHeight - 50;
+    // Show scroll to bottom button if user scrolled up (with 100px threshold)
+    const isNearBottom =
+      chatContainer.scrollTop + chatContainer.clientHeight >= chatContainer.scrollHeight - 100;
 
-    if (!isAtBottom && autoscroll) {
-      autoscroll = false;
-    } else if (isAtBottom && !autoscroll) {
-      resumeAutoScroll();
-    }
+    showScrollToBottom = !isNearBottom;
   }
 
-  function resumeAutoScroll() {
-    autoscroll = true;
+  function scrollToBottom() {
     if (chatContainer) {
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+      chatContainer.scrollTo({
+        top: chatContainer.scrollHeight,
+        behavior: "smooth",
+      });
     }
   }
 </script>
@@ -204,9 +167,9 @@
 
     <!-- Chat message input -->
     <div class="pointer-events-none absolute right-0 bottom-0 left-0 z-50">
-      {#if !autoscroll}
+      {#if showScrollToBottom}
         <button
-          onclick={resumeAutoScroll}
+          onclick={scrollToBottom}
           class="bg-accent/50 hover:bg-accent/80 pointer-events-auto mx-auto mb-2 flex items-center justify-center gap-1 rounded-full p-2 text-sm backdrop-blur-sm transition-colors"
           transition:fade={{ duration: 100 }}
         >
