@@ -191,9 +191,7 @@
         "message_segment_usage_generationId_unique": {
           "name": "message_segment_usage_generationId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "generation_id"
-          ]
+          "columns": ["generation_id"]
         }
       },
       "policies": {},
@@ -633,9 +631,7 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
