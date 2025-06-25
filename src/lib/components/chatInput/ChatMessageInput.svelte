@@ -191,14 +191,6 @@
       ? isFinishedMessageStatus(currentChatState.lastMessageStatus)
       : false;
   });
-
-  $effect(() =>
-    console.log(
-      "last message status",
-      getCurrentChatState()?.lastMessageStatus,
-      isLastMessageFinished,
-    ),
-  );
 </script>
 
 <KeyboardShortcuts
