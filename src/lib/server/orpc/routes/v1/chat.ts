@@ -1,9 +1,12 @@
 import { osBase } from "../../context";
 import { z } from "zod";
 import { LLAMA_3_1_8B, LLAMA_3_3_8B_FREE, MODELS, REASONING_LEVELS } from "$lib/common/ai/models";
-import { createAgent, invokeAgent } from "$lib/server/ai/agents/main";
 import { db } from "$lib/server/db";
-import { chatOwnerMiddleware, openRouterMiddleware } from "../../middlewares";
+import {
+  authenticatedMiddleware,
+  chatOwnerMiddleware,
+  openRouterMiddleware,
+} from "../../middlewares";
 import {
   createChat,
   createReplyUserMessageAndAssistantMessage,
@@ -15,12 +18,13 @@ import {
 } from "$lib/server/services/messages";
 import { initializeChatContext } from "$lib/server/ai/state";
 import { generateChatTitle, type GenerateChatTitleContext } from "$lib/server/ai/agents/title";
-import { eq } from "drizzle-orm";
-import { chatTable } from "$lib/server/db/schema";
+import { and, eq } from "drizzle-orm";
+import { chatTable, messageTable } from "$lib/server/db/schema";
 import { ORPCError } from "@orpc/client";
-import { RateLimitError } from "openai";
 import * as Sentry from "@sentry/sveltekit";
 import { posthog } from "$lib/server/posthog";
+import { executeAgentSafely } from "$lib/server/services/agent";
+import { sendCancelMessage } from "$lib/server/db/mq/messageCancellation";
 
 export const v1ChatRouter = osBase.router({
   newChat: osBase
@@ -128,11 +132,6 @@ export const v1ChatRouter = osBase.router({
       }
 
       try {
-        const agent = createAgent(input.model, context.openRouterKey.apiKey, {
-          thinking: defaultThinkingLevel,
-          webSearchEnabled: input.webSearchEnabled ?? false,
-        });
-
         // Initialize the context properly
         const chatContext = initializeChatContext({
           userId: context.userCtx.user.id,
@@ -159,45 +158,15 @@ export const v1ChatRouter = osBase.router({
         });
 
         // Invoke the agent with the initialized context
-        const agentPromise = invokeAgent(agent, chatContext)
-          .then(() => {
-            posthog?.capture({
-              distinctId: context.userCtx.user.id,
-              event: "agent_invocation_succeeded",
-              properties: {
-                type: "newChat",
-                chatId: result.chatId,
-                assistantMessageId: result.assistantMessageId,
-                model: input.model,
-              },
-            });
-          })
-          .catch(async (error) => {
-            Sentry.captureException(error, {
-              user: { id: context.userCtx.user.id },
-              extra: {
-                chatId: result.chatId,
-                threadId: result.threadId,
-                assistantMessageId: result.assistantMessageId,
-              },
-            });
-            posthog?.capture({
-              distinctId: context.userCtx.user.id,
-              event: "agent_invocation_failed",
-              properties: {
-                type: "newChat",
-                chatId: result.chatId,
-                assistantMessageId: result.assistantMessageId,
-                model: input.model,
-              },
-            });
-            await markMessageAsErrored(
-              db,
-              result.assistantMessageId,
-              "Agent failed to create chat",
-            );
-            console.error("Error invoking agent: ", error);
-          });
+        const agentPromise = executeAgentSafely(
+          {
+            model: input.model,
+            openRouterKey: context.openRouterKey.apiKey,
+            reasoningLevel: defaultThinkingLevel,
+            webSearchEnabled: input.webSearchEnabled ?? false,
+          },
+          chatContext,
+        );
 
         if (context.ctx?.waitUntil) {
           context.ctx.waitUntil(agentPromise);
@@ -320,11 +289,6 @@ export const v1ChatRouter = osBase.router({
       }
 
       try {
-        const agent = createAgent(actualModel, context.openRouterKey.apiKey, {
-          thinking: actualReasoningLevel,
-          webSearchEnabled: actualWebSearchEnabled,
-        });
-
         const chatContext = initializeChatContext({
           userId: context.userCtx.user.id,
           userAlias: context.userCtx.user.name,
@@ -334,49 +298,15 @@ export const v1ChatRouter = osBase.router({
           messages: messages,
         });
 
-        const agentPromise = invokeAgent(agent, chatContext)
-          .then(() => {
-            posthog?.capture({
-              distinctId: context.userCtx.user.id,
-              event: "agent_invocation_succeeded",
-              properties: {
-                type: "sendMessage",
-                chatId: result.chatId,
-                assistantMessageId: result.assistantMessageId,
-                model: actualModel,
-              },
-            });
-          })
-          .catch(async (error) => {
-            let errorMessage = "Agent failed to send message";
-
-            if (error instanceof RateLimitError) {
-              errorMessage =
-                "Rate limit exceeded. If you're using a free model, try using a paid model.";
-            }
-
-            Sentry.captureException(error, {
-              user: { id: context.userCtx.user.id },
-              extra: {
-                chatId: result.chatId,
-                threadId: result.threadId,
-                assistantMessageId: result.assistantMessageId,
-                userMessageId: result.userMessageId,
-              },
-            });
-            posthog?.capture({
-              distinctId: context.userCtx.user.id,
-              event: "agent_invocation_failed",
-              properties: {
-                type: "sendMessage",
-                chatId: result.chatId,
-                assistantMessageId: result.assistantMessageId,
-                model: actualModel,
-              },
-            });
-            await markMessageAsErrored(db, result.assistantMessageId, errorMessage);
-            console.error("Failed to send message: ", error);
-          });
+        const agentPromise = executeAgentSafely(
+          {
+            model: actualModel,
+            openRouterKey: context.openRouterKey.apiKey,
+            reasoningLevel: actualReasoningLevel,
+            webSearchEnabled: actualWebSearchEnabled,
+          },
+          chatContext,
+        );
 
         if (context.ctx?.waitUntil) {
           context.ctx.waitUntil(agentPromise);
@@ -466,11 +396,6 @@ export const v1ChatRouter = osBase.router({
       }
 
       try {
-        const agent = createAgent(input.model, context.openRouterKey.apiKey, {
-          thinking: result.message.reasoningLevel,
-          webSearchEnabled: result.message.webSearchEnabled,
-        });
-
         const chatContext = initializeChatContext({
           userId: context.userCtx.user.id,
           userAlias: context.userCtx.user.name,
@@ -480,41 +405,15 @@ export const v1ChatRouter = osBase.router({
           messages: messages,
         });
 
-        const agentPromise = invokeAgent(agent, chatContext)
-          .then(() => {
-            posthog?.capture({
-              distinctId: context.userCtx.user.id,
-              event: "agent_invocation_succeeded",
-              properties: {
-                type: "regenerateMessage",
-                chatId: result.message.chatId,
-                messageId: result.message.id,
-                model: input.model,
-              },
-            });
-          })
-          .catch(async (error) => {
-            Sentry.captureException(error, {
-              user: { id: context.userCtx.user.id },
-              extra: {
-                chatId: result.message.chatId,
-                threadId: result.message.threadId,
-                messageId: result.message.id,
-              },
-            });
-            posthog?.capture({
-              distinctId: context.userCtx.user.id,
-              event: "agent_invocation_failed",
-              properties: {
-                type: "regenerateMessage",
-                chatId: result.message.chatId,
-                messageId: result.message.id,
-                model: input.model,
-              },
-            });
-            await markMessageAsErrored(db, result.message.id, "Agent failed to regenerate message");
-            console.error("Error invoking agent: ", error);
-          });
+        const agentPromise = executeAgentSafely(
+          {
+            model: input.model,
+            openRouterKey: context.openRouterKey.apiKey,
+            reasoningLevel: result.message.reasoningLevel,
+            webSearchEnabled: result.message.webSearchEnabled,
+          },
+          chatContext,
+        );
 
         if (context.ctx?.waitUntil) {
           context.ctx.waitUntil(agentPromise);
@@ -542,5 +441,41 @@ export const v1ChatRouter = osBase.router({
           message: "Failed to regenerate message",
         });
       }
+    }),
+
+  cancelMessage: osBase
+    .use(authenticatedMiddleware)
+    .input(z.object({ messageId: z.string().uuid() }))
+    .handler(async ({ context, input }) => {
+      const [message] = await db
+        .select({
+          status: messageTable.status,
+        })
+        .from(messageTable)
+        .where(
+          and(
+            eq(messageTable.id, input.messageId),
+            eq(messageTable.userId, context.userCtx.user.id),
+          ),
+        );
+
+      if (!message) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "Message not found",
+        });
+      }
+
+      if (message.status === "waiting_confirmation") {
+        await db
+          .update(messageTable)
+          .set({ status: "cancelled" })
+          .where(eq(messageTable.id, input.messageId));
+      } else if (message.status !== "processing") {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Message is not in progress",
+        });
+      }
+
+      await sendCancelMessage(input.messageId);
     }),
 });

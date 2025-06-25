@@ -6,7 +6,14 @@
     type ModelId,
     GEMINI_FLASH_2_5,
   } from "$lib/common/ai/models";
-  import { BrainIcon, ChevronDownIcon, GlobeIcon, Loader2Icon, SendIcon } from "@lucide/svelte";
+  import {
+    BrainIcon,
+    ChevronDownIcon,
+    GlobeIcon,
+    Loader2Icon,
+    SendIcon,
+    StopCircleIcon,
+  } from "@lucide/svelte";
   import { Button } from "../ui/button";
   import KeyboardShortcuts from "../utils/KeyboardShortcuts.svelte";
   import ModelPickerPopover from "./ModelPickerPopover.svelte";
@@ -22,6 +29,7 @@
   import { page } from "$app/state";
   import { getLastSelectedModel, setLastSelectedModel } from "$lib/utils/localStorage";
   import { sendMessageEventDispatcher } from "$lib/client/state/sendMessageEventDispatcher";
+  import { isFinishedMessageStatus } from "$lib/common";
 
   interface Props {
     /**
@@ -154,6 +162,25 @@
     }
   }
 
+  async function onCancelMessage() {
+    if (loading) return;
+    loading = true;
+
+    try {
+      const currentChatState = getCurrentChatState();
+
+      if (currentChatState?.lastMessageId) {
+        await orpc.v1.chat.cancelMessage({
+          messageId: currentChatState.lastMessageId,
+        });
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      loading = false;
+    }
+  }
+
   afterNavigate(({ to }) => {
     if (!to) return;
 
@@ -164,6 +191,13 @@
   });
 
   let modelPickerOpen = $state(false);
+
+  const isLastMessageFinished = $derived.by(() => {
+    const currentChatState = getCurrentChatState();
+    return currentChatState?.lastMessageStatus
+      ? isFinishedMessageStatus(currentChatState.lastMessageStatus)
+      : false;
+  });
 </script>
 
 <KeyboardShortcuts
@@ -248,7 +282,9 @@
           >
             <SelectTrigger>
               <BrainIcon />
-              {actualReasoningLevel.charAt(0).toUpperCase() + actualReasoningLevel.slice(1)}
+              <span class="hidden sm:block">
+                {actualReasoningLevel.charAt(0).toUpperCase() + actualReasoningLevel.slice(1)}
+              </span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">None</SelectItem>
@@ -265,11 +301,17 @@
         <!-- <Button variant="secondary" size="icon" disabled={loading || !browser}>
           <MicIcon class="h-4 w-4" />
         </Button> -->
-        <Button disabled={!value.trim() || loading || !browser} onclick={onSendMessage} size="icon">
+        <Button
+          disabled={(!value.trim() && isLastMessageFinished) || loading || !browser}
+          onclick={isLastMessageFinished ? onSendMessage : onCancelMessage}
+          size="icon"
+        >
           {#if loading}
-            <Loader2Icon class="h-4 w-4 animate-spin" />
+            <Loader2Icon class="animate-spin" />
+          {:else if !isLastMessageFinished}
+            <StopCircleIcon />
           {:else}
-            <SendIcon class="h-4 w-4" />
+            <SendIcon />
           {/if}
         </Button>
       </div>

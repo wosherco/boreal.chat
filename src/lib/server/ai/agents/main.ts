@@ -6,7 +6,7 @@ import {
 } from "$lib/common/ai/models";
 import { StateGraph } from "@langchain/langgraph";
 import { ChatContextAnnotation, type ChatContext } from "../state";
-import OpenAI from "openai";
+import OpenAI, { APIUserAbortError } from "openai";
 import { dispatchCustomEvent } from "@langchain/core/callbacks/dispatch";
 import type { ChatCompletionChunk } from "openai/resources/chat/completions";
 import BufferedTokenInsert from "../utils/BufferedTokenInsert";
@@ -44,9 +44,9 @@ interface AgentParameters {
    */
   webSearchEnabled?: boolean;
   /**
-   * If the model is free, this will enable the free model.
+   * If the agent should be aborted.
    */
-  useFreeModel?: boolean;
+  abortSignal?: AbortSignal;
 }
 
 const STREAMED_REASONING_TOKEN = "streamed_reasoning_token";
@@ -82,6 +82,7 @@ type MessageFinishedEvent = {
   data: {
     message: OpenAI.ChatCompletionMessageParam;
     generationId: string;
+    cancelled: boolean;
   };
 };
 
@@ -107,20 +108,25 @@ export function createAgent(
       actualModel = MODEL_DETAILS[model].reasoning;
     }
 
-    const stream = await createOpenAIClient(openRouterKey).chat.completions.create({
-      model: actualModel,
-      messages: state.messages,
-      user: state.userId,
-      stream: true,
-      reasoning_effort:
-        parameters.thinking === undefined
-          ? undefined
-          : parameters.thinking === "none"
-            ? null
-            : parameters.thinking,
-      temperature: parameters.temperature ?? 0.8,
-      max_tokens: parameters.maxTokens ?? 8192,
-    });
+    const stream = await createOpenAIClient(openRouterKey).chat.completions.create(
+      {
+        model: actualModel,
+        messages: state.messages,
+        user: state.userId,
+        stream: true,
+        reasoning_effort:
+          parameters.thinking === undefined
+            ? undefined
+            : parameters.thinking === "none"
+              ? null
+              : parameters.thinking,
+        temperature: parameters.temperature ?? 0.8,
+        max_tokens: parameters.maxTokens ?? 8192,
+      },
+      {
+        signal: parameters.abortSignal,
+      },
+    );
 
     let generationId: string | undefined;
     let responseReasoning = "";
@@ -130,49 +136,57 @@ export function createAgent(
     let toolCallName: string | undefined;
     let toolCallArgs = "";
 
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0].delta;
+    let cancelled = false;
+    try {
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0].delta;
 
-      if (chunk.id !== undefined) {
-        generationId = chunk.id;
-      }
-
-      if (delta.role !== undefined) {
-        role = delta.role;
-      }
-
-      if ((delta as { reasoning: string }).reasoning) {
-        responseReasoning += (delta as { reasoning: string }).reasoning;
-
-        await dispatchCustomEvent(STREAMED_REASONING_TOKEN, {
-          reasoning: (delta as { reasoning: string }).reasoning,
-          generationId: chunk.id,
-        } satisfies StreamedReasoningTokenEvent["data"]);
-      }
-
-      if (delta.content) {
-        responseContent += delta.content;
-
-        await dispatchCustomEvent(STREAMED_TOKEN, {
-          content: delta.content,
-          generationId: chunk.id,
-        } satisfies StreamedTokenEvent["data"]);
-      }
-
-      if (delta.tool_calls !== undefined && delta.tool_calls.length > 0) {
-        // note: for simplicity we're only handling a single tool call here
-        const toolCall = delta.tool_calls[0];
-        if (toolCall.function?.name !== undefined) {
-          toolCallName = toolCall.function.name;
+        if (chunk.id !== undefined) {
+          generationId = chunk.id;
         }
-        if (toolCall.id !== undefined) {
-          toolCallId = toolCall.id;
+
+        if (delta.role !== undefined) {
+          role = delta.role;
         }
-        await dispatchCustomEvent(STREAMED_TOOL_CALL_CHUNK, {
-          toolCall,
-        } satisfies StreamedToolCallChunkEvent["data"]);
-        toolCallArgs += toolCall.function?.arguments ?? "";
+
+        if ((delta as { reasoning: string }).reasoning) {
+          responseReasoning += (delta as { reasoning: string }).reasoning;
+
+          await dispatchCustomEvent(STREAMED_REASONING_TOKEN, {
+            reasoning: (delta as { reasoning: string }).reasoning,
+            generationId: chunk.id,
+          } satisfies StreamedReasoningTokenEvent["data"]);
+        }
+
+        if (delta.content) {
+          responseContent += delta.content;
+
+          await dispatchCustomEvent(STREAMED_TOKEN, {
+            content: delta.content,
+            generationId: chunk.id,
+          } satisfies StreamedTokenEvent["data"]);
+        }
+
+        if (delta.tool_calls !== undefined && delta.tool_calls.length > 0) {
+          // note: for simplicity we're only handling a single tool call here
+          const toolCall = delta.tool_calls[0];
+          if (toolCall.function?.name !== undefined) {
+            toolCallName = toolCall.function.name;
+          }
+          if (toolCall.id !== undefined) {
+            toolCallId = toolCall.id;
+          }
+          await dispatchCustomEvent(STREAMED_TOOL_CALL_CHUNK, {
+            toolCall,
+          } satisfies StreamedToolCallChunkEvent["data"]);
+          toolCallArgs += toolCall.function?.arguments ?? "";
+        }
       }
+    } catch (e) {
+      if (e instanceof APIUserAbortError) {
+        cancelled = true;
+      }
+      throw e;
     }
 
     // At this point the LLM stream has finished. We're just getting stuff together.
@@ -205,6 +219,7 @@ export function createAgent(
     await dispatchCustomEvent(MESSAGE_FINISHED, {
       message: responseMessage as OpenAI.ChatCompletionMessageParam,
       generationId,
+      cancelled,
     } satisfies MessageFinishedEvent["data"]);
 
     // TODO: https://langchain-ai.github.io/langgraphjs/how-tos/streaming-tokens-without-langchain/#define-tools-and-a-tool-calling-node
@@ -307,7 +322,7 @@ export async function invokeAgent(
             db
               .update(messageTable)
               .set({
-                status: "finished",
+                status: data.cancelled ? "cancelled" : "finished",
               })
               .where(eq(messageTable.id, context.currentMessageId))
               .execute(),
