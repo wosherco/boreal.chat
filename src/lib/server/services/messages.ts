@@ -5,6 +5,7 @@ import type { MessageChainRow } from "$lib/common/sharedTypes";
 import { transformKeyToCamelCaseRecursive } from "$lib/client/hooks/utils";
 import type { ModelId } from "$lib/common/ai/models";
 import { addSeconds } from "date-fns";
+import { alias } from "drizzle-orm/pg-core";
 
 export async function createChat(
   tx: TransactableDBType,
@@ -295,17 +296,23 @@ export async function regenerateMessage(
     model: ModelId;
   },
 ) {
+  const parent = alias(messageTable, "parent");
+
   const [message] = await tx
     .select({
       chatId: messageTable.chatId,
       threadId: messageTable.threadId,
-      parentMessageId: messageTable.parentMessageId,
+      parent: {
+        id: parent.id,
+        threadId: parent.threadId,
+      },
       model: messageTable.model,
       webSearchEnabled: messageTable.webSearchEnabled,
       reasoningLevel: messageTable.reasoningLevel,
       role: messageTable.role,
     })
     .from(messageTable)
+    .innerJoin(parent, eq(messageTable.parentMessageId, parent.id))
     .where(and(eq(messageTable.id, params.messageId), eq(messageTable.userId, params.userId)))
     .execute();
 
@@ -313,7 +320,7 @@ export async function regenerateMessage(
     throw new Error("Message not found");
   }
 
-  if (!message.parentMessageId || message.role === "user") {
+  if (!message.parent.id || message.role === "user") {
     throw new Error("Message can not be a root/user message");
   }
 
@@ -332,7 +339,7 @@ export async function regenerateMessage(
       messageTable,
       and(
         eq(messageTable.userId, params.userId),
-        eq(messageTable.parentMessageId, message.parentMessageId),
+        eq(messageTable.parentMessageId, message.parent.id),
       ),
     ),
   ]);
@@ -347,7 +354,7 @@ export async function regenerateMessage(
       userId: params.userId,
       chatId: message.chatId,
       threadId: newThread.id,
-      parentMessageId: message.parentMessageId,
+      parentMessageId: message.parent.id,
       role: "assistant",
       status: "processing",
       version: messagesCount + 1,
@@ -373,8 +380,8 @@ export async function regenerateMessage(
   return {
     message: newMessage,
     parentMessage: {
-      id: message.parentMessageId,
-      threadId: message.threadId,
+      id: message.parent.id,
+      threadId: message.parent.threadId,
     },
   };
 }
