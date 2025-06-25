@@ -21,6 +21,7 @@
   import { toast } from "svelte-sonner";
   import { page } from "$app/state";
   import { getLastSelectedModel, setLastSelectedModel } from "$lib/utils/localStorage";
+  import { sendMessageEventDispatcher } from "$lib/client/state/sendMessageEventDispatcher";
 
   interface Props {
     /**
@@ -93,6 +94,10 @@
             webSearchEnabled: actualWebSearchEnabled,
           });
 
+          sendMessageEventDispatcher.launch("message_dispatched", {
+            regenerate: false,
+          });
+
           value = "";
         } catch (e) {
           if (e instanceof ORPCError) {
@@ -130,6 +135,10 @@
           }
 
           await goto(`/chat/${chatDetails.chatId}`);
+
+          sendMessageEventDispatcher.launch("message_dispatched", {
+            regenerate: false,
+          });
         } catch (e) {
           if (e instanceof ORPCError) {
             toast.error(e.message);

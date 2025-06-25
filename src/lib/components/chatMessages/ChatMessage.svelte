@@ -23,6 +23,7 @@
   import ChatMessageInlineInput from "./ChatMessageInlineInput.svelte";
   import { syncStreams } from "$lib/client/db/index.svelte";
   import { matchBy, matchStream } from "@electric-sql/experimental";
+  import { sendMessageEventDispatcher } from "$lib/client/state/sendMessageEventDispatcher";
 
   interface Props {
     message: MessageWithOptionalChainRow;
@@ -192,6 +193,10 @@
     const result = await orpc.v1.chat.regenerateMessage({
       model: newModel,
       messageId: message.id,
+    });
+
+    sendMessageEventDispatcher.launch("message_dispatched", {
+      regenerate: true,
     });
 
     const messageStream = syncStreams()?.streams.message;
