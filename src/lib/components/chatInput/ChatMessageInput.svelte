@@ -283,7 +283,9 @@
           >
             <SelectTrigger>
               <BrainIcon />
-              {actualReasoningLevel.charAt(0).toUpperCase() + actualReasoningLevel.slice(1)}
+              <span class="hidden sm:block">
+                {actualReasoningLevel.charAt(0).toUpperCase() + actualReasoningLevel.slice(1)}
+              </span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">None</SelectItem>
