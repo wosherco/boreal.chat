@@ -189,7 +189,7 @@
     const currentChatState = getCurrentChatState();
     return currentChatState?.lastMessageStatus
       ? isFinishedMessageStatus(currentChatState.lastMessageStatus)
-      : false;
+      : true;
   });
 </script>
 
