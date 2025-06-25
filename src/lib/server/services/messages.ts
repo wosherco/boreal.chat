@@ -312,7 +312,7 @@ export async function regenerateMessage(
       role: messageTable.role,
     })
     .from(messageTable)
-    .innerJoin(parent, eq(messageTable.parentMessageId, parent.id))
+    .leftJoin(parent, eq(messageTable.parentMessageId, parent.id))
     .where(and(eq(messageTable.id, params.messageId), eq(messageTable.userId, params.userId)))
     .execute();
 
@@ -320,7 +320,7 @@ export async function regenerateMessage(
     throw new Error("Message not found");
   }
 
-  if (!message.parent.id || message.role === "user") {
+  if (!message.parent?.id || message.role === "user") {
     throw new Error("Message can not be a root/user message");
   }
 
