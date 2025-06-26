@@ -27,6 +27,7 @@ async function fetchModelFeatures() {
         prompt: model.pricing.prompt,
         completion: model.pricing.completion,
         image: model.pricing.image,
+        web_search: model.pricing.web_search,
         request: model.pricing.request,
       },
       inputModalities: model.architecture.input_modalities,
@@ -46,6 +47,7 @@ export type ModelFeatures = {
     prompt: string;
     completion: string;
     image: string;
+    web_search: string;
     request: string;
   };
   inputModalities: ("text" | "image" | "audio" | "video" | "file")[];
@@ -74,6 +76,7 @@ interface OpenRouterModel {
     prompt: string;
     completion: string;
     image: string;
+    web_search: string;
     request: string;
   };
 }
