@@ -7,6 +7,7 @@
     "start": "node build",
     "dev": "vite dev",
     "dev:caddy": "caddy run --config infra/development/Caddyfile",
+    "prebuild": "pnpm db:client:compile & pnpm script:fetchModels",
     "build": "vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
@@ -27,10 +28,10 @@
     "db:client:compile": "node scripts/compileMigrations.mjs",
     "db:client:build": "pnpm db:client:generate && pnpm db:client:compile",
     "db:build": "pnpm db:generate && pnpm db:client:build && pnpm db:migrate",
-    "prebuild": "pnpm db:client:compile",
     "add-ui": "pnpm dlx shadcn-svelte@latest add",
     "build:docker": "docker build -t boreal.chat .",
-    "i18n": "paraglide-js compile --outdir src/lib/paraglide"
+    "i18n": "paraglide-js compile --outdir src/lib/paraglide",
+    "script:fetchModels": "pnpm exec bun run ./scripts/fetchModelFeatures.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250607.0",
@@ -84,7 +85,9 @@
     "typescript-eslint": "^8.20.0",
     "vite": "^6.2.6",
     "vite-plugin-mkcert": "^1.17.8",
-    "zod": "^3.25.56"
+    "zod": "^3.25.56",
+    "bun": "^1.2.13",
+    "@types/bun": "^1.2.13"
   },
   "dependencies": {
     "@electric-sql/experimental": "^1.0.4",
