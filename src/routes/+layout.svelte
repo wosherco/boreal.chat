@@ -6,6 +6,7 @@
   import type { LayoutProps } from "./$types";
   import posthog from "posthog-js";
   import SearchCommand from "$lib/components/SearchCommand.svelte";
+  import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
 
   let { children, data }: LayoutProps = $props();
 
@@ -18,12 +19,17 @@
     }
   }
 
+  const currentUser = useCurrentUser(data.auth.currentUserInfo);
+
   $effect(() => {
-    // TODO: This should use useCurrentUser hook
-    if (data.auth.currentUserInfo?.data) {
-      posthog.identify(data.auth.currentUserInfo.data.id, {
-        email: data.auth.currentUserInfo.data.email,
-        name: data.auth.currentUserInfo.data.name,
+    if ($currentUser.loading || !$currentUser.data) {
+      return;
+    }
+
+    if ($currentUser.data.authenticated && $currentUser.data.data) {
+      posthog.identify($currentUser.data.data.id, {
+        email: $currentUser.data.data.email,
+        name: $currentUser.data.data.name,
       });
     } else {
       posthog.reset();

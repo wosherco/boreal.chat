@@ -21,9 +21,9 @@
   import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
   import Markdown from "../markdown/Markdown.svelte";
   import ChatMessageInlineInput from "./ChatMessageInlineInput.svelte";
-  import { syncStreams } from "$lib/client/db/index.svelte";
-  import { matchBy, matchStream } from "@electric-sql/experimental";
   import { isFinishedMessageStatus } from "$lib/common";
+  import { messageTable } from "$lib/client/db/schema";
+  import { waitForInsert } from "$lib/client/hooks/waitForInsert";
 
   interface Props {
     message: MessageWithOptionalChainRow;
@@ -195,31 +195,23 @@
       messageId: message.id,
     });
 
-    const messageStream = syncStreams()?.streams.message;
-
-    if (messageStream) {
-      try {
-        await matchStream(messageStream, ["insert"], matchBy("id", result.messageId), 5000);
-      } catch (e) {
-        console.error("Waiting for message sync failed", e);
-      }
+    try {
+      await waitForInsert(messageTable, result.messageId, 5000);
+    } catch (e) {
+      console.error("Waiting for message sync failed", e);
     }
 
     onChangeThreadId?.(result.threadId);
   }
 
   async function onSubmitEdit(newThreadId: string, newMessageId: string) {
-    onChangeThreadId?.(newThreadId);
-
-    const messageStream = syncStreams()?.streams.message;
-
-    if (messageStream) {
-      try {
-        await matchStream(messageStream, ["insert"], matchBy("id", newMessageId), 5000);
-      } catch (e) {
-        console.error("Waiting for message sync failed", e);
-      }
+    try {
+      await waitForInsert(messageTable, newMessageId, 5000);
+    } catch (e) {
+      console.error("Waiting for message sync failed", e);
     }
+
+    onChangeThreadId?.(newThreadId);
 
     editingMessage = false;
   }
