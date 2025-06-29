@@ -19,7 +19,6 @@
   import ModelPickerPopover from "./ModelPickerPopover.svelte";
   import { afterNavigate, goto } from "$app/navigation";
   import { syncStreams } from "$lib/client/db/index.svelte";
-  import { matchBy, matchStream } from "@electric-sql/experimental";
   import { getCurrentChatState } from "$lib/client/state/currentChatState.svelte";
   import { Toggle } from "../ui/toggle";
   import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
@@ -29,6 +28,8 @@
   import { page } from "$app/state";
   import { getLastSelectedModel, setLastSelectedModel } from "$lib/utils/localStorage";
   import { isFinishedMessageStatus } from "$lib/common";
+  import { waitForInsert } from "$lib/client/hooks/waitForInsert";
+  import { chatTable, messageTable } from "$lib/client/db/schema";
 
   interface Props {
     /**
@@ -124,13 +125,8 @@
           if (chatStream && messagesStream) {
             try {
               await Promise.all([
-                matchStream(chatStream, ["insert"], matchBy("id", chatDetails.chatId), 5000),
-                matchStream(
-                  messagesStream,
-                  ["insert"],
-                  matchBy("id", chatDetails.userMessageId),
-                  5000,
-                ),
+                waitForInsert(chatTable, chatDetails.chatId, 5000),
+                waitForInsert(messageTable, chatDetails.userMessageId, 5000),
               ]);
             } catch (err) {
               console.error("Waiting for chat sync failed", err);
