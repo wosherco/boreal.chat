@@ -31,7 +31,7 @@
     "add-ui": "pnpm dlx shadcn-svelte@latest add",
     "build:docker": "docker build -t boreal.chat .",
     "i18n": "paraglide-js compile --outdir src/lib/paraglide",
-    "script:fetchModels": "pnpm exec bun run ./scripts/fetchModelFeatures.ts"
+    "script:fetchModels": "bun run ./scripts/fetchModelFeatures.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250607.0",
