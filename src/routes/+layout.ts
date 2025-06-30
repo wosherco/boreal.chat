@@ -7,7 +7,7 @@ import { ORPCError } from "@orpc/client";
 import { env } from "$env/dynamic/public";
 
 export const load: LayoutLoad = async ({ data }) => {
-  if (browser) {
+  if (browser && env.PUBLIC_POSTHOG_API_KEY && env.PUBLIC_POSTHOG_HOST) {
     posthog.init(env.PUBLIC_POSTHOG_API_KEY, {
       api_host: env.PUBLIC_POSTHOG_HOST,
       person_profiles: "identified_only",
