@@ -31,7 +31,7 @@
     "add-ui": "pnpm dlx shadcn-svelte@latest add",
     "build:docker": "docker build -t boreal.chat .",
     "i18n": "paraglide-js compile --outdir src/lib/paraglide",
-    "script:fetchModels": "bun run ./scripts/fetchModelFeatures.ts"
+    "script:fetchModels": "pnpm dlx bun run ./scripts/fetchModelFeatures.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250607.0",
@@ -86,8 +86,7 @@
     "vite": "^6.2.6",
     "vite-plugin-mkcert": "^1.17.8",
     "zod": "^3.25.56",
-    "bun": "^1.2.13",
-    "@types/bun": "^1.2.13"
+    "@types/bun": "^1.2.17"
   },
   "dependencies": {
     "@electric-sql/experimental": "^1.0.4",

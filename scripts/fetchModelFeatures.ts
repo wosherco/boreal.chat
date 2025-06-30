@@ -2,6 +2,7 @@ import { ModelId, MODELS } from "../src/lib/common/ai/models.js";
 import { file } from "bun";
 import path from "path";
 import { fileURLToPath } from "url";
+import { $ } from "bun";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,6 +66,15 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = ${JSON.st
 
   await file(outputPath).write(fileContent);
   console.log(`Model features saved to ${outputPath}`);
+
+  // Format the generated file with Prettier
+  console.log("Formatting the generated file with Prettier...");
+  try {
+    await $`pnpm dlx prettier --write ${outputPath}`;
+    console.log("File formatted successfully.");
+  } catch (error) {
+    console.error("Error formatting file with Prettier:", error);
+  }
 }
 
 interface OpenRouterModel {
