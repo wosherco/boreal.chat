@@ -12,7 +12,7 @@ import { orpc } from "../orpc";
 import { ORPCError } from "@orpc/client";
 import { getTableName, sql } from "drizzle-orm";
 import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
-import { getAllCacheValues } from "../hooks/localDbHook.svelte";
+import { getAllCacheValues } from "../hooks/localDbHook";
 
 const initializeDbLock = new AsyncLock();
 

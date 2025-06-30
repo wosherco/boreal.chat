@@ -7,7 +7,7 @@ import type {
 import { eq, getTableColumns, sql } from "drizzle-orm";
 import { clientDb } from "../db/index.svelte";
 import { messageTable, messageTokensTable, messageSegmentsTable } from "../db/schema";
-import { createHydratableData } from "./localDbHook.svelte";
+import { createHydratableData } from "./localDbHook";
 import { transformKeyToCamelCaseRecursive } from "./utils";
 
 export const useChatMessages = (

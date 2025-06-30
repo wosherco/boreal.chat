@@ -43,9 +43,23 @@
       ?.sort((a, b) => a.value.version - b.value.version) ?? [],
   );
 
+  $effect(() => {
+    console.log(
+      "otherVersions",
+      otherVersions.map((v) => ({
+        id: v.value.id,
+        version: v.value.version,
+        threadId: v.value.threadId,
+      })),
+    );
+  });
+
   function nextThread() {
     const nextVersion = message.version + 1;
     const nextThread = otherVersions.find((child) => child.value.version === nextVersion);
+
+    console.log("nextThread", nextThread, nextVersion, "current", message.version);
+
     if (nextThread) {
       onChangeThreadId?.(nextThread.value.threadId);
     }
@@ -54,6 +68,9 @@
   function previousThread() {
     const previousVersion = message.version - 1;
     const previousThread = otherVersions.find((child) => child.value.version === previousVersion);
+
+    console.log("previousThread", previousThread, previousVersion, "current", message.version);
+
     if (previousThread) {
       onChangeThreadId?.(previousThread.value.threadId);
     }
