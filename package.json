@@ -7,7 +7,7 @@
     "start": "node build",
     "dev": "vite dev",
     "dev:caddy": "caddy run --config infra/development/Caddyfile",
-    "prebuild": "pnpm db:client:compile & pnpm script:fetchModels",
+    "prebuild": "pnpm db:client:compile && pnpm script:fetchModels",
     "build": "vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
