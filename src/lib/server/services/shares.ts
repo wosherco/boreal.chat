@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "$lib/server/db";
 import {
   chatTable,
@@ -115,6 +115,19 @@ export async function getMessageShare(id: string, userEmail?: string) {
   };
 }
 
+export async function deleteMessageShare(userId: string, id: string) {
+  const [deleted] = await db
+    .delete(messageShareTable)
+    .where(and(eq(messageShareTable.id, id), eq(messageShareTable.userId, userId)))
+    .returning({ id: messageShareTable.id });
+
+  if (!deleted) {
+    throw new ORPCError("NOT_FOUND", {
+      message: "Share not found",
+    });
+  }
+}
+
 export async function createThreadShare(
   userId: string,
   params: {
@@ -185,6 +198,19 @@ export async function getThreadShare(id: string, userEmail?: string) {
     threadId: share.threadId,
     lastMessageId: share.lastMessageId,
   };
+}
+
+export async function deleteThreadShare(userId: string, id: string) {
+  const [deleted] = await db
+    .delete(threadShareTable)
+    .where(and(eq(threadShareTable.id, id), eq(threadShareTable.userId, userId)))
+    .returning({ id: threadShareTable.id });
+
+  if (!deleted) {
+    throw new ORPCError("NOT_FOUND", {
+      message: "Share not found",
+    });
+  }
 }
 
 export async function upsertChatShare(

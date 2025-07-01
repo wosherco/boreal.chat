@@ -4,6 +4,8 @@ import { authenticatedMiddleware } from "../../middlewares";
 import {
   createMessageShare,
   createThreadShare,
+  deleteMessageShare,
+  deleteThreadShare,
   upsertChatShare,
 } from "$lib/server/services/shares";
 import { SHARE_PRIVACY_OPTIONS } from "$lib/common";
@@ -50,6 +52,12 @@ export const v1ShareRouter = osBase.router({
           emails: input.emails,
         }),
       ),
+    delete: osBase
+      .use(authenticatedMiddleware)
+      .input(z.object({ shareId: z.string().uuid() }))
+      .handler(async ({ context, input }) =>
+        deleteMessageShare(context.userCtx.user.id, input.shareId),
+      ),
   }),
   thread: osBase.router({
     create: osBase
@@ -80,6 +88,12 @@ export const v1ShareRouter = osBase.router({
           privacy: input.privacy,
           emails: input.emails,
         }),
+      ),
+    delete: osBase
+      .use(authenticatedMiddleware)
+      .input(z.object({ shareId: z.string().uuid() }))
+      .handler(async ({ context, input }) =>
+        deleteThreadShare(context.userCtx.user.id, input.shareId),
       ),
   }),
   chat: osBase.router({
