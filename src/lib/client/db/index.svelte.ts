@@ -10,9 +10,9 @@ import { browser } from "$app/environment";
 import { getTableColumnNames } from "./utils";
 import { orpc } from "../orpc";
 import { ORPCError } from "@orpc/client";
-import { invalidateAll } from "$app/navigation";
 import { getTableName, sql } from "drizzle-orm";
 import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
+import { getAllCacheValues } from "../hooks/localDbHook";
 
 const initializeDbLock = new AsyncLock();
 
@@ -242,8 +242,8 @@ async function startShapesSync() {
     },
     key: "boreal-chat-sync-v1",
     onInitialSync: () => {
-      console.log("Sync done. Invalidating everything...");
-      invalidateAll();
+      console.log("Sync done. Refreshing all stores...");
+      getAllCacheValues().forEach((store) => store.refreshQuery());
     },
   });
 

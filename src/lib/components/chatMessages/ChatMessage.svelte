@@ -21,9 +21,9 @@
   import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
   import Markdown from "../markdown/Markdown.svelte";
   import ChatMessageInlineInput from "./ChatMessageInlineInput.svelte";
-  import { syncStreams } from "$lib/client/db/index.svelte";
-  import { matchBy, matchStream } from "@electric-sql/experimental";
   import { isFinishedMessageStatus } from "$lib/common";
+  import { messageTable } from "$lib/client/db/schema";
+  import { waitForInsert } from "$lib/client/hooks/waitForInsert";
 
   interface Props {
     message: MessageWithOptionalChainRow;
@@ -43,9 +43,23 @@
       ?.sort((a, b) => a.value.version - b.value.version) ?? [],
   );
 
+  $effect(() => {
+    console.log(
+      "otherVersions",
+      otherVersions.map((v) => ({
+        id: v.value.id,
+        version: v.value.version,
+        threadId: v.value.threadId,
+      })),
+    );
+  });
+
   function nextThread() {
     const nextVersion = message.version + 1;
     const nextThread = otherVersions.find((child) => child.value.version === nextVersion);
+
+    console.log("nextThread", nextThread, nextVersion, "current", message.version);
+
     if (nextThread) {
       onChangeThreadId?.(nextThread.value.threadId);
     }
@@ -54,6 +68,9 @@
   function previousThread() {
     const previousVersion = message.version - 1;
     const previousThread = otherVersions.find((child) => child.value.version === previousVersion);
+
+    console.log("previousThread", previousThread, previousVersion, "current", message.version);
+
     if (previousThread) {
       onChangeThreadId?.(previousThread.value.threadId);
     }
@@ -195,31 +212,23 @@
       messageId: message.id,
     });
 
-    const messageStream = syncStreams()?.streams.message;
-
-    if (messageStream) {
-      try {
-        await matchStream(messageStream, ["insert"], matchBy("id", result.messageId), 5000);
-      } catch (e) {
-        console.error("Waiting for message sync failed", e);
-      }
+    try {
+      await waitForInsert(messageTable, result.messageId, 5000);
+    } catch (e) {
+      console.error("Waiting for message sync failed", e);
     }
 
     onChangeThreadId?.(result.threadId);
   }
 
   async function onSubmitEdit(newThreadId: string, newMessageId: string) {
-    onChangeThreadId?.(newThreadId);
-
-    const messageStream = syncStreams()?.streams.message;
-
-    if (messageStream) {
-      try {
-        await matchStream(messageStream, ["insert"], matchBy("id", newMessageId), 5000);
-      } catch (e) {
-        console.error("Waiting for message sync failed", e);
-      }
+    try {
+      await waitForInsert(messageTable, newMessageId, 5000);
+    } catch (e) {
+      console.error("Waiting for message sync failed", e);
     }
+
+    onChangeThreadId?.(newThreadId);
 
     editingMessage = false;
   }

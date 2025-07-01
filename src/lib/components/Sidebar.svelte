@@ -23,6 +23,7 @@
     Loader2,
     XIcon,
     KeyboardIcon,
+    BookOpenIcon,
   } from "@lucide/svelte";
   import { goto } from "$app/navigation";
   import { orpc } from "$lib/client/orpc";
@@ -212,6 +213,10 @@
             <DropdownMenuItem onclick={() => goto("/settings")}>
               <SettingsIcon class="mr-2 size-4" />
               <span>Settings</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onclick={() => window.open("https://docs.boreal.chat", "_blank")}>
+              <BookOpenIcon class="mr-2 size-4" />
+              <span>Docs</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onclick={onLogout} variant="destructive" disabled={logoutLoading}>

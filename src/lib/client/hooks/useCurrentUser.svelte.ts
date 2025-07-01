@@ -1,7 +1,7 @@
 import type { CurrentUserInfo, ServerData, UserInfo } from "$lib/common/sharedTypes";
 import { clientDb } from "../db/index.svelte";
 import { userTable } from "../db/schema";
-import { createHydratableData } from "./localDbHook.svelte";
+import { createHydratableData } from "./localDbHook";
 import { transformKeyToCamelCaseRecursive } from "./utils";
 
 export const useCurrentUser = (serverData: ServerData<CurrentUserInfo>) =>

@@ -2,7 +2,7 @@ import type { Chat, ServerData } from "$lib/common/sharedTypes";
 import { desc } from "drizzle-orm";
 import { clientDb } from "../db/index.svelte";
 import { chatTable } from "../db/schema";
-import { createHydratableData } from "./localDbHook.svelte";
+import { createHydratableData } from "./localDbHook";
 import { transformKeyToCamelCaseRecursive } from "./utils";
 
 export const useChats = (serverData: ServerData<Chat[]>) =>

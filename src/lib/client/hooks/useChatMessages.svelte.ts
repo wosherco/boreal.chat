@@ -7,7 +7,7 @@ import type {
 import { eq } from "drizzle-orm";
 import { clientDb } from "../db/index.svelte";
 import { messageTable } from "../db/schema";
-import { createHydratableData } from "./localDbHook.svelte";
+import { createHydratableData } from "./localDbHook";
 import { transformKeyToCamelCaseRecursive } from "./utils";
 import { createMessagesBaseQuery } from "$lib/common/schema/queries";
 

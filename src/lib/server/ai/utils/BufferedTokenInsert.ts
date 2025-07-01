@@ -26,8 +26,9 @@ class BufferedTokenInsert {
   private lastInsert: number = 0;
   private buffer: string = "";
   private flushTimer: NodeJS.Timeout | null = null;
-  private readonly FLUSH_TIMEOUT = 400; // 400ms
-  private readonly BUFFER_THRESHOLD = 100; // characters threshold
+  // Flush sooner so streaming tokens reach the DB more quickly
+  private readonly FLUSH_TIMEOUT = 100; // 100ms
+  private readonly BUFFER_THRESHOLD = 20; // characters threshold
   private readonly BATCH_FLUSH_DELAY = 10; // 10ms to collect batches
   private isDestroyed = false;
 

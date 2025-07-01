@@ -9,7 +9,7 @@
 
   const { data }: PageProps = $props();
 
-  const currentUser = $derived(useCurrentUser(data.auth.currentUserInfo));
+  const currentUser = useCurrentUser(data.auth.currentUserInfo);
 
   interface PrewrittenPrompt {
     prompt: string;
