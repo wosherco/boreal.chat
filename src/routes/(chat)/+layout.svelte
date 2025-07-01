@@ -186,7 +186,7 @@
   </Sheet>
 </div>
 
-<div class="flex h-[100dvh] w-full flex-row">
+<div class="flex min-h-screen w-full flex-row md:h-[100dvh]">
   <!-- Desktop Sidebar -->
   <div
     class={cn(
@@ -198,12 +198,19 @@
   </div>
 
   <div class="relative flex-1 flex-grow">
-    <main class="h-full overflow-y-auto" bind:this={chatContainer} onscroll={handleScroll}>
+    <main
+      class="min-h-screen md:h-full md:overflow-y-auto"
+      bind:this={chatContainer}
+      onscroll={handleScroll}
+    >
       {@render children()}
     </main>
 
     <!-- Chat message input -->
-    <div class="pointer-events-none absolute right-0 bottom-0 left-0">
+    <div
+      class="pointer-events-none absolute right-0 bottom-0 left-0"
+      style="padding-bottom: env(safe-area-inset-bottom)"
+    >
       {#if !autoscroll}
         <button
           onclick={resumeAutoScroll}

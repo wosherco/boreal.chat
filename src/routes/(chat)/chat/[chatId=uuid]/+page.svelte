@@ -19,11 +19,12 @@
 
 <div
   class={cn(
-    "mx-auto flex w-full max-w-screen min-w-0 flex-col gap-2 overflow-x-hidden px-4 pt-16 pb-36",
+    "mx-auto flex w-full max-w-screen min-w-0 flex-col gap-2 overflow-x-hidden px-4 pt-16",
     isSidebarCollapsed()
       ? "md:max-w-screen-md"
       : "md:max-w-[min(var(--breakpoint-md),calc(100vw-var(--spacing)*80)))]",
   )}
+  style="padding-bottom: calc(9rem + env(safe-area-inset-bottom))"
 >
   {#if $messages.loading || !$messages.data}
     <ChatSkeleton />
