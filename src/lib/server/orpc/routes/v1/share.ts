@@ -4,7 +4,7 @@ import { authenticatedMiddleware } from "../../middlewares";
 import {
   createMessageShare,
   createThreadShare,
-  createChatShare,
+  upsertChatShare,
 } from "$lib/server/services/shares";
 import { SHARE_PRIVACY_OPTIONS } from "$lib/common";
 
@@ -33,12 +33,22 @@ export const v1ShareRouter = osBase.router({
       .use(authenticatedMiddleware)
       .input(messageInput)
       .handler(async ({ context, input }) =>
-        createMessageShare(
-          context.userCtx.user.id,
-          input.messageId,
-          input.privacy,
-          input.emails ?? [],
-        ),
+        createMessageShare(context.userCtx.user.id, {
+          messageId: input.messageId,
+          privacy: input.privacy,
+          emails: input.emails,
+        }),
+      ),
+    update: osBase
+      .use(authenticatedMiddleware)
+      .input(messageInput.and(z.object({ shareId: z.string().uuid() })))
+      .handler(async ({ context, input }) =>
+        createMessageShare(context.userCtx.user.id, {
+          existingShareId: input.shareId,
+          messageId: input.messageId,
+          privacy: input.privacy,
+          emails: input.emails,
+        }),
       ),
   }),
   thread: osBase.router({
@@ -46,21 +56,42 @@ export const v1ShareRouter = osBase.router({
       .use(authenticatedMiddleware)
       .input(threadInput)
       .handler(async ({ context, input }) =>
-        createThreadShare(
-          context.userCtx.user.id,
-          input.threadId,
-          input.lastMessageId,
-          input.privacy,
-          input.emails ?? [],
+        createThreadShare(context.userCtx.user.id, {
+          threadId: input.threadId,
+          lastMessageId: input.lastMessageId,
+          privacy: input.privacy,
+          emails: input.emails,
+        }),
+      ),
+    update: osBase
+      .use(authenticatedMiddleware)
+      .input(
+        threadInput.and(
+          z.object({
+            shareId: z.string().uuid(),
+          }),
         ),
+      )
+      .handler(async ({ context, input }) =>
+        createThreadShare(context.userCtx.user.id, {
+          existingShareId: input.shareId,
+          threadId: input.threadId,
+          lastMessageId: input.lastMessageId,
+          privacy: input.privacy,
+          emails: input.emails,
+        }),
       ),
   }),
   chat: osBase.router({
-    create: osBase
+    upsert: osBase
       .use(authenticatedMiddleware)
       .input(chatInput)
       .handler(async ({ context, input }) =>
-        createChatShare(context.userCtx.user.id, input.chatId, input.privacy, input.emails ?? []),
+        upsertChatShare(context.userCtx.user.id, {
+          chatId: input.chatId,
+          privacy: input.privacy,
+          emails: input.emails,
+        }),
       ),
   }),
 });

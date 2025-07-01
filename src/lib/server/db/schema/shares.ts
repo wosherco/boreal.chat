@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, timestamp, text } from "drizzle-orm/pg-core";
 import { userTable } from "./users";
 import { chatTable, threadTable, messageTable } from "./chats";
 import { SHARE_PRIVACY_OPTIONS } from "$lib/common";
@@ -8,17 +8,11 @@ export const messageShareTable = pgTable("message_share", {
   userId: uuid()
     .notNull()
     .references(() => userTable.id, { onDelete: "cascade" }),
-  chatId: uuid()
-    .notNull()
-    .references(() => chatTable.id, { onDelete: "cascade" }),
-  threadId: uuid()
-    .notNull()
-    .references(() => threadTable.id, { onDelete: "cascade" }),
   messageId: uuid()
     .notNull()
     .references(() => messageTable.id, { onDelete: "cascade" }),
   privacy: varchar({ length: 20, enum: SHARE_PRIVACY_OPTIONS }).notNull().default("private"),
-  allowedEmails: jsonb("allowed_emails").notNull().default([]),
+  allowedEmails: text("allowed_emails").array().notNull().default([]),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
@@ -28,9 +22,6 @@ export const threadShareTable = pgTable("thread_share", {
   userId: uuid()
     .notNull()
     .references(() => userTable.id, { onDelete: "cascade" }),
-  chatId: uuid()
-    .notNull()
-    .references(() => chatTable.id, { onDelete: "cascade" }),
   threadId: uuid()
     .notNull()
     .references(() => threadTable.id, { onDelete: "cascade" }),
@@ -38,7 +29,7 @@ export const threadShareTable = pgTable("thread_share", {
     .notNull()
     .references(() => messageTable.id, { onDelete: "cascade" }),
   privacy: varchar({ length: 20, enum: SHARE_PRIVACY_OPTIONS }).notNull().default("private"),
-  allowedEmails: jsonb("allowed_emails").notNull().default([]),
+  allowedEmails: text("allowed_emails").array().notNull().default([]),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
@@ -51,7 +42,7 @@ export const chatShareTable = pgTable("chat_share", {
     .notNull()
     .references(() => userTable.id, { onDelete: "cascade" }),
   privacy: varchar({ length: 20, enum: SHARE_PRIVACY_OPTIONS }).notNull().default("private"),
-  allowedEmails: jsonb("allowed_emails").notNull().default([]),
+  allowedEmails: text("allowed_emails").array().notNull().default([]),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });

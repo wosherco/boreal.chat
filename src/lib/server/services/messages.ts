@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { TransactableDBType } from "../db";
 import { chatTable, messageSegmentsTable, messageTable, threadTable } from "../db/schema";
 import type { MessageChainRow } from "$lib/common/sharedTypes";
@@ -6,6 +6,7 @@ import { transformKeyToCamelCaseRecursive } from "$lib/client/hooks/utils";
 import type { ModelId } from "$lib/common/ai/models";
 import { addSeconds } from "date-fns";
 import { alias } from "drizzle-orm/pg-core";
+import { createMessagesBaseQuery as createCommonMessagesBaseQuery } from "$lib/common/schema/queries";
 
 export async function createChat(
   tx: TransactableDBType,
@@ -464,4 +465,22 @@ ORDER BY c.created_at DESC;        -- newest → oldest for chat view
       tokenStream: row.tokenStream ?? null,
     }))
     .toReversed();
+}
+
+export async function fetchAllChatMessages(db: TransactableDBType, chatId: string) {
+  const { baseQuery } = createCommonMessagesBaseQuery(
+    // @ts-expect-error - db is a TransactableDBType, which is a ClientDBType
+    db,
+  );
+
+  return baseQuery.where(eq(messageTable.chatId, chatId));
+}
+
+export async function fetchMessages(db: TransactableDBType, messageIds: string[]) {
+  const { baseQuery } = createCommonMessagesBaseQuery(
+    // @ts-expect-error - db is a TransactableDBType, which is a ClientDBType
+    db,
+  );
+
+  return baseQuery.where(inArray(messageTable.id, messageIds));
 }

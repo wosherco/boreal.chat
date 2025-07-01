@@ -1,43 +1,36 @@
 import type { PageServerLoad } from "./$types";
 import { db } from "$lib/server/db";
-import { threadShareTable } from "$lib/server/db/schema";
-import { eq } from "drizzle-orm";
 import { fetchThreadMessagesRecursive } from "$lib/server/services/messages";
 import { error } from "@sveltejs/kit";
-
-function checkPrivacy(
-  share: { privacy: string; allowedEmails: unknown },
-  userEmail: string | null,
-) {
-  if (share.privacy === "private") return false;
-  if (share.privacy === "emails") {
-    const list = (share.allowedEmails as string[]) || [];
-    return userEmail !== null && list.includes(userEmail);
-  }
-  return true;
-}
+import { ORPCError } from "@orpc/client";
+import { getThreadShare } from "$lib/server/services/shares";
 
 export const load: PageServerLoad = async ({ params, locals, setHeaders }) => {
   const { shareId } = params;
 
-  const [threadShare] = await db
-    .select()
-    .from(threadShareTable)
-    .where(eq(threadShareTable.id, shareId));
+  let threadId: string;
+  let lastMessageId: string;
+  try {
+    const threadShare = await getThreadShare(shareId, locals.user?.email ?? undefined);
+    threadId = threadShare.threadId;
+    lastMessageId = threadShare.lastMessageId;
+  } catch (e) {
+    if (e instanceof ORPCError) {
+      throw error(e.status, e.message);
+    }
 
-  if (!threadShare) {
-    throw error(404, "Not found");
+    throw e;
   }
 
-  if (!checkPrivacy(threadShare, locals.user?.email ?? null)) {
-    throw error(401, "Unauthorized");
-  }
-  if (threadShare.privacy === "public") {
-    setHeaders({ "X-Robots-Tag": "noindex" });
-  }
-  const messages = await fetchThreadMessagesRecursive(db, threadShare.threadId, {
-    lastMessageId: threadShare.lastMessageId,
-    maxDepth: 15,
+  setHeaders({ "X-Robots-Tag": "noindex" });
+  const messages = await fetchThreadMessagesRecursive(db, threadId, {
+    lastMessageId,
   });
-  return { type: "thread", messages, chatId: threadShare.chatId };
+
+  return {
+    share: {
+      threadId,
+      messages,
+    },
+  };
 };

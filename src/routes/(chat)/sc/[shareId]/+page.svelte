@@ -3,9 +3,12 @@
   import type { PageProps } from "./$types";
   import { cn } from "$lib/utils";
   import { isSidebarCollapsed } from "../../+layout.svelte";
+  import SvelteSeo from "svelte-seo";
 
   const { data }: PageProps = $props();
 </script>
+
+<SvelteSeo title="Shared Chat | boreal.chat" nofollow noindex />
 
 <div
   class={cn(
@@ -15,5 +18,9 @@
       : "md:max-w-[min(var(--breakpoint-md),calc(100vw-var(--spacing)*80)))]",
   )}
 >
-  <RecursiveMessageRendering messages={data.messages} chatId={data.chatId} chat={null} />
+  <RecursiveMessageRendering
+    messages={data.share.messages}
+    chatId={data.share.chatId}
+    chat={null}
+  />
 </div>
