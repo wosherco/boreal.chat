@@ -1,7 +1,7 @@
 import { pgTable, uuid, varchar, timestamp, text } from "drizzle-orm/pg-core";
 import { userTable } from "./users";
 import { chatTable, threadTable, messageTable } from "./chats";
-import { SHARE_PRIVACY_OPTIONS } from "$lib/common";
+import { SHARE_PRIVACY_OPTIONS } from "../../../common";
 
 export const messageShareTable = pgTable("message_share", {
   id: varchar({ length: 21 }).primaryKey(),

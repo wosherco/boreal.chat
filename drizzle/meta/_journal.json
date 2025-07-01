@@ -43,6 +43,13 @@
       "when": 1750798013596,
       "tag": "0005_tired_kree",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1751403255146,
+      "tag": "0006_lively_rockslide",
+      "breakpoints": true
     }
   ]
 }

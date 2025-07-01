@@ -32,7 +32,9 @@
     "when": 1749999276314,
     "tag": "0002_charming_union_jack",
     "hash": "00c91d9c42f42258ced12af5a83468aab56e3e5086b192d7ad395197aff18b73",
-    "sql": ["ALTER TABLE \"messages\" ADD COLUMN \"error\" text;"]
+    "sql": [
+      "ALTER TABLE \"messages\" ADD COLUMN \"error\" text;"
+    ]
   },
   {
     "idx": 3,
@@ -48,9 +50,9 @@
     "idx": 4,
     "when": 1750797808889,
     "tag": "0004_eager_crystal",
-    "hash": "0b8aed8e3d654fe35d901b0f2f12b3a2202428f2fd54bbe13fe6d17098846ea6",
+    "hash": "fd63341ca3735941ad665f912354b1983189971090859f20e79a4a4920d4cffb",
     "sql": [
-      "CREATE TABLE \"message_segment_usage\" (\"id\" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,\"user_id\" uuid NOT NULL,\"generation_id\" uuid NOT NULL,\"is_byok\" boolean DEFAULT false NOT NULL,\"model\" text,\"origin\" text,\"provider_name\" text,\"usage\" double precision,\"cache_discount\" double precision,\"tokens_prompt\" integer,\"tokens_completion\" integer,\"num_media_prompt\" integer,\"num_media_completion\" integer,\"num_search_results\" integer,CONSTRAINT \"message_segment_usage_generationId_unique\" UNIQUE(\"generation_id\"));",
+      "CREATE TABLE \"message_segment_usage\" (    \"id\" uuid PRIMARY KEY DEFAULT gen_random_uuid () NOT NULL,    \"user_id\" uuid NOT NULL,    \"generation_id\" uuid NOT NULL,    \"is_byok\" boolean DEFAULT false NOT NULL,    \"model\" text,    \"origin\" text,    \"provider_name\" text,    \"usage\" double precision,    \"cache_discount\" double precision,    \"tokens_prompt\" integer,    \"tokens_completion\" integer,    \"num_media_prompt\" integer,    \"num_media_completion\" integer,    \"num_search_results\" integer,    CONSTRAINT \"message_segment_usage_generationId_unique\" UNIQUE (\"generation_id\"));",
       "ALTER TABLE \"message_segments\" ADD COLUMN \"generation_id\" uuid;",
       "ALTER TABLE \"message_tokens\" ADD COLUMN \"generation_id\" uuid;",
       "ALTER TABLE \"messages\" DROP COLUMN \"metadata\" CASCADE;"

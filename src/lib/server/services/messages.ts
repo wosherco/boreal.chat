@@ -1,12 +1,17 @@
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, getTableColumns, inArray, isNull, sql } from "drizzle-orm";
 import type { TransactableDBType } from "../db";
-import { chatTable, messageSegmentsTable, messageTable, threadTable } from "../db/schema";
-import type { MessageChainRow } from "$lib/common/sharedTypes";
+import {
+  chatTable,
+  messageSegmentsTable,
+  messageTable,
+  messageTokensTable,
+  threadTable,
+} from "../db/schema";
+import type { MessageChainRow, SegmentJson, TokenStreamJson } from "$lib/common/sharedTypes";
 import { transformKeyToCamelCaseRecursive } from "$lib/client/hooks/utils";
 import type { ModelId } from "$lib/common/ai/models";
 import { addSeconds } from "date-fns";
 import { alias } from "drizzle-orm/pg-core";
-import { createMessagesBaseQuery as createCommonMessagesBaseQuery } from "$lib/common/schema/queries";
 
 export async function createChat(
   tx: TransactableDBType,
@@ -467,20 +472,59 @@ ORDER BY c.created_at DESC;        -- newest → oldest for chat view
     .toReversed();
 }
 
+/**
+ * Creates a base query for fetching messages with their segments and token streams
+ */
+function createMessagesBaseQuery(db: TransactableDBType) {
+  const segmentsSubquery = db
+    .select({
+      segments: sql<SegmentJson>`jsonb_agg(jsonb_build_object(
+							'ordinal', ${messageSegmentsTable.ordinal},
+							'kind',    ${messageSegmentsTable.kind},
+							'content', ${messageSegmentsTable.content},
+							'toolName',${messageSegmentsTable.toolName},
+							'toolArgs',${messageSegmentsTable.toolArgs},
+							'toolResult', ${messageSegmentsTable.toolResult}
+						) ORDER BY ${messageSegmentsTable.ordinal})`.as("segments"),
+    })
+    .from(messageSegmentsTable)
+    .where(eq(messageSegmentsTable.messageId, messageTable.id))
+    .as("segments");
+
+  const tokenStreamSubquery = db
+    .select({
+      tokenStream: sql<TokenStreamJson[]>`jsonb_agg(jsonb_build_object(
+								'token', ${messageTokensTable.tokens},
+								'kind', ${messageTokensTable.kind}
+							) ORDER BY ${messageTokensTable.createdAt})`.as("tokenStream"),
+    })
+    .from(messageTokensTable)
+    .where(eq(messageTokensTable.messageId, messageTable.id))
+    .as("tokenStream");
+
+  return {
+    baseQuery: db
+      .select({
+        ...getTableColumns(messageTable),
+        segments: segmentsSubquery.segments,
+        tokenStream: tokenStreamSubquery.tokenStream,
+      })
+      .from(messageTable)
+      .leftJoinLateral(segmentsSubquery, sql<boolean>`true`)
+      .leftJoinLateral(tokenStreamSubquery, sql<boolean>`true`),
+    segmentsSubquery,
+    tokenStreamSubquery,
+  };
+}
+
 export async function fetchAllChatMessages(db: TransactableDBType, chatId: string) {
-  const { baseQuery } = createCommonMessagesBaseQuery(
-    // @ts-expect-error - db is a TransactableDBType, which is a ClientDBType
-    db,
-  );
+  const { baseQuery } = createMessagesBaseQuery(db);
 
   return baseQuery.where(eq(messageTable.chatId, chatId));
 }
 
 export async function fetchMessages(db: TransactableDBType, messageIds: string[]) {
-  const { baseQuery } = createCommonMessagesBaseQuery(
-    // @ts-expect-error - db is a TransactableDBType, which is a ClientDBType
-    db,
-  );
+  const { baseQuery } = createMessagesBaseQuery(db);
 
   return baseQuery.where(inArray(messageTable.id, messageIds));
 }
