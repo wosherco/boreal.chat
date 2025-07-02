@@ -112,9 +112,77 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* PWA and Safe Area Support */
+:root {
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  
+  /* Viewport units that respond to keyboard */
+  --vh: 100vh;
+}
+
+/* Mobile Safari viewport fix for keyboard */
+@supports (-webkit-touch-callout: none) {
+  :root {
+    --vh: 100vh; /* Will be dynamically updated by JavaScript */
+  }
+}
+
+/* Safe area offset utilities */
+.pt-safe { padding-top: var(--safe-area-inset-top); }
+.pb-safe { padding-bottom: var(--safe-area-inset-bottom); }
+.pl-safe { padding-left: var(--safe-area-inset-left); }
+.pr-safe { padding-right: var(--safe-area-inset-right); }
+
+.pt-safe-offset-2 { padding-top: calc(var(--safe-area-inset-top) + 0.5rem); }
+.pt-safe-offset-4 { padding-top: calc(var(--safe-area-inset-top) + 1rem); }
+.pt-safe-offset-10 { padding-top: calc(var(--safe-area-inset-top) + 2.5rem); }
+.pb-safe-offset-3 { padding-bottom: calc(var(--safe-area-inset-bottom) + 0.75rem); }
+.pb-safe-offset-6 { padding-bottom: calc(var(--safe-area-inset-bottom) + 1.5rem); }
+.top-safe-offset-2 { top: calc(var(--safe-area-inset-top) + 0.5rem); }
+
+.min-h-pwa { min-height: var(--vh); }
+.h-pwa { height: var(--vh); }
+.max-h-pwa { max-height: var(--vh); }
+
+/* Prevent zoom on input focus in iOS */
+input, textarea, select {
+  font-size: 16px !important;
+}
+
+@media screen and (max-width: 767px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
 body {
   letter-spacing: var(--tracking-normal);
+  /* Prevent overscroll behavior */
+  overscroll-behavior: none;
 }
+
+/* Keyboard open state adjustments */
+html.keyboard-open {
+  /* Additional styles when keyboard is open */
+}
+
+html.keyboard-open body {
+  /* Prevent scrolling when keyboard is open on some browsers */
+  overflow: hidden;
+}
+
+html.keyboard-open .chat-input-container {
+  /* Ensure input stays visible when keyboard opens */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

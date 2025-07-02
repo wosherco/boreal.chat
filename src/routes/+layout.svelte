@@ -7,6 +7,8 @@
   import posthog from "posthog-js";
   import SearchCommand from "$lib/components/SearchCommand.svelte";
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
+  import { onMount } from "svelte";
+  import { initializeMobileKeyboardHandler } from "$lib/utils/mobileKeyboard";
 
   let { children, data }: LayoutProps = $props();
 
@@ -35,6 +37,13 @@
       posthog.reset();
     }
   });
+
+  onMount(() => {
+    // Initialize mobile keyboard handler
+    const cleanup = initializeMobileKeyboardHandler();
+    
+    return cleanup;
+  });
 </script>
 
 <svelte:window on:copy={onCopy} />
@@ -42,6 +51,6 @@
 <ModeWatcher />
 <Toaster />
 <SearchCommand />
-<div class="relative h-full min-h-[100dvh] w-full">
+<div class="relative h-full min-h-pwa w-full">
   {@render children()}
 </div>

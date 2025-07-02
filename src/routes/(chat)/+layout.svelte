@@ -186,7 +186,7 @@
   </Sheet>
 </div>
 
-<div class="flex h-[100dvh] w-full flex-row">
+<div class="flex h-pwa w-full flex-row">
   <!-- Desktop Sidebar -->
   <div
     class={cn(
@@ -198,7 +198,7 @@
   </div>
 
   <div class="relative flex-1 flex-grow">
-    <main class="h-full overflow-y-auto" bind:this={chatContainer} onscroll={handleScroll}>
+    <main class="h-full overflow-y-auto pb-safe-offset-6" bind:this={chatContainer} onscroll={handleScroll}>
       {@render children()}
     </main>
 
