@@ -94,10 +94,10 @@
     isWrapped && "[&_pre]:break-words [&_pre]:![white-space:pre-wrap]",
   )}
 >
-  <div class="bg-input flex h-full flex-row items-center justify-between border-b px-4">
+  <div class="bg-input relative flex h-full flex-row items-center justify-between border-b px-4">
     <p class="">{codeProps?.filename ?? codeProps?.lang}</p>
 
-    <div class="sticky top-4">
+    <div class="sticky top-0 z-10 bg-input/95 backdrop-blur-sm">
       <Button variant="ghost" size="icon" onclick={copyToClipboard}>
         <CopyIcon />
       </Button>
