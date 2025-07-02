@@ -13,7 +13,7 @@ import { SHARE_PRIVACY_OPTIONS } from "$lib/common";
 const messageInput = z.object({
   chatId: z.string().uuid(),
   messageId: z.string().uuid(),
-  privacy: z.enum(SHARE_PRIVACY_OPTIONS).default("public"),
+  privacy: z.enum(SHARE_PRIVACY_OPTIONS).default("private"),
   emails: z.array(z.string().email()).optional(),
 });
 
@@ -21,13 +21,13 @@ const threadInput = z.object({
   chatId: z.string().uuid(),
   threadId: z.string().uuid(),
   lastMessageId: z.string().uuid(),
-  privacy: z.enum(SHARE_PRIVACY_OPTIONS).default("public"),
+  privacy: z.enum(SHARE_PRIVACY_OPTIONS).default("private"),
   emails: z.array(z.string().email()).optional(),
 });
 
 const chatInput = z.object({
   chatId: z.string().uuid(),
-  privacy: z.enum(SHARE_PRIVACY_OPTIONS).default("public"),
+  privacy: z.enum(SHARE_PRIVACY_OPTIONS).default("private"),
   emails: z.array(z.string().email()).optional(),
 });
 
