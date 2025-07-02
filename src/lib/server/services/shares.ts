@@ -241,13 +241,13 @@ export async function upsertChatShare(
       chatId,
       userId,
       privacy,
-      allowedEmails: emails,
+      allowedEmails: emails.map(cleanEmail),
     })
     .onConflictDoUpdate({
       target: [chatShareTable.chatId],
       set: {
         privacy,
-        allowedEmails: emails,
+        allowedEmails: emails.map(cleanEmail),
       },
     });
 
