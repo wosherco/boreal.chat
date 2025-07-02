@@ -19,5 +19,5 @@
       : "md:max-w-[min(var(--breakpoint-md),calc(100vw-var(--spacing)*80)))]",
   )}
 >
-  <ChatMessage message={data.share.message} />
+  <ChatMessage message={data.share.message} isSharedView={true} />
 </div>

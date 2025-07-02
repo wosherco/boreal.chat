@@ -7,6 +7,7 @@ import {
   deleteMessageShare,
   deleteThreadShare,
   upsertChatShare,
+  listChatShares,
 } from "$lib/server/services/shares";
 import { SHARE_PRIVACY_OPTIONS } from "$lib/common";
 
@@ -106,6 +107,12 @@ export const v1ShareRouter = osBase.router({
           privacy: input.privacy,
           emails: input.emails,
         }),
+      ),
+    list: osBase
+      .use(authenticatedMiddleware)
+      .input(z.object({ chatId: z.string().uuid() }))
+      .handler(async ({ context, input }) =>
+        listChatShares(context.userCtx.user.id, input.chatId),
       ),
   }),
 });

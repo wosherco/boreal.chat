@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "$lib/server/db";
 import {
   chatTable,
@@ -276,4 +276,66 @@ export async function getChatShare(id: string, userEmail?: string) {
   return {
     chatId: share.chatId,
   };
+}
+
+export async function listChatShares(userId: string, chatId: string) {
+  const [chat] = await db
+    .select({ userId: chatTable.userId })
+    .from(chatTable)
+    .where(eq(chatTable.id, chatId))
+    .limit(1);
+
+  if (!chat || chat.userId !== userId) {
+    throw new ORPCError("NOT_FOUND", {
+      message: "Chat not found",
+    });
+  }
+
+  const shares = await db
+    .select({
+      type: sql<"chat">`'chat'`,
+      id: chatShareTable.chatId,
+      shareId: chatShareTable.chatId,
+      privacy: chatShareTable.privacy,
+      allowedEmails: chatShareTable.allowedEmails,
+      createdAt: chatShareTable.createdAt,
+      updatedAt: chatShareTable.updatedAt,
+    })
+    .from(chatShareTable)
+    .where(eq(chatShareTable.chatId, chatId));
+
+  const messageShares = await db
+    .select({
+      type: sql<"message">`'message'`,
+      id: messageShareTable.id,
+      shareId: messageShareTable.id,
+      privacy: messageShareTable.privacy,
+      allowedEmails: messageShareTable.allowedEmails,
+      createdAt: messageShareTable.createdAt,
+      updatedAt: messageShareTable.updatedAt,
+      messageId: messageShareTable.messageId,
+    })
+    .from(messageShareTable)
+    .innerJoin(messageTable, eq(messageShareTable.messageId, messageTable.id))
+    .where(and(eq(messageTable.chatId, chatId), eq(messageShareTable.userId, userId)));
+
+  const threadShares = await db
+    .select({
+      type: sql<"thread">`'thread'`,
+      id: threadShareTable.id,
+      shareId: threadShareTable.id,
+      privacy: threadShareTable.privacy,
+      allowedEmails: threadShareTable.allowedEmails,
+      createdAt: threadShareTable.createdAt,
+      updatedAt: threadShareTable.updatedAt,
+      threadId: threadShareTable.threadId,
+      lastMessageId: threadShareTable.lastMessageId,
+    })
+    .from(threadShareTable)
+    .innerJoin(threadTable, eq(threadShareTable.threadId, threadTable.id))
+    .where(and(eq(threadTable.chatId, chatId), eq(threadShareTable.userId, userId)));
+
+  return [...shares, ...messageShares, ...threadShares].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
 }

@@ -1,9 +1,11 @@
 import type { PageServerLoad } from "./$types";
-import { db } from "$lib/server/db";
 import { fetchMessages } from "$lib/server/services/messages";
-import { error } from "@sveltejs/kit";
-import { getMessageShare } from "$lib/server/services/shares";
+import { error, redirect } from "@sveltejs/kit";
 import { ORPCError } from "@orpc/client";
+import { getMessageShare } from "$lib/server/services/shares";
+import { chatTable, messageTable } from "$lib/server/db/schema";
+import { eq } from "drizzle-orm";
+import { db } from "$lib/server/db";
 
 export const load: PageServerLoad = async ({ params, locals, setHeaders }) => {
   const { shareId } = params;
@@ -20,12 +22,30 @@ export const load: PageServerLoad = async ({ params, locals, setHeaders }) => {
     throw e;
   }
 
+  // Get the message to find the chat
+  const [message] = await db
+    .select({ chatId: messageTable.chatId, userId: messageTable.userId })
+    .from(messageTable)
+    .where(eq(messageTable.id, messageId))
+    .limit(1);
+
+  if (!message) {
+    throw error(404, "Message not found");
+  }
+
+  // If user is logged in and is the owner of the message, redirect to the original chat
+  if (locals.user && message.userId === locals.user.id) {
+    throw redirect(302, `/chat/${message.chatId}`);
+  }
+
   setHeaders({ "X-Robots-Tag": "noindex" });
 
-  const [message] = await fetchMessages(db, [messageId]);
+  const [fetchedMessage] = await fetchMessages(db, [messageId]);
+
   return {
     share: {
-      message,
+      message: fetchedMessage,
+      isSharedView: true,
     },
   };
 };
