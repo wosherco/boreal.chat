@@ -21,3 +21,9 @@ export const isFinishedMessageStatus = (status: MessageStatus) =>
 export const MESSAGE_SEGMENT_KINDS = ["reasoning", "text", "tool_call", "tool_result"] as const;
 
 export type MessageSegmentKind = (typeof MESSAGE_SEGMENT_KINDS)[number];
+
+export const SHARE_TYPES = ["message", "thread", "chat"] as const;
+export type ShareType = (typeof SHARE_TYPES)[number];
+
+export const SHARE_PRIVACY_OPTIONS = ["private", "emails", "public"] as const;
+export type SharePrivacy = (typeof SHARE_PRIVACY_OPTIONS)[number];

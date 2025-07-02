@@ -4,7 +4,7 @@
   import { ArrowRightIcon } from "@lucide/svelte";
 </script>
 
-<div class="m-auto flex h-full w-full flex-col items-center justify-center gap-4 p-4 text-center">
+<div class="mx-auto flex h-max w-full flex-col items-center justify-center gap-4 p-4 text-center">
   <h1 class="text-4xl font-bold">{page.status}</h1>
   <p class="text-muted-foreground text-lg">{page.error?.message}</p>
   <Button variant="link" href="/">Go back home <ArrowRightIcon class="h-4 w-4" /></Button>
