@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node build",
-    "dev": "vite dev",
+    "dev": "vite dev --host",
     "dev:caddy": "caddy run --config infra/development/Caddyfile",
     "prebuild": "pnpm db:client:compile && pnpm script:fetchModels",
     "build": "vite build",

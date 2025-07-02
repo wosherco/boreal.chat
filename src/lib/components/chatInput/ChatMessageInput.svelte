@@ -224,6 +224,7 @@
 <div class="mx-auto w-full max-w-screen-md px-4">
   <div
     class="bg-muted/50 group pointer-events-auto z-50 flex w-full flex-col gap-3 rounded-lg rounded-b-none border border-b-0 shadow backdrop-blur transition-colors focus-within:border-white"
+    style:padding-bottom={`calc(var(--safe-area-inset-bottom))`}
   >
     <!-- svelte-ignore a11y_autofocus -->
     <textarea
