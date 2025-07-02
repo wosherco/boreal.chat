@@ -5,6 +5,9 @@ import { SHARE_PRIVACY_OPTIONS } from "../../../common";
 
 export const messageShareTable = pgTable("message_share", {
   id: varchar({ length: 21 }).primaryKey(),
+  chatId: uuid()
+    .notNull()
+    .references(() => chatTable.id, { onDelete: "cascade" }),
   userId: uuid()
     .notNull()
     .references(() => userTable.id, { onDelete: "cascade" }),
@@ -19,6 +22,9 @@ export const messageShareTable = pgTable("message_share", {
 
 export const threadShareTable = pgTable("thread_share", {
   id: varchar({ length: 21 }).primaryKey(),
+  chatId: uuid()
+    .notNull()
+    .references(() => chatTable.id, { onDelete: "cascade" }),
   userId: uuid()
     .notNull()
     .references(() => userTable.id, { onDelete: "cascade" }),
