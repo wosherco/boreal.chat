@@ -146,7 +146,7 @@ export async function createThreadShare(
   const [thread] = await db
     .select({ userId: threadTable.userId, chatId: threadTable.chatId })
     .from(threadTable)
-    .innerJoin(chatTable, eq(threadTable.chatId, chatTable.id))
+    .innerJoin(messageTable, eq(threadTable.id, messageTable.threadId))
     .where(and(eq(threadTable.id, threadId), eq(messageTable.id, lastMessageId)))
     .limit(1);
 
