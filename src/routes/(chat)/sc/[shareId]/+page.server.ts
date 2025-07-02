@@ -4,6 +4,7 @@ import { fetchAllChatMessages } from "$lib/server/services/messages";
 import { error } from "@sveltejs/kit";
 import { ORPCError } from "@orpc/client";
 import { getChatShare } from "$lib/server/services/shares";
+import type { MessageWithOptionalChainRow } from "$lib/common/sharedTypes";
 
 export const load: PageServerLoad = async ({ params, locals, setHeaders }) => {
   const { shareId } = params;
@@ -27,7 +28,7 @@ export const load: PageServerLoad = async ({ params, locals, setHeaders }) => {
   return {
     share: {
       chatId,
-      messages: chatMessages,
+      messages: chatMessages satisfies MessageWithOptionalChainRow[],
     },
   };
 };

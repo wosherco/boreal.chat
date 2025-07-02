@@ -478,7 +478,7 @@ ORDER BY c.created_at DESC;        -- newest → oldest for chat view
 function createMessagesBaseQuery(db: TransactableDBType) {
   const segmentsSubquery = db
     .select({
-      segments: sql<SegmentJson>`jsonb_agg(jsonb_build_object(
+      segments: sql<SegmentJson[]>`jsonb_agg(jsonb_build_object(
 							'ordinal', ${messageSegmentsTable.ordinal},
 							'kind',    ${messageSegmentsTable.kind},
 							'content', ${messageSegmentsTable.content},
