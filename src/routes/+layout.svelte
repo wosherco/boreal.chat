@@ -42,6 +42,6 @@
 <ModeWatcher />
 <Toaster />
 <SearchCommand />
-<div class="relative h-full min-h-[100dvh] w-full">
+<div class="min-h-pwa relative w-full">
   {@render children()}
 </div>

@@ -186,7 +186,7 @@
   </Sheet>
 </div>
 
-<div class="flex h-[100dvh] w-full flex-row">
+<div class="h-pwa flex w-full flex-row">
   <!-- Desktop Sidebar -->
   <div
     class={cn(
@@ -203,11 +203,11 @@
     </main>
 
     <!-- Chat message input -->
-    <div class="pointer-events-none absolute right-0 bottom-0 left-0">
+    <div class="pointer-events-none absolute right-0 bottom-0 left-0 w-full overflow-y-hidden">
       {#if !autoscroll}
         <button
           onclick={resumeAutoScroll}
-          class="bg-accent/50 hover:bg-accent/80 mx-auto mb-2 flex items-center justify-center gap-1 rounded-full p-2 text-sm backdrop-blur-sm transition-colors"
+          class="bg-accent/50 hover:bg-accent/80 pointer-events-auto mx-auto mb-2 flex items-center justify-center gap-1 rounded-full p-2 text-sm backdrop-blur-sm transition-colors"
           transition:fade={{ duration: 100 }}
         >
           <ArrowDownIcon class="size-4" />
