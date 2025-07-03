@@ -257,6 +257,8 @@ async function startShapesSync() {
       if (!currentDBUser) {
         console.log("Something went wrong, clearing local db");
         await clearLocalDb();
+
+        window.location.reload();
       } else {
         console.log("Shapes sync done");
       }
