@@ -10,7 +10,6 @@ import { browser } from "$app/environment";
 import { getTableColumnNames } from "./utils";
 import { orpc } from "../orpc";
 import { ORPCError } from "@orpc/client";
-import { getTableName, sql } from "drizzle-orm";
 import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
 import { getAllCacheValues } from "../hooks/localDbHook";
 
@@ -241,13 +240,30 @@ async function startShapesSync() {
       },
     },
     key: "boreal-chat-sync-v1",
-    onInitialSync: () => {
+    onInitialSync: async () => {
       console.log("Sync done. Refreshing all stores...");
       getAllCacheValues().forEach((store) => store.refreshQuery());
     },
   });
 
-  console.log("Shapes sync done");
+  const intervalCheck = setInterval(async () => {
+    const isUserSynced = currentStreams?.streams.user.isUpToDate;
+
+    if (isUserSynced) {
+      clearInterval(intervalCheck);
+      await pglite().syncToFs();
+      const [currentDBUser] = await clientDb().select().from(schema.userTable).limit(1);
+
+      if (!currentDBUser) {
+        console.log("Something went wrong, clearing local db");
+        await clearLocalDb();
+      } else {
+        console.log("Shapes sync done");
+      }
+    } else {
+      console.log("Syncing still not done");
+    }
+  }, 50);
 }
 
 export async function clearLocalDb() {
@@ -258,16 +274,10 @@ export async function clearLocalDb() {
 
   console.log("Clearing local db...");
 
-  await Promise.all(
-    Object.values(schema).map(async (table) => {
-      await clientDb().execute(
-        sql`TRUNCATE TABLE ${sql.identifier(getTableName(table))}
-        RESTART IDENTITY   -- resets sequences to their start values
-        CASCADE;           -- also truncates any tables that have FKs pointing here
-       `,
-      );
-    }),
-  );
+  if (!pglite().closed) {
+    await pglite().close();
+  }
 
-  await pglite().syncToFs();
+  // Deleting the DB from indexedDB
+  indexedDB.deleteDatabase("/pglite/borealchat-syncdata");
 }
