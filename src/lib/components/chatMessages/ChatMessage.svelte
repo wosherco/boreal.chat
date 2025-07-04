@@ -243,7 +243,11 @@
     >
       {#each cleanedSegments as segment (segment.ordinal)}
         {#if segment.kind === "text"}
-          <Markdown content={segment.content ?? ""} />
+          {#if isUser}
+            <div class="whitespace-pre-wrap">{segment.content ?? ""}</div>
+          {:else}
+            <Markdown content={segment.content ?? ""} />
+          {/if}
         {:else if segment.kind === "reasoning"}
           <ReasoningSegment reasoning={segment.content ?? ""} isReasoning={segment.streamed} />
         {:else if segment.kind === "tool_call"}
