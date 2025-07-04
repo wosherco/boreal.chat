@@ -37,16 +37,19 @@
 
 <DeleteChatAlertDialog chatId={chat.id} bind:open={deleteChatModalOpen} />
 
-<SheetClosableOnlyOnPhone {isPhone} class="group flex w-full flex-row items-center justify-start">
+<SheetClosableOnlyOnPhone
+  {isPhone}
+  class="group flex w-full flex-row items-center justify-start text-start"
+>
   <Button
     variant="ghost"
     class={cn("min-w-0 flex-1 justify-start gap-2 px-2", isActive && "bg-accent")}
     href={`/chat/${chat.id}`}
     {@attach hold({
       onHold: () => {
-        console.log("held");
+        dropdownOpen = true;
       },
-      duration: 1000,
+      duration: 500,
     })}
   >
     <MessageSquareIcon class="text-muted-foreground" />
