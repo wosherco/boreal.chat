@@ -8,7 +8,7 @@
   import SearchCommand from "$lib/components/SearchCommand.svelte";
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
-  import { browser } from "$app/environment";
+  import { browser, dev } from "$app/environment";
   import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools";
 
   let { children, data }: LayoutProps = $props();
@@ -57,5 +57,8 @@
   <div class="min-h-pwa relative w-full">
     {@render children()}
   </div>
-  <SvelteQueryDevtools />
+
+  {#if dev}
+    <SvelteQueryDevtools />
+  {/if}
 </QueryClientProvider>
