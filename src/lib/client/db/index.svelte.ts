@@ -18,6 +18,7 @@ const initializeDbLock = new AsyncLock();
 export type PGliteType = NonNullable<Awaited<ReturnType<typeof initializeClientDb>>>;
 
 let dbClientReady = $state(false);
+let dbIsUpToDate = $state(false);
 let pgliteState = $state<PGliteType | null>(null);
 const createDrizzleClient = (db: PGliteType) =>
   // @ts-expect-error we're using the DB from a worker, which is not typed, but it's practically the same
@@ -26,6 +27,7 @@ const drizzleState = $derived(!pgliteState ? null : createDrizzleClient(pgliteSt
 export type ClientDBType = Exclude<typeof drizzleState, null>;
 
 export const isDbReady = () => dbClientReady;
+export const isDbUpToDate = () => dbIsUpToDate;
 export const pglite = () => {
   if (!browser) {
     throw new Error("PGlite is not available on the server");
@@ -246,26 +248,38 @@ async function startShapesSync() {
     },
   });
 
-  const intervalCheck = setInterval(async () => {
-    const isUserSynced = currentStreams?.streams.user.isUpToDate;
+  return new Promise((resolve) => {
+    // This is nasty af, and an awful hack. Hopefully we can find a better way to do this with the elastic & pglite team.
+    const intervalCheck = setInterval(async () => {
+      if (currentStreams?.isUpToDate) {
+        clearInterval(intervalCheck);
+        await pglite().syncToFs();
 
-    if (isUserSynced) {
-      clearInterval(intervalCheck);
-      await pglite().syncToFs();
-      const [currentDBUser] = await clientDb().select().from(schema.userTable).limit(1);
+        let currentDBUser: typeof schema.userTable.$inferSelect | undefined = undefined;
+        for (let i = 0; i < 10; i++) {
+          const [queriedDBUser] = await clientDb().select().from(schema.userTable).limit(1);
+          if (queriedDBUser) {
+            currentDBUser = queriedDBUser;
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
 
-      if (!currentDBUser) {
-        console.log("Something went wrong, clearing local db");
-        await clearLocalDb();
+        if (!currentDBUser) {
+          console.log("Something went wrong, clearing local db");
+          await clearLocalDb();
 
-        window.location.reload();
+          window.location.reload();
+        } else {
+          dbIsUpToDate = true;
+          resolve(true);
+          console.log("Shapes sync done");
+        }
       } else {
-        console.log("Shapes sync done");
+        console.log("Syncing still not done");
       }
-    } else {
-      console.log("Syncing still not done");
-    }
-  }, 50);
+    }, 50);
+  });
 }
 
 export async function clearLocalDb() {
