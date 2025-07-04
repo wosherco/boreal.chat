@@ -25,6 +25,8 @@ import * as Sentry from "@sentry/sveltekit";
 import { posthog } from "$lib/server/posthog";
 import { executeAgentSafely } from "$lib/server/services/agent";
 import { sendCancelMessage } from "$lib/server/db/mq/messageCancellation";
+import { deleteChat, renameChat } from "$lib/server/services/chat";
+import { chatTitleSchema } from "$lib/common/validators/chat";
 
 export const v1ChatRouter = osBase.router({
   newChat: osBase
@@ -477,5 +479,30 @@ export const v1ChatRouter = osBase.router({
       }
 
       await sendCancelMessage(input.messageId);
+    }),
+
+  renameChat: osBase
+    .use(authenticatedMiddleware)
+    .input(z.object({ chatId: z.string().uuid(), newTitle: chatTitleSchema }))
+    .use(chatOwnerMiddleware)
+    .handler(async ({ input }) => {
+      await renameChat(db, input.chatId, input.newTitle);
+
+      return {
+        chatId: input.chatId,
+        newTitle: input.newTitle,
+      };
+    }),
+
+  deleteChat: osBase
+    .use(authenticatedMiddleware)
+    .input(z.object({ chatId: z.string().uuid() }))
+    .use(chatOwnerMiddleware)
+    .handler(async ({ input }) => {
+      await deleteChat(db, input.chatId);
+
+      return {
+        chatId: input.chatId,
+      };
     }),
 });
