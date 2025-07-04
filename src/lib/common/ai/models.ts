@@ -88,168 +88,99 @@ export type ModelId = (typeof MODELS)[number];
 
 export interface ModelDetails {
   displayName: string;
-  /**
-   * If true, the model supports reasoning. If a string, it supports reasoning, but under another slug.
-   *
-   * @default false
-   */
-  reasoning?: boolean | string;
-  /**
-   * If the model is free.
-   *
-   * @default false
-   */
-  free?: boolean;
 }
 
 export const MODEL_DETAILS: Record<ModelId, ModelDetails> = {
   // From google
   [GEMINI_2_5_PRO]: {
     displayName: "Gemini Pro 2.5",
-
-    reasoning: true,
   },
   [GEMINI_FLASH_2_5]: {
     displayName: "Gemini Flash 2.5",
-
-    reasoning: "google/gemini-2.5-flash-preview-05-20:thinking",
   },
   [GEMINI_FLASH_2_0]: {
     displayName: "Gemini Flash 2.0",
-
-    reasoning: false,
   },
   [GEMINI_FLASH_2_0_FREE]: {
     displayName: "(Free) Gemini Flash 2.0",
-
-    reasoning: false,
-    free: true,
   },
 
   // From openai
   [GPT_4O]: {
     displayName: "GPT-4o",
-
-    reasoning: false,
   },
   [GPT_4O_MINI]: {
     displayName: "GPT-4o-mini",
-
-    reasoning: false,
   },
   [GPT_O4_MINI]: {
     displayName: "o4-mini",
-
-    reasoning: true,
   },
   [GPT_O4_MINI_HIGH]: {
     displayName: "o4-mini-high",
-
-    reasoning: true,
   },
   [GPT_4_1]: {
     displayName: "GPT-4.1",
-
-    reasoning: true,
   },
   [GPT_4_1_NANO]: {
     displayName: "GPT-4.1-nano",
-
-    reasoning: true,
   },
   [GPT_4_1_MINI]: {
     displayName: "GPT-4.1-mini",
-
-    reasoning: true,
   },
 
   // From anthropic
   [CLAUDE_OPUS_4]: {
     displayName: "Claude Opus 4",
-
-    reasoning: true,
   },
   [CLAUDE_SONNET_4]: {
     displayName: "Claude Sonnet 4",
-
-    reasoning: true,
   },
   [CLAUDE_3_7_SONNET]: {
     displayName: "Claude 3.7 Sonnet",
-
-    reasoning: true,
   },
   [CLAUDE_3_5_SONNET]: {
     displayName: "Claude 3.5 Sonnet",
-
-    reasoning: true,
   },
 
   // From deepseek
   [DEEPSEEK_R1]: {
     displayName: "DeepSeek R1",
-
-    reasoning: true,
   },
   [DEEPSEEK_R1_FREE]: {
     displayName: "(Free) DeepSeek R1",
-
-    reasoning: true,
-    free: true,
   },
   [DEEPSEEK_V3]: {
     displayName: "DeepSeek V3",
-
-    reasoning: false,
   },
   [DEEPSEEK_V3_FREE]: {
     displayName: "(Free) DeepSeek V3",
-
-    reasoning: true,
-    free: true,
   },
 
   // From meta
   [LLAMA_4_MAVERICK]: {
     displayName: "Llama 4 Maverick",
-
-    reasoning: false,
   },
   [LLAMA_4_MAVERICK_FREE]: {
     displayName: "(Free) Llama 4 Maverick",
-
-    reasoning: false,
-    free: true,
   },
   [LLAMA_4_SCOUT]: {
     displayName: "Llama 4 Scout",
-
-    reasoning: false,
   },
   [LLAMA_4_SCOUT_FREE]: {
     displayName: "(Free) Llama 4 Scout",
-
-    reasoning: false,
-    free: true,
   },
 
   // From qwen
   [QWEN_3_30B_A3B]: {
     displayName: "Qwen 3.30B A3B",
-
-    reasoning: true,
   },
 
   // From xAi
   [GROK_3_BETA]: {
     displayName: "Grok 3 Beta",
-
-    reasoning: false,
   },
   [GROK_3_MINI_BETA]: {
     displayName: "Grok 3 Mini Beta",
-
-    reasoning: true,
   },
 };
 

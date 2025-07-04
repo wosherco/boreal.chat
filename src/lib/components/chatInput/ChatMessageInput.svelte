@@ -6,6 +6,7 @@
     type ModelId,
     GEMINI_FLASH_2_5,
   } from "$lib/common/ai/models";
+  import { isReasoningModel } from "$lib/common/ai/modelFeatures";
   import {
     BrainIcon,
     ChevronDownIcon,
@@ -263,7 +264,7 @@
           <span class="hidden text-xs md:block">Web Search</span>
         </Toggle>
 
-        {#if MODEL_DETAILS[actualSelectedModel].reasoning}
+        {#if isReasoningModel(actualSelectedModel)}
           <Select
             type="single"
             value={actualReasoningLevel}

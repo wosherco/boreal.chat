@@ -305,3 +305,64 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
     inputModalities: ["text", "image", "file"],
   },
 };
+
+// Utility functions to replace hardcoded logic from models.ts
+
+/**
+ * Known reasoning models and their mappings
+ */
+const REASONING_MODEL_MAPPINGS: Record<string, string> = {
+  "google/gemini-2.5-flash-preview-05-20": "google/gemini-2.5-flash-preview-05-20:thinking",
+};
+
+/**
+ * Models that support reasoning (either natively or through a variant)
+ */
+const REASONING_MODELS = [
+  "google/gemini-2.5-pro-preview",
+  "google/gemini-2.5-flash-preview-05-20",
+  "openai/o4-mini",
+  "openai/o4-mini-high", 
+  "openai/gpt-4.1",
+  "openai/gpt-4.1-nano",
+  "openai/gpt-4.1-mini",
+  "anthropic/claude-opus-4",
+  "anthropic/claude-sonnet-4",
+  "anthropic/claude-3.7-sonnet:thinking",
+  "anthropic/claude-3.5-sonnet",
+  "deepseek/deepseek-r1-0528",
+  "deepseek/deepseek-r1-0528:free",
+  "deepseek/deepseek-chat-v3-0324:free",
+  "qwen/qwen3-30b-a3b",
+  "x-ai/grok-3-mini-beta",
+];
+
+/**
+ * Check if a model supports reasoning
+ */
+export function isReasoningModel(modelId: ModelId): boolean {
+  return REASONING_MODELS.indexOf(modelId) !== -1;
+}
+
+/**
+ * Get the reasoning variant of a model (if it has one)
+ */
+export function getReasoningModel(modelId: ModelId): string | null {
+  return REASONING_MODEL_MAPPINGS[modelId] || null;
+}
+
+/**
+ * Check if a model is free (based on pricing in MODEL_FEATURES)
+ */
+export function isFreeModel(modelId: ModelId): boolean {
+  const features = MODEL_FEATURES[modelId];
+  if (!features) return false;
+  
+  return (
+    features.pricing.prompt === "0" &&
+    features.pricing.completion === "0" &&
+    features.pricing.image === "0" &&
+    features.pricing.web_search === "0" &&
+    features.pricing.request === "0"
+  );
+}

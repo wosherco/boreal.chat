@@ -1,6 +1,5 @@
 import {
   addWebSearchToModel,
-  MODEL_DETAILS,
   type ModelId,
   type ReasoningLevel,
 } from "$lib/common/ai/models";
@@ -104,8 +103,9 @@ export function createAgent(
       actualModel = addWebSearchToModel(actualModel);
     }
 
-    if (typeof MODEL_DETAILS[model].reasoning === "string" && parameters.thinking) {
-      actualModel = MODEL_DETAILS[model].reasoning;
+    // Check for specific reasoning model mappings
+    if (parameters.thinking && model === "google/gemini-2.5-flash-preview-05-20") {
+      actualModel = "google/gemini-2.5-flash-preview-05-20:thinking";
     }
 
     const stream = await createOpenAIClient(openRouterKey).chat.completions.create(
