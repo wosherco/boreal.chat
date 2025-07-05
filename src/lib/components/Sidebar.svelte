@@ -51,6 +51,7 @@
   import { browser } from "$app/environment";
   import ShortcutsCheatsheetDialog from "./ShortcutsCheatsheetDialog.svelte";
   import SheetClosableOnlyOnPhone from "./utils/SheetClosableOnlyOnPhone.svelte";
+  import { isSubscribed } from "$lib/common/utils/subscription";
 
   let shortcutsCheatsheetOpen = $state(false);
 
@@ -175,7 +176,13 @@
                 </Avatar>
                 <div class="flex min-w-0 flex-1 flex-col items-start">
                   <p class="w-full truncate text-sm font-medium">{user.data.name}</p>
-                  <p class="text-muted-foreground text-xs">Free</p>
+                  <p class="text-muted-foreground text-xs">
+                    {#if isSubscribed(user.data)}
+                      Pro
+                    {:else}
+                      Free
+                    {/if}
+                  </p>
                 </div>
                 <ChevronsUpDownIcon class="size-4" />
               </div>

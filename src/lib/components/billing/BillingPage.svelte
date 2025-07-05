@@ -20,7 +20,7 @@
   const user = useCurrentUser(null);
 
   const isLoggedIn = $derived($user.data?.authenticated ?? false);
-  const isUserSubscribed = $derived(isSubscribed($user.data?.data ?? null));
+  const isUserSubscribed = $derived(isSubscribed($user.data?.data ?? null, false));
 
   const createCheckoutSession = createMutation(
     orpcQuery.v1.billing.createCheckoutSession.mutationOptions({
@@ -59,13 +59,6 @@
 </script>
 
 <div class="space-y-6">
-  <div class="space-y-2 text-center">
-    <h1 class="text-3xl font-bold tracking-tighter sm:text-4xl xl:text-5xl">Choose your plan</h1>
-    <p class="text-muted-foreground mx-auto max-w-2xl text-lg">
-      Start with our free plan and upgrade when you're ready for more features
-    </p>
-  </div>
-
   {#if isUserSubscribed}
     <div
       class="mb-6 rounded-lg border border-green-200 bg-green-50 p-6 dark:border-green-800 dark:bg-green-900/20"
