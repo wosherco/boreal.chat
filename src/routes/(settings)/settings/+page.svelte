@@ -13,7 +13,7 @@
 
 <SvelteSeo title="Settings | boreal.chat" />
 
-<h1 class="text-2wxl font-semibold">Account Overview</h1>
+<h1 class="text-2xl font-semibold">Account Overview</h1>
 
 <div class="flex flex-col gap-2 pt-4">
   {#if $user.loading}
