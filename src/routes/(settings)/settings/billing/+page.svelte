@@ -7,8 +7,7 @@
   import SvelteSeo from "svelte-seo";
   import type { PageProps } from "./$types";
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
-  import { ArrowRightIcon, Loader2Icon } from "@lucide/svelte";
-  import { Button } from "$lib/components/ui/button";
+  import { Loader2Icon } from "@lucide/svelte";
 
   let isBillingPageEnabled = $state(dev);
 
