@@ -85,6 +85,8 @@ const posthogProxyHandle: Handle = async ({ event, resolve }) => {
       method: event.request.method,
       headers,
       body: event.request.body,
+      // @ts-expect-error - duplex is a node-specific property
+      duplex: "half",
     });
 
     return response;

@@ -155,7 +155,12 @@
         </div>
       {:else if !user.data || !user.authenticated}
         <!-- Login Button -->
-        <Button href="/auth" class="w-full" variant="default">Sign In</Button>
+        <div class="flex flex-row gap-2">
+          <Button href="/auth" class="w-full flex-1" variant="default">Sign In</Button>
+          <Button href="/settings" class="shrink-0" variant="outline" size="icon">
+            <SettingsIcon />
+          </Button>
+        </div>
       {:else}
         <!-- User Dropdown -->
         <DropdownMenu>

@@ -57,6 +57,13 @@
       "when": 1751478020181,
       "tag": "0007_aspiring_toxin",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1751729534698,
+      "tag": "0008_quick_ultimates",
+      "breakpoints": true
     }
   ]
 }

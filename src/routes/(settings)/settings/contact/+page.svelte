@@ -5,8 +5,8 @@
 
 <SvelteSeo title="Contact Us | boreal.chat" />
 
-<h2 class="text-xl font-semibold">Contact Us</h2>
-<p class="text-muted-foreground">Reach out to us with any questions.</p>
+<h1 class="text-2xl font-semibold">Contact Us</h1>
+<h2 class="text-muted-foreground">Reach out to us with any questions.</h2>
 
 <div class="flex w-full flex-wrap gap-4 pt-4">
   <a href="mailto:contact@boreal.chat">
