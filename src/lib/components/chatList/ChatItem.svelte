@@ -20,7 +20,7 @@
   import { hold } from "$lib/actions/hold";
   import EditChatTitleDialog from "./EditChatTitleDialog.svelte";
   import DeleteChatAlertDialog from "./DeleteChatAlertDialog.svelte";
-  import { orpc, orpcQuery } from "$lib/client/orpc";
+  import { orpcQuery } from "$lib/client/orpc";
   import { toast } from "svelte-sonner";
   import { createMutation } from "@tanstack/svelte-query";
 
