@@ -1,11 +1,9 @@
-name: Build and Publish
+name: Build, Publish and Release
 
 on:
   push:
     branches:
       - main
-    tags:
-      - "v*"
   pull_request:
     branches:
       - main
@@ -17,6 +15,7 @@ env:
 
 jobs:
   build-and-push:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -73,6 +72,7 @@ jobs:
             GHCR_IMAGE="${REGISTRY}/${OWNER}/${SERVICE}"
             SHA_TAG=$(echo ${{ github.sha }} | cut -c1-7)
             
+            # For 'main' branch, VERSION is 'latest'
             docker tag $IMAGE_NAME $GHCR_IMAGE:$VERSION
             docker tag $IMAGE_NAME $GHCR_IMAGE:$SHA_TAG
             
@@ -106,3 +106,66 @@ jobs:
           SENTRY_ORG: borealchat
           SENTRY_PROJECT: webapp
         run: pnpm build
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip ci]')
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # We need to fetch all history and tags for changeset version to work correctly
+          fetch-depth: 0
+
+      - name: Setup
+        uses: ./.github/setup
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        id: changesets
+        uses: changesets/action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to the Container registry
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Retag and push images
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        run: |
+          SERVICES=$(grep -E "^  [a-zA-Z0-9_.-]+:" docker-compose.build.yaml | sed 's/://g' | awk '{print $1}')
+          SHA_TAG=$(echo ${{ github.sha }} | cut -c1-7)
+          VERSION=$(echo ${{ steps.changesets.outputs.newVersion }} | sed 's/^v//')
+
+          for SERVICE in $SERVICES; do
+            [ -z "$SERVICE" ] && continue
+            GHCR_IMAGE="${{ env.REGISTRY }}/${{ env.OWNER }}/${SERVICE}"
+            echo "Processing $SERVICE with image $GHCR_IMAGE"
+
+            echo "Pulling $GHCR_IMAGE:$SHA_TAG"
+            docker pull "$GHCR_IMAGE:$SHA_TAG"
+
+            echo "Tagging $GHCR_IMAGE:$SHA_TAG as $GHCR_IMAGE:$VERSION"
+            docker tag "$GHCR_IMAGE:$SHA_TAG" "$GHCR_IMAGE:$VERSION"
+            
+            echo "Pushing $GHCR_IMAGE:$VERSION"
+            docker push "$GHCR_IMAGE:$VERSION"
+          done
+
+      - name: Trigger Deploy
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        env:
+          DEPLOY_WEBHOOK_TOKEN: ${{ secrets.DEPLOY_WEBHOOK_TOKEN }}
+          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H "Authorization: Bearer $DEPLOY_WEBHOOK_TOKEN" "$DEPLOY_WEBHOOK_URL"
