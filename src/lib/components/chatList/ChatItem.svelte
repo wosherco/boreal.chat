@@ -1,6 +1,6 @@
 <script lang="ts">
   import { cn } from "$lib/utils";
-  import { EllipsisVerticalIcon, MessageSquareIcon, PencilIcon, TrashIcon } from "@lucide/svelte";
+  import { EllipsisVerticalIcon, MessageSquareIcon, PencilIcon, TrashIcon, PinIcon } from "@lucide/svelte";
   import { Button } from "../ui/button";
   import SheetClosableOnlyOnPhone from "../utils/SheetClosableOnlyOnPhone.svelte";
   import type { Chat } from "$lib/common/sharedTypes";
@@ -14,6 +14,8 @@
   import { hold } from "$lib/actions/hold";
   import EditChatTitleDialog from "./EditChatTitleDialog.svelte";
   import DeleteChatAlertDialog from "./DeleteChatAlertDialog.svelte";
+  import { orpc } from "$lib/client/orpc";
+  import { toast } from "svelte-sonner";
 
   interface Props {
     chat: Chat;
@@ -25,8 +27,23 @@
   let dropdownOpen = $state(false);
   let editChatTitleDialogOpen = $state(false);
   let deleteChatModalOpen = $state(false);
+  let pinLoading = $state(false);
 
   const isActive = $derived(page.params.chatId === chat.id || dropdownOpen);
+
+  async function handlePinToggle() {
+    if (pinLoading) return;
+    pinLoading = true;
+    try {
+      await orpc.v1.chat.pinChat({ chatId: chat.id, pinned: !chat.pinned });
+      toast.success(chat.pinned ? "Chat unpinned" : "Chat pinned");
+    } catch (error) {
+      console.error("Error toggling pin:", error);
+      toast.error("Failed to toggle pin");
+    } finally {
+      pinLoading = false;
+    }
+  }
 </script>
 
 <EditChatTitleDialog
@@ -66,6 +83,10 @@
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
+        <DropdownMenuItem onclick={handlePinToggle} disabled={pinLoading}>
+          <PinIcon />
+          {chat.pinned ? "Unpin" : "Pin"}
+        </DropdownMenuItem>
         <DropdownMenuItem onclick={() => (editChatTitleDialogOpen = true)}>
           <PencilIcon />
           Rename

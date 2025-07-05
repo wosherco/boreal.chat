@@ -28,6 +28,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       chat: {
         id: chatTable.id,
         title: chatTable.title,
+        pinned: chatTable.pinned,
         createdAt: chatTable.createdAt,
         updatedAt: chatTable.updatedAt,
         selectedModel: chatTable.selectedModel,

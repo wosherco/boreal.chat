@@ -29,6 +29,7 @@ export type UserInfo = {
 export interface Chat {
   id: string;
   title: string | null;
+  pinned: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -64,7 +65,7 @@ export type MessageWithSegments = DBMessage & {
 };
 
 export type MessageWithSegmentsAndTokenStream = MessageWithSegments & {
-  /** live token stream while the message is still “processing” */
+  /** live token stream while the message is still "processing" */
   tokenStream: TokenStreamJson[] | null;
 };
 
