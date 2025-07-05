@@ -25,4 +25,22 @@ export default defineConfig({
   worker: {
     format: "es",
   },
+  ssr: {
+    noExternal: [
+      "@lucide/svelte",
+      "sveltekit-superforms",
+      "formsnap"
+    ],
+  },
+  build: {
+    rollupOptions: {
+      external: [
+        "@tanstack/svelte-query",
+        "@tanstack/svelte-query-devtools",
+        "@tanstack/svelte-query-persist-client",
+        "@tanstack/query-async-storage-persister",
+        "@orpc/tanstack-query",
+      ],
+    },
+  },
 });
