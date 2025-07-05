@@ -50,6 +50,13 @@
       "when": 1751729562420,
       "tag": "0006_dry_maelstrom",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1751757359361,
+      "tag": "0007_cold_azazel",
+      "breakpoints": true
     }
   ]
 }

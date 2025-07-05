@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { type ClientDBType, type PGliteType } from "./index.svelte";
+import { dev } from "$app/environment";
 
 interface Migration {
   idx: number;
@@ -122,8 +123,8 @@ export async function migrateClient(db: ClientDBType, pglite: PGliteType): Promi
     const totalTime = performance.now() - startTime;
     console.log("🎉 All migrations applied successfully!");
 
-    console.log("🔃 Syncing into IndexedDB in the background...");
-    pglite
+    console.log("🔃 Syncing into IndexedDB...");
+    await pglite
       .syncToFs()
       .then(() => {
         console.log("✅ IndexedDB synced successfully!");
@@ -159,6 +160,20 @@ export async function migrateClient(db: ClientDBType, pglite: PGliteType): Promi
     }
 
     console.error(`❌ Migration failed after ${totalTime.toFixed(2)}ms:`, error);
-    throw error;
+    if (!dev) {
+      console.log("🔄 Attempting to recover by clearing local database and reloading...");
+
+      try {
+        // Import clearLocalDb dynamically to avoid circular dependency
+        const { clearLocalDb } = await import("./index.svelte");
+        await clearLocalDb();
+        window.location.reload();
+      } catch (recoveryError) {
+        console.error("❌ Recovery attempt failed:", recoveryError);
+        throw error; // Re-throw original error if recovery fails
+      }
+    } else {
+      throw error;
+    }
   }
 }

@@ -64,6 +64,13 @@
       "when": 1751729534698,
       "tag": "0008_quick_ultimates",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1751757355489,
+      "tag": "0009_low_chat",
+      "breakpoints": true
     }
   ]
 }

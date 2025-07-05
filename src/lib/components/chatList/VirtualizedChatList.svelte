@@ -12,8 +12,8 @@
 
   const { chats, isPhone }: Props = $props();
 
-  const pinnedChats = $derived(!chats ? [] : chats.filter(chat => chat.pinned));
-  const unpinnedChats = $derived(!chats ? [] : chats.filter(chat => !chat.pinned));
+  const pinnedChats = $derived(!chats ? [] : chats.filter((chat) => chat.pinned));
+  const unpinnedChats = $derived(!chats ? [] : chats.filter((chat) => !chat.pinned));
   const sortedChats = $derived(!unpinnedChats ? null : groupByDate(unpinnedChats, currentDate()));
 </script>
 
