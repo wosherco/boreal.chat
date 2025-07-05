@@ -16,5 +16,7 @@
     {@render children()}
   </SheetClose>
 {:else}
-  {@render children()}
+  <div class={className}>
+    {@render children()}
+  </div>
 {/if}

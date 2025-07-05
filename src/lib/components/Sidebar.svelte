@@ -75,7 +75,7 @@
 <ShortcutsCheatsheetDialog bind:open={shortcutsCheatsheetOpen} />
 
 <TooltipProvider>
-  <div class="bg-sidebar text-sidebar-foreground flex h-full w-80 flex-col overflow-hidden">
+  <div class="bg-sidebar text-sidebar-foreground flex h-full w-80 min-w-0 flex-col overflow-hidden">
     <div class="flex w-full items-center justify-start px-4">
       <!-- Header -->
       {#if isPhone}
@@ -132,7 +132,7 @@
     </div>
 
     <!-- Chat List -->
-    <div class="flex-1 overflow-y-auto p-2">
+    <div class="min-w-0 flex-1 overflow-y-auto p-2">
       {#if chats.loading}
         <div class="flex flex-col items-center justify-center">
           <Loader2 class="size-4 animate-spin" />

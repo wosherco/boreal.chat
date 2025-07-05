@@ -7,6 +7,9 @@
   import posthog from "posthog-js";
   import SearchCommand from "$lib/components/SearchCommand.svelte";
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
+  import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
+  import { browser, dev } from "$app/environment";
+  import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools";
 
   let { children, data }: LayoutProps = $props();
 
@@ -35,13 +38,27 @@
       posthog.reset();
     }
   });
+
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        enabled: browser,
+      },
+    },
+  });
 </script>
 
 <svelte:window on:copy={onCopy} />
 
-<ModeWatcher />
-<Toaster />
-<SearchCommand />
-<div class="min-h-pwa relative w-full">
-  {@render children()}
-</div>
+<QueryClientProvider client={queryClient}>
+  <ModeWatcher />
+  <Toaster />
+  <SearchCommand />
+  <div class="min-h-pwa relative w-full">
+    {@render children()}
+  </div>
+
+  {#if dev}
+    <SvelteQueryDevtools />
+  {/if}
+</QueryClientProvider>
