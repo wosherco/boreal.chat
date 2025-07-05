@@ -39,8 +39,8 @@
 
   const pinToggleMutation = createMutation(
     orpcQuery.v1.chat.pinChat.mutationOptions({
-      onSuccess: () => {
-        toast.success(chat.pinned ? "Chat unpinned" : "Chat pinned");
+      onSuccess: (res) => {
+        toast.success(res.pinned ? "Chat pinned" : "Chat unpinned");
       },
       onError: () => {
         toast.error("Failed to toggle pin");
