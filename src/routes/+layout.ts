@@ -5,11 +5,12 @@ import { pickSSRorSPAPromise } from "$lib/client/hooks/pickSSRorSPA.svelte";
 import { orpc } from "$lib/client/orpc";
 import { ORPCError } from "@orpc/client";
 import { env } from "$env/dynamic/public";
+import { POSTHOG_PROXY_PATH } from "$lib/common/constants";
 
 export const load: LayoutLoad = async ({ data }) => {
   if (browser) {
     posthog.init(env.PUBLIC_POSTHOG_API_KEY, {
-      api_host: "/relay-FesSEfdsfe",
+      api_host: POSTHOG_PROXY_PATH,
       ui_host: env.PUBLIC_POSTHOG_HOST,
       person_profiles: "identified_only",
     });
