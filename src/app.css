@@ -132,3 +132,8 @@ body {
     overscroll-behavior-y: none;
   }
 }
+
+:root::view-transition-old(root),
+:root::view-transition-new(root) {
+  animation: none;
+}

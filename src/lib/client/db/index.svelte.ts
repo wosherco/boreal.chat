@@ -9,7 +9,6 @@ import { env } from "$env/dynamic/public";
 import { browser } from "$app/environment";
 import { getTableColumnNames } from "./utils";
 import { orpc } from "../orpc";
-import { ORPCError } from "@orpc/client";
 import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
 import { getAllCacheValues } from "../hooks/localDbHook";
 
@@ -145,13 +144,17 @@ async function startShapesSync() {
   console.log("Starting shapes sync");
 
   try {
-    await orpc.v1.auth.getUser();
-  } catch (err) {
-    if (err instanceof ORPCError && err.status === 401) {
+    const response = await orpc.v1.auth.getUser();
+
+    if (!response.authenticated) {
       console.log("We're not logged in, we're not syncing shapes");
       await clearLocalDb();
       return;
     }
+  } catch {
+    // Server might be down, we won't sync shapes.
+    // TODO: Back-off to try to keep in sync with the server.
+    return;
   }
 
   currentStreams = await pglite().electric.syncShapesToTables({

@@ -43,6 +43,13 @@
       "when": 1750798013998,
       "tag": "0005_neat_zodiak",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1751729562420,
+      "tag": "0006_dry_maelstrom",
+      "breakpoints": true
     }
   ]
 }

@@ -32,7 +32,9 @@
     "when": 1749999276314,
     "tag": "0002_charming_union_jack",
     "hash": "00c91d9c42f42258ced12af5a83468aab56e3e5086b192d7ad395197aff18b73",
-    "sql": ["ALTER TABLE \"messages\" ADD COLUMN \"error\" text;"]
+    "sql": [
+      "ALTER TABLE \"messages\" ADD COLUMN \"error\" text;"
+    ]
   },
   {
     "idx": 3,
@@ -65,6 +67,15 @@
       "ALTER TABLE \"message_segment_usage\" ALTER COLUMN \"generation_id\" SET DATA TYPE varchar(50);",
       "ALTER TABLE \"message_segments\" ALTER COLUMN \"generation_id\" SET DATA TYPE varchar(50);",
       "ALTER TABLE \"message_tokens\" ALTER COLUMN \"generation_id\" SET DATA TYPE varchar(50);"
+    ]
+  },
+  {
+    "idx": 6,
+    "when": 1751729562420,
+    "tag": "0006_dry_maelstrom",
+    "hash": "4d3d4162e4f1ab4a41fc67833eeb95dcae93117e2f9f798aed2328d3807673a1",
+    "sql": [
+      "ALTER TABLE \"user\" ADD COLUMN \"subscription_status\" varchar(255);"
     ]
   }
 ]

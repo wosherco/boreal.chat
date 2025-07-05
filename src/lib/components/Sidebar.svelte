@@ -51,6 +51,7 @@
   import { browser } from "$app/environment";
   import ShortcutsCheatsheetDialog from "./ShortcutsCheatsheetDialog.svelte";
   import SheetClosableOnlyOnPhone from "./utils/SheetClosableOnlyOnPhone.svelte";
+  import { isSubscribed } from "$lib/common/utils/subscription";
 
   let shortcutsCheatsheetOpen = $state(false);
 
@@ -155,7 +156,12 @@
         </div>
       {:else if !user.data || !user.authenticated}
         <!-- Login Button -->
-        <Button href="/auth" class="w-full" variant="default">Sign In</Button>
+        <div class="flex flex-row gap-2">
+          <Button href="/auth" class="w-full flex-1" variant="default">Sign In</Button>
+          <Button href="/settings" class="shrink-0" variant="outline" size="icon">
+            <SettingsIcon />
+          </Button>
+        </div>
       {:else}
         <!-- User Dropdown -->
         <DropdownMenu>
@@ -170,7 +176,13 @@
                 </Avatar>
                 <div class="flex min-w-0 flex-1 flex-col items-start">
                   <p class="w-full truncate text-sm font-medium">{user.data.name}</p>
-                  <p class="text-muted-foreground text-xs">Free</p>
+                  <p class="text-muted-foreground text-xs">
+                    {#if isSubscribed(user.data)}
+                      Pro
+                    {:else}
+                      Free
+                    {/if}
+                  </p>
                 </div>
                 <ChevronsUpDownIcon class="size-4" />
               </div>
