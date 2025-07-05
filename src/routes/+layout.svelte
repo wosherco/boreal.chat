@@ -10,6 +10,7 @@
   import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
   import { browser, dev } from "$app/environment";
   import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools";
+  import { onNavigate } from "$app/navigation";
   import TrackingConsentPrompt from "$lib/components/TrackingConsentPrompt.svelte";
 
   let { children, data }: LayoutProps = $props();
@@ -22,6 +23,31 @@
       event.clipboardData?.setData("text/plain", trimmed);
     }
   }
+
+  onNavigate((navigation) => {
+    if (!browser || !document.startViewTransition) {
+      return;
+    }
+
+    const fromPath = navigation.from?.url?.pathname;
+    const toPath = navigation.to?.url?.pathname;
+
+    if (fromPath && toPath) {
+      const fromSettings = fromPath.startsWith("/settings");
+      const toSettings = toPath.startsWith("/settings");
+
+      if (fromSettings && toSettings) {
+        return;
+      }
+    }
+
+    return new Promise((resolve) => {
+      document.startViewTransition(async () => {
+        resolve();
+        await navigation.complete;
+      });
+    });
+  });
 
   const currentUser = useCurrentUser(data.auth.currentUserInfo);
 

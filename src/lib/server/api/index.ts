@@ -8,6 +8,8 @@ import { appRouter } from "$lib/server/orpc/router";
 import { RPCHandler } from "@orpc/server/fetch";
 import type { StatusCode } from "hono/utils/http-status";
 import type { Cookies } from "@sveltejs/kit";
+import { handleStripeWebhook } from "../stripe";
+import * as Sentry from "@sentry/sveltekit";
 
 export interface UserContext {
   user: User | null;
@@ -24,6 +26,10 @@ export function createApi({ ctx, cookies }: CreateApiParams = {}) {
     Bindings: object;
     Variables: { userCtx: UserContext; ctx?: ExecutionContext };
   }>();
+
+  api.post("/api/webhook/stripe", (c) => {
+    return handleStripeWebhook(c.req.raw);
+  });
 
   api.use(
     "*",
@@ -46,24 +52,27 @@ export function createApi({ ctx, cookies }: CreateApiParams = {}) {
         }
       }
 
-      if (!sessionToken) {
-        return c.json({ error: "Unauthorized" }, 401);
-      }
-
-      const { session, user } = await validateSessionToken(sessionToken);
-
-      c.set("userCtx", { session, user });
       c.set("ctx", ctx);
+      c.set("userCtx", { session: null, user: null });
+
+      if (sessionToken) {
+        const { session, user } = await validateSessionToken(sessionToken);
+
+        c.set("userCtx", { session, user });
+      }
 
       await next();
       if (c.error) {
         console.error("Error: ", c.error);
+        Sentry.captureException(c.error);
       }
     },
   );
 
   api.use("/api/v1/shape", async (c) => {
-    if (!c.get("userCtx").user) {
+    const user = c.get("userCtx").user;
+
+    if (!user) {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
@@ -81,7 +90,7 @@ export function createApi({ ctx, cookies }: CreateApiParams = {}) {
       "where",
       `${electricSqlUrl.searchParams.get("table") === "user" ? "id" : "user_id"} = $1`,
     );
-    electricSqlUrl.searchParams.set("params[1]", c.get("userCtx").user!.id);
+    electricSqlUrl.searchParams.set("params[1]", user.id);
 
     const electricHeaders = new Headers();
 
