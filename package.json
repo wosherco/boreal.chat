@@ -76,6 +76,7 @@
     "prettier": "^3.4.2",
     "prettier-plugin-svelte": "^3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.11",
+    "stripe": "^18.3.0",
     "svelte": "^5.0.0",
     "svelte-check": "^4.0.0",
     "svelte-seo": "^1.6.1",

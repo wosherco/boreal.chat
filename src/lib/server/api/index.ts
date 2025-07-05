@@ -8,6 +8,7 @@ import { appRouter } from "$lib/server/orpc/router";
 import { RPCHandler } from "@orpc/server/fetch";
 import type { StatusCode } from "hono/utils/http-status";
 import type { Cookies } from "@sveltejs/kit";
+import { handleStripeWebhook } from "../stripe";
 
 export interface UserContext {
   user: User | null;
@@ -24,6 +25,10 @@ export function createApi({ ctx, cookies }: CreateApiParams = {}) {
     Bindings: object;
     Variables: { userCtx: UserContext; ctx?: ExecutionContext };
   }>();
+
+  api.post("/api/webhook/stripe", (c) => {
+    return handleStripeWebhook(c.req.raw);
+  });
 
   api.use(
     "*",
@@ -46,14 +51,12 @@ export function createApi({ ctx, cookies }: CreateApiParams = {}) {
         }
       }
 
-      if (!sessionToken) {
-        return c.json({ error: "Unauthorized" }, 401);
+      if (sessionToken) {
+        const { session, user } = await validateSessionToken(sessionToken);
+
+        c.set("userCtx", { session, user });
+        c.set("ctx", ctx);
       }
-
-      const { session, user } = await validateSessionToken(sessionToken);
-
-      c.set("userCtx", { session, user });
-      c.set("ctx", ctx);
 
       await next();
       if (c.error) {
