@@ -19,7 +19,13 @@ export function createRatelimit(
 
   const limit = async (identifier: string) => {
     if (!ratelimiter) {
-      return { success: true };
+      return {
+        success: true,
+        limit: 999999999,
+        pending: Promise.resolve(),
+        remaining: 999999999,
+        reset: Date.now() + 999999999,
+      } satisfies Awaited<ReturnType<Ratelimit["limit"]>>;
     }
     return ratelimiter.limit(identifier);
   };
