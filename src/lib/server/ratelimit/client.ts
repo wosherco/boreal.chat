@@ -12,7 +12,10 @@ export function createRatelimit(
     env.RATE_LIMIT_ENABLED !== "true"
       ? undefined
       : new Ratelimit({
-          redis: Redis.fromEnv(),
+          redis: new Redis({
+            url: env.RATE_LIMIT_REDIS_REST_URL,
+            token: env.RATE_LIMIT_REDIS_REST_TOKEN,
+          }),
           limiter,
           prefix: identifier,
         });
