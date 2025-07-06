@@ -505,4 +505,20 @@ export const v1ChatRouter = osBase.router({
         chatId: input.chatId,
       };
     }),
+
+  pinChat: osBase
+    .use(authenticatedMiddleware)
+    .input(z.object({ chatId: z.string().uuid(), pinned: z.boolean() }))
+    .use(chatOwnerMiddleware)
+    .handler(async ({ input }) => {
+      await db
+        .update(chatTable)
+        .set({ pinned: input.pinned, updatedAt: new Date() })
+        .where(eq(chatTable.id, input.chatId));
+
+      return {
+        chatId: input.chatId,
+        pinned: input.pinned,
+      };
+    }),
 });

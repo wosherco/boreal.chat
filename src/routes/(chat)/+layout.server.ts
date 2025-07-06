@@ -21,12 +21,13 @@ export const load: LayoutServerLoad = async ({ cookies, locals }) => {
         .select({
           id: chatTable.id,
           title: chatTable.title,
+          pinned: chatTable.pinned,
           createdAt: chatTable.createdAt,
           updatedAt: chatTable.updatedAt,
         })
         .from(chatTable)
         .where(eq(chatTable.userId, userId))
-        .orderBy(desc(chatTable.updatedAt))
+        .orderBy(desc(chatTable.pinned), desc(chatTable.updatedAt))
         .limit(40)
         .execute()
         .then((rows) =>
