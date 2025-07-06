@@ -11,6 +11,7 @@
   import { browser, dev } from "$app/environment";
   import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools";
   import { onNavigate } from "$app/navigation";
+  import TrackingConsentPrompt from "$lib/components/TrackingConsentPrompt.svelte";
 
   let { children, data }: LayoutProps = $props();
 
@@ -77,6 +78,7 @@
 <svelte:window on:copy={onCopy} />
 
 <QueryClientProvider client={queryClient}>
+  <TrackingConsentPrompt />
   <ModeWatcher />
   <Toaster />
   <SearchCommand />
