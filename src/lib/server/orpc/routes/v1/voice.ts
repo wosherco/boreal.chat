@@ -7,6 +7,7 @@ import { ORPCError } from "@orpc/client";
 import { transcribe } from "$lib/server/services/external/fireworks";
 import { parseMedia } from "@remotion/media-parser";
 import { env } from "$env/dynamic/public";
+import { posthog } from "$lib/server/posthog";
 
 const MAX_DURATION = 120;
 
@@ -29,7 +30,9 @@ export const v1VoiceRouter = osBase.router({
         duration: z.number().max(MAX_DURATION),
       }),
     )
-    .handler(async ({ input }) => {
+    .handler(async ({ input, context }) => {
+      let duration = input.duration;
+
       try {
         const media = await parseMedia({
           src: input.audioBlob,
@@ -43,6 +46,8 @@ export const v1VoiceRouter = osBase.router({
             message: "Audio is too long",
           });
         }
+
+        duration = media.slowDurationInSeconds;
       } catch (error) {
         console.error(error);
         Sentry.captureException(error);
@@ -53,6 +58,16 @@ export const v1VoiceRouter = osBase.router({
 
       try {
         const transcript = await transcribe(input.audioBlob);
+
+        posthog?.capture({
+          distinctId: context.userCtx.user.id,
+          event: "voice_message_transcribed",
+          properties: {
+            duration,
+            model: "fireworks-whisper-v3-large",
+          },
+        });
+
         return { transcript: transcript.text };
       } catch (error) {
         console.error(error);
