@@ -1,11 +1,12 @@
 import { env } from "$env/dynamic/private";
 import { env as publicEnv } from "$env/dynamic/public";
 import { BILLING_ENABLED } from "$lib/common/constants";
+import { type SubscriptionPlan } from "$lib/common";
 import Stripe from "stripe";
 import { userTable } from "../db/schema";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
-import { STRIPE_PRICE_ID, STRIPE_PRODUCT_ID } from "./constants";
+import { STRIPE_PLANS, STRIPE_PRICE_ID, STRIPE_PRODUCT_ID } from "./constants";
 import * as Sentry from "@sentry/sveltekit";
 
 function createStripe() {
@@ -61,11 +62,16 @@ async function ensureCustomerId(stripe: Stripe, userId: string) {
   });
 }
 
-export async function createCheckoutSession(userId: string) {
+export async function createCheckoutSession(userId: string, plan: SubscriptionPlan = "premium") {
   const stripe = createStripe();
 
   if (!stripe) {
     return null;
+  }
+
+  const planConfig = STRIPE_PLANS[plan];
+  if (!planConfig) {
+    throw new Error(`Invalid plan: ${plan}`);
   }
 
   const customerId = await ensureCustomerId(stripe, userId);
@@ -74,12 +80,15 @@ export async function createCheckoutSession(userId: string) {
     mode: "subscription",
     line_items: [
       {
-        price: STRIPE_PRICE_ID,
+        price: planConfig.priceId,
         quantity: 1,
       },
     ],
     customer: customerId,
     allow_promotion_codes: true,
+    metadata: {
+      plan: plan,
+    },
     // {CHECKOUT_SESSION_ID} is a string literal; do not change it!
     // the actual Session ID is returned in the query parameter when your customer
     // is redirected to the success page.
@@ -180,16 +189,34 @@ async function updateSubscriptionStatus(subscription: Stripe.Subscription) {
     return;
   }
 
-  const productItem = subscription.items.data.find((item) => {
+  // Determine which plan this subscription is for
+  let subscriptionPlan: SubscriptionPlan | null = null;
+  let productItem: Stripe.SubscriptionItem | null = null;
+
+  for (const item of subscription.items.data) {
     const product = item.price?.product;
     if (!product || item.object !== "subscription_item" || !item.current_period_end) {
-      return false;
+      continue;
     }
+    
     const productId = typeof product === "string" ? product : product?.id;
-    return productId === STRIPE_PRODUCT_ID;
-  });
+    
+    // Check which plan this product belongs to
+    for (const [planKey, planConfig] of Object.entries(STRIPE_PLANS)) {
+      if (productId === planConfig.productId) {
+        subscriptionPlan = planKey as SubscriptionPlan;
+        productItem = item;
+        break;
+      }
+    }
+    
+    if (subscriptionPlan && productItem) {
+      break;
+    }
+  }
 
-  if (!productItem) {
+  if (!productItem || !subscriptionPlan) {
+    console.warn("No matching product found for subscription", subscription.id);
     return;
   }
 
@@ -199,6 +226,7 @@ async function updateSubscriptionStatus(subscription: Stripe.Subscription) {
     .update(userTable)
     .set({
       subscriptionStatus: status,
+      subscriptionPlan: subscriptionPlan,
       subscribedUntil: subscriptionEnd,
       subscriptionId: subscription.id,
     })
