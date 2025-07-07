@@ -64,7 +64,7 @@
       class="mb-6 rounded-lg border border-green-200 bg-green-50 p-6 dark:border-green-800 dark:bg-green-900/20"
     >
       <h2 class="mb-2 text-xl font-semibold text-green-800 dark:text-green-200">
-        🎉 You are subscribed to the PRO plan
+        🎉 You are subscribed to the Premium plan
       </h2>
       <p class="mb-4 text-green-700 dark:text-green-300">
         Your subscription is active until:
@@ -91,26 +91,30 @@
     </div>
   {/if}
 
-  <div class="mx-auto grid max-w-4xl grid-cols-1 gap-8 md:grid-cols-2">
-    <!-- FREE Plan -->
+  <div class="mx-auto grid max-w-5xl grid-cols-1 gap-8 md:grid-cols-2">
+    <!-- Premium Plan -->
     <Card class="relative {isLoggedIn && !isUserSubscribed ? 'ring-primary ring-2' : ''}">
       {#if isLoggedIn && !isUserSubscribed}
         <div class="absolute -top-3 left-1/2 -translate-x-1/2 transform">
-          <Badge variant="default" class="bg-primary text-primary-foreground">Current Plan</Badge>
+          <Badge variant="default" class="bg-primary text-primary-foreground">Recommended</Badge>
         </div>
       {/if}
       <CardHeader>
-        <CardTitle class="text-2xl">FREE</CardTitle>
-        <CardDescription>For individuals getting started.</CardDescription>
+        <CardTitle class="text-2xl text-blue-600 dark:text-blue-400">Premium</CardTitle>
+        <CardDescription>Perfect for regular users with moderate usage.</CardDescription>
         <div class="text-3xl font-bold">
-          0€<span class="text-muted-foreground text-base font-normal">/month</span>
+          6€<span class="text-muted-foreground text-base font-normal">/month</span>
         </div>
       </CardHeader>
       <CardContent class="space-y-4">
         <ul class="space-y-3">
           <li class="flex items-center gap-3">
             <Check class="h-5 w-5 text-green-500" />
-            <span>Bring your own key (BYOK). You pay for what you use.</span>
+            <span><strong>Usage-based AI requests</strong> - Pay for what you use</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <Check class="h-5 w-5 text-green-500" />
+            <span><strong>20GB storage limit</strong> for files and data</span>
           </li>
           <li class="flex items-center gap-3">
             <Check class="h-5 w-5 text-green-500" />
@@ -118,14 +122,42 @@
           </li>
           <li class="flex items-center gap-3">
             <Check class="h-5 w-5 text-green-500" />
-            <span>Basic web search with all models</span>
+            <span>Advanced web searching</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <Check class="h-5 w-5 text-green-500" />
+            <span>Basic Data Analysis</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <Check class="h-5 w-5 text-green-500" />
+            <span>Projects support</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <Check class="h-5 w-5 text-green-500" />
+            <span>Bring your own key (BYOK) option</span>
           </li>
         </ul>
       </CardContent>
       <CardFooter class="mt-auto">
         {#if !isLoggedIn}
-          <Button href="/auth" class="w-full" variant="outline">Sign Up for Free</Button>
+          <Button href="/auth" class="w-full bg-blue-600 hover:bg-blue-700 text-white">
+            <Star class="mr-2 h-4 w-4" />
+            Get Premium
+          </Button>
         {:else if !isUserSubscribed}
+          <Button
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={isLoading}
+            onclick={() => $createCheckoutSession.mutate({ plan: 'premium' })}
+          >
+            {#if isLoading}
+              <Loader2 class="mr-2 animate-spin" />
+            {:else}
+              <Star class="mr-2 h-4 w-4" />
+            {/if}
+            Subscribe to Premium
+          </Button>
+        {:else}
           <Button
             disabled={isLoading}
             onclick={() => $createCustomerSession.mutate({})}
@@ -137,16 +169,11 @@
             {/if}
             Manage Account
           </Button>
-        {:else}
-          <Button disabled class="w-full" variant="outline">
-            <Check class="mr-2 h-4 w-4" />
-            Included in PRO
-          </Button>
         {/if}
       </CardFooter>
     </Card>
 
-    <!-- PRO Plan -->
+    <!-- Unlimited Plan -->
     <Card
       class="border-primary from-primary/5 via-primary/10 to-primary/5 relative border-2 bg-gradient-to-br {isUserSubscribed
         ? 'ring-primary shadow-lg ring-2'
@@ -172,11 +199,11 @@
         <CardTitle
           class="from-primary to-primary/80 bg-gradient-to-r bg-clip-text text-2xl text-transparent"
         >
-          PRO
+          Unlimited
         </CardTitle>
-        <CardDescription>For power users and teams.</CardDescription>
+        <CardDescription>For power users and teams who need everything.</CardDescription>
         <div class="text-3xl font-bold">
-          10€<span class="text-muted-foreground text-base font-normal">/month</span>
+          12€<span class="text-muted-foreground text-base font-normal">/month</span>
         </div>
       </CardHeader>
       <CardContent class="space-y-4">
@@ -186,7 +213,7 @@
               <Check class="text-primary h-3 w-3" />
             </div>
             <span
-              ><strong>Unlimited requests*</strong>
+              ><strong>Unlimited AI requests</strong>
               <small class="text-muted-foreground">(fair rate limits applied)</small></span
             >
           </li>
@@ -195,7 +222,7 @@
               <Check class="text-primary h-3 w-3" />
             </div>
             <span
-              ><strong>Unlimited files*</strong>
+              ><strong>Unlimited storage</strong>
               <small class="text-muted-foreground">(fair rate limits applied)</small></span
             >
           </li>
@@ -215,13 +242,19 @@
             <div class="bg-primary/20 rounded-full p-1">
               <Check class="text-primary h-3 w-3" />
             </div>
-            <span><strong>Projects</strong></span>
+            <span><strong>Priority support</strong></span>
+          </li>
+          <li class="flex items-center gap-3">
+            <div class="bg-primary/20 rounded-full p-1">
+              <Check class="text-primary h-3 w-3" />
+            </div>
+            <span><strong>Projects with unlimited resources</strong></span>
           </li>
         </ul>
 
-        <!-- Everything from FREE plan included note -->
+        <!-- Everything from Premium plan included note -->
         <div class="border-primary/20 border-t pt-2">
-          <p class="text-muted-foreground text-sm">Plus everything from the FREE plan</p>
+          <p class="text-muted-foreground text-sm">Plus everything from the Premium plan</p>
         </div>
       </CardContent>
       <CardFooter>
@@ -231,20 +264,20 @@
             class="from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground w-full bg-gradient-to-r shadow-lg"
           >
             <Zap class="mr-2 h-4 w-4" />
-            Sign Up for PRO
+            Get Unlimited
           </Button>
         {:else if !isUserSubscribed}
           <Button
             class="from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground w-full bg-gradient-to-r shadow-lg"
             disabled={isLoading}
-            onclick={() => $createCheckoutSession.mutate({})}
+            onclick={() => $createCheckoutSession.mutate({ plan: 'unlimited' })}
           >
             {#if isLoading}
               <Loader2 class="mr-2 animate-spin" />
             {:else}
               <Zap class="mr-2 h-4 w-4" />
             {/if}
-            Subscribe to PRO
+            Subscribe to Unlimited
           </Button>
         {:else}
           <Button disabled class="w-full" variant="outline">
