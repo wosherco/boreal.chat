@@ -87,5 +87,12 @@
     "tag": "0008_broken_proudstar",
     "hash": "79d44a61d56fc676d1d2dd716c26f529b7c839b9879f1d8a494b613d3c2f5a43",
     "sql": ["ALTER TABLE \"user\" ADD COLUMN \"subscription_plan\" varchar(50);"]
+  },
+  {
+    "idx": 9,
+    "when": 1751917053264,
+    "tag": "0009_nebulous_annihilus",
+    "hash": "8237be00695763ccceaa8daecc4f7b830b153a5f089b0cbc8af7670116540146",
+    "sql": ["ALTER TABLE \"user\" ADD COLUMN \"credits\" real DEFAULT 0 NOT NULL;"]
   }
 ]

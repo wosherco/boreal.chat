@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
-  import { CheckCircle, Zap, ArrowRight } from "@lucide/svelte";
+  import { CheckCircle, ArrowRight, InfinityIcon } from "@lucide/svelte";
   import SvelteSeo from "svelte-seo";
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
@@ -16,8 +16,8 @@
 </script>
 
 <SvelteSeo
-  title="Welcome to PRO! | boreal.chat"
-  description="Your subscription is now active. Start using all PRO features today."
+  title="Welcome to Unlimited! | boreal.chat"
+  description="Your Unlimited subscription is now active. Enjoy unlimited access to all features."
 />
 
 <div class="flex min-h-screen items-center justify-center p-4">
@@ -31,8 +31,8 @@
 
     <!-- Header -->
     <div class="space-y-4">
-      <h1 class="text-4xl font-bold tracking-tight">🎉 Welcome to PRO!</h1>
-      <p class="text-muted-foreground text-xl">Your subscription is now active.</p>
+      <h1 class="text-4xl font-bold tracking-tight">🚀 Welcome to Unlimited!</h1>
+      <p class="text-muted-foreground text-xl">Your Unlimited subscription is now active.</p>
     </div>
 
     <!-- Features List -->
@@ -43,9 +43,23 @@
           <div
             class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
           >
-            <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
+            <InfinityIcon class="h-4 w-4 text-green-600 dark:text-green-400" />
           </div>
-          <span>Unlimited requests & files*</span>
+          <span
+            ><strong>Unlimited Messages</strong>
+            <small class="text-muted-foreground">(fair rate limits applied)</small></span
+          >
+        </div>
+        <div class="flex items-center gap-3">
+          <div
+            class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
+          >
+            <InfinityIcon class="h-4 w-4 text-green-600 dark:text-green-400" />
+          </div>
+          <span
+            ><strong>Unlimited storage</strong>
+            <small class="text-muted-foreground">(fair rate limits applied)</small></span
+          >
         </div>
         <div class="flex items-center gap-3">
           <div
@@ -53,7 +67,7 @@
           >
             <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
           </div>
-          <span>Advanced web searching</span>
+          <span>Advanced Web Searching</span>
         </div>
         <div class="flex items-center gap-3">
           <div
@@ -61,7 +75,7 @@
           >
             <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
           </div>
-          <span>Advanced data analysis</span>
+          <span>Advanced Data Analysis</span>
         </div>
         <div class="flex items-center gap-3">
           <div
@@ -69,10 +83,10 @@
           >
             <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
           </div>
-          <span>Projects & more</span>
+          <span>Advanced Projects</span>
         </div>
       </div>
-      <p class="text-muted-foreground text-sm">*Fair rate limits applied</p>
+      <p class="text-muted-foreground text-sm">Plus everything from the Premium plan</p>
     </div>
 
     <!-- Primary CTA -->
@@ -82,8 +96,8 @@
         class="from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground w-full bg-gradient-to-r shadow-lg"
         size="lg"
       >
-        <Zap class="mr-2 h-4 w-4" />
-        Start Using PRO Features
+        <InfinityIcon class="mr-2 h-4 w-4" />
+        Start Using Unlimited Features
         <ArrowRight class="ml-2 h-4 w-4" />
       </Button>
 

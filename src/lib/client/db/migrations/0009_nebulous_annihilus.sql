@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "credits" real DEFAULT 0 NOT NULL;

@@ -1,5 +1,14 @@
 import { SUBSCRIPTION_STATUS, SUBSCRIPTION_PLANS, USER_ROLES } from "../../../common";
-import { pgTable, serial, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  pgTable,
+  real,
+  serial,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from "drizzle-orm/pg-core";
 
 export const userTable = pgTable("user", {
   id: uuid().defaultRandom().primaryKey(),
@@ -17,6 +26,20 @@ export const userTable = pgTable("user", {
     length: 255,
     enum: SUBSCRIPTION_STATUS,
   }),
+
+  // Credit system
+  credits: real().notNull().default(0.0),
+});
+
+export const creditTransactionTable = pgTable("credit_transaction", {
+  id: uuid().defaultRandom().primaryKey(),
+  userId: uuid()
+    .notNull()
+    .references(() => userTable.id),
+  amount: real().notNull(),
+  stripeCheckoutSessionId: text().notNull().unique(),
+  added: boolean().notNull().default(false),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
 
 export const sessionTable = pgTable("session", {

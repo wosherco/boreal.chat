@@ -3,10 +3,10 @@ import { env as publicEnv } from "$env/dynamic/public";
 import { BILLING_ENABLED } from "$lib/common/constants";
 import { PREMIUM_PLAN_NAME, type SubscriptionPlan } from "$lib/common";
 import Stripe from "stripe";
-import { userTable } from "../db/schema";
-import { db } from "../db";
+import { creditTransactionTable, userTable } from "../db/schema";
+import { db, increment } from "../db";
 import { eq } from "drizzle-orm";
-import { STRIPE_PLANS } from "./constants";
+import { STRIPE_CREDITS_PRICE_ID, STRIPE_PLANS } from "./constants";
 import * as Sentry from "@sentry/sveltekit";
 
 function createStripe() {
@@ -106,8 +106,8 @@ export async function createCheckoutSession(
     // {CHECKOUT_SESSION_ID} is a string literal; do not change it!
     // the actual Session ID is returned in the query parameter when your customer
     // is redirected to the success page.
-    success_url: `${publicEnv.PUBLIC_URL}/settings/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${publicEnv.PUBLIC_URL}/settings/billing/canceled`,
+    success_url: `${publicEnv.PUBLIC_URL}/settings/billing/success/${plan}?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${publicEnv.PUBLIC_URL}/settings/billing/canceled/${plan}`,
   });
 }
 
@@ -166,6 +166,38 @@ export async function createUpgradeSession(userId: string, toPlan: SubscriptionP
   });
 }
 
+export async function createCreditsSession(userId: string, messages: number) {
+  const stripe = createStripe();
+
+  if (!stripe) {
+    return null;
+  }
+  const { customerId } = await ensureCustomerId(stripe, userId);
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    line_items: [
+      {
+        price: STRIPE_CREDITS_PRICE_ID,
+        quantity: messages,
+      },
+    ],
+    customer: customerId,
+    metadata: {
+      messages: messages,
+    },
+    success_url: `${publicEnv.PUBLIC_URL}/settings/billing/success/credits?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${publicEnv.PUBLIC_URL}/settings/billing/canceled/credits`,
+  });
+
+  await db.insert(creditTransactionTable).values({
+    userId,
+    amount: messages,
+    stripeCheckoutSessionId: session.id,
+  });
+  return session;
+}
+
 export async function handleStripeWebhook(req: Request): Promise<Response> {
   const stripe = createStripe();
 
@@ -217,6 +249,37 @@ export async function handleStripeWebhook(req: Request): Promise<Response> {
     // case "entitlements.active_entitlement_summary.updated":
     //   subscription = event.data.object;
     //   break;
+    case "checkout.session.completed":
+      {
+        await db.transaction(async (tx) => {
+          const [dbTransaction] = await tx
+            .select()
+            .from(creditTransactionTable)
+            .where(eq(creditTransactionTable.stripeCheckoutSessionId, event.data.object.id))
+            .for("update");
+
+          if (!dbTransaction) {
+            return;
+          }
+
+          if (dbTransaction.added) {
+            return;
+          }
+
+          await tx
+            .update(creditTransactionTable)
+            .set({ added: true })
+            .where(eq(creditTransactionTable.id, dbTransaction.id));
+
+          await tx
+            .update(userTable)
+            .set({ credits: increment(userTable.credits, dbTransaction.amount) })
+            .where(eq(userTable.id, dbTransaction.userId));
+
+          // TODO: Send email?
+        });
+      }
+      break;
     default:
       // Unexpected event type
       console.log(`Unhandled event type ${event.type}.`);
