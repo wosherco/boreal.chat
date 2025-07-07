@@ -86,13 +86,12 @@
   </nav>
 {/snippet}
 
-<div
-  class="min-h-pwa w-full h-full p-4 md:pt-16"
-  style="view-transition-name: settings-wrapper"
->
+<div class="min-h-pwa h-full w-full p-4 md:pt-16" style="view-transition-name: settings-wrapper">
   <div class="flex h-full min-h-[calc(100vh-8rem)] md:min-h-[calc(100vh-4rem)]">
     <Sheet>
-      <aside class="hidden h-full min-h-full w-64 border-r bg-background md:flex md:flex-col lg:w-72 2xl:w-80">
+      <aside
+        class="bg-background hidden h-full min-h-full w-64 border-r md:flex md:flex-col lg:w-72 2xl:w-80"
+      >
         {@render NavLinks()}
       </aside>
       <main class="flex-1 overflow-auto">

@@ -64,7 +64,7 @@
       class="mb-6 rounded-lg border border-green-200 bg-green-50 p-6 dark:border-green-800 dark:bg-green-900/20"
     >
       <h2 class="mb-2 text-xl font-semibold text-green-800 dark:text-green-200">
-        🎉 You are subscribed to the Premium plan
+        🎉 You are subscribed to the {$user.data?.data?.subscriptionPlan ?? "Premium"} plan
       </h2>
       <p class="mb-4 text-green-700 dark:text-green-300">
         Your subscription is active until:
@@ -140,15 +140,15 @@
       </CardContent>
       <CardFooter class="mt-auto">
         {#if !isLoggedIn}
-          <Button href="/auth" class="w-full bg-blue-600 hover:bg-blue-700 text-white">
+          <Button href="/auth" class="w-full bg-blue-600 text-white hover:bg-blue-700">
             <Star class="mr-2 h-4 w-4" />
             Get Premium
           </Button>
         {:else if !isUserSubscribed}
           <Button
-            class="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            class="w-full bg-blue-600 text-white hover:bg-blue-700"
             disabled={isLoading}
-            onclick={() => $createCheckoutSession.mutate({ plan: 'premium' })}
+            onclick={() => $createCheckoutSession.mutate({ plan: "premium" })}
           >
             {#if isLoading}
               <Loader2 class="mr-2 animate-spin" />
@@ -270,7 +270,7 @@
           <Button
             class="from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground w-full bg-gradient-to-r shadow-lg"
             disabled={isLoading}
-            onclick={() => $createCheckoutSession.mutate({ plan: 'unlimited' })}
+            onclick={() => $createCheckoutSession.mutate({ plan: "unlimited" })}
           >
             {#if isLoading}
               <Loader2 class="mr-2 animate-spin" />

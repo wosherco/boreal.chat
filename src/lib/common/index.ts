@@ -43,5 +43,7 @@ export const SUBSCRIPTION_STATUS = [
 
 export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUS)[number];
 
-export const SUBSCRIPTION_PLANS = ["premium", "unlimited"] as const;
+export const PREMIUM_PLAN_NAME = "premium";
+export const UNLIMITED_PLAN_NAME = "unlimited";
+export const SUBSCRIPTION_PLANS = [PREMIUM_PLAN_NAME, UNLIMITED_PLAN_NAME] as const;
 export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number];

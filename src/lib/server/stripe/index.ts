@@ -1,12 +1,12 @@
 import { env } from "$env/dynamic/private";
 import { env as publicEnv } from "$env/dynamic/public";
 import { BILLING_ENABLED } from "$lib/common/constants";
-import { type SubscriptionPlan } from "$lib/common";
+import { PREMIUM_PLAN_NAME, type SubscriptionPlan } from "$lib/common";
 import Stripe from "stripe";
 import { userTable } from "../db/schema";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
-import { STRIPE_PLANS, STRIPE_PRICE_ID, STRIPE_PRODUCT_ID } from "./constants";
+import { STRIPE_PLANS } from "./constants";
 import * as Sentry from "@sentry/sveltekit";
 
 function createStripe() {
@@ -28,6 +28,7 @@ async function ensureCustomerId(stripe: Stripe, userId: string) {
         id: userTable.id,
         name: userTable.name,
         stripeCustomerId: userTable.stripeCustomerId,
+        subscriptionId: userTable.subscriptionId,
         email: userTable.email,
       })
       .from(userTable)
@@ -58,11 +59,24 @@ async function ensureCustomerId(stripe: Stripe, userId: string) {
       customerId = customer.id;
     }
 
-    return customerId;
+    return { customerId, subscriptionId: user.subscriptionId };
   });
 }
 
-export async function createCheckoutSession(userId: string, plan: SubscriptionPlan = "premium") {
+async function getCurrentSubscription(stripe: Stripe, userId: string) {
+  const { subscriptionId } = await ensureCustomerId(stripe, userId);
+  if (!subscriptionId) {
+    return null;
+  }
+
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  return subscription;
+}
+
+export async function createCheckoutSession(
+  userId: string,
+  plan: SubscriptionPlan = PREMIUM_PLAN_NAME,
+) {
   const stripe = createStripe();
 
   if (!stripe) {
@@ -74,7 +88,7 @@ export async function createCheckoutSession(userId: string, plan: SubscriptionPl
     throw new Error(`Invalid plan: ${plan}`);
   }
 
-  const customerId = await ensureCustomerId(stripe, userId);
+  const { customerId } = await ensureCustomerId(stripe, userId);
 
   return stripe.checkout.sessions.create({
     mode: "subscription",
@@ -104,7 +118,7 @@ export async function createCustomerSession(userId: string, toCancel = false) {
     return null;
   }
 
-  const customerId = await ensureCustomerId(stripe, userId);
+  const { customerId } = await ensureCustomerId(stripe, userId);
 
   return stripe.billingPortal.sessions.create({
     customer: customerId,
@@ -114,6 +128,41 @@ export async function createCustomerSession(userId: string, toCancel = false) {
           type: "subscription_cancel",
         }
       : undefined,
+  });
+}
+
+export async function createUpgradeSession(userId: string, toPlan: SubscriptionPlan) {
+  const stripe = createStripe();
+
+  if (!stripe) {
+    return null;
+  }
+
+  const { customerId } = await ensureCustomerId(stripe, userId);
+
+  const subscription = await getCurrentSubscription(stripe, userId);
+
+  if (!subscription) {
+    throw new Error("User has no subscription");
+  }
+
+  const onlyItemId = subscription.items.data[0].id;
+
+  return stripe.billingPortal.sessions.create({
+    customer: customerId,
+    return_url: `${publicEnv.PUBLIC_URL}/settings/billing`,
+    flow_data: {
+      type: "subscription_update",
+      subscription_update_confirm: {
+        subscription: subscription.id,
+        items: [
+          {
+            id: onlyItemId,
+            price: STRIPE_PLANS[toPlan].priceId,
+          },
+        ],
+      },
+    },
   });
 }
 
@@ -198,9 +247,9 @@ async function updateSubscriptionStatus(subscription: Stripe.Subscription) {
     if (!product || item.object !== "subscription_item" || !item.current_period_end) {
       continue;
     }
-    
+
     const productId = typeof product === "string" ? product : product?.id;
-    
+
     // Check which plan this product belongs to
     for (const [planKey, planConfig] of Object.entries(STRIPE_PLANS)) {
       if (productId === planConfig.productId) {
@@ -209,7 +258,7 @@ async function updateSubscriptionStatus(subscription: Stripe.Subscription) {
         break;
       }
     }
-    
+
     if (subscriptionPlan && productItem) {
       break;
     }

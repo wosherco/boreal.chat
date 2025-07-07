@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "subscription_plan" varchar(50);
