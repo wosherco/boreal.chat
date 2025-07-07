@@ -33,48 +33,44 @@ export const v1VoiceRouter = osBase.router({
     .handler(async ({ input, context }) => {
       let duration = input.duration;
 
-      try {
-        const media = await parseMedia({
-          src: input.audioBlob,
-          fields: {
-            slowDurationInSeconds: true,
-          },
-        });
-
-        if (!media.slowDurationInSeconds || media.slowDurationInSeconds > input.duration) {
-          throw new ORPCError("BAD_REQUEST", {
-            message: "Audio is too long",
-          });
-        }
-
-        duration = media.slowDurationInSeconds;
-      } catch (error) {
+      const media = await parseMedia({
+        src: input.audioBlob,
+        fields: {
+          slowDurationInSeconds: true,
+        },
+      }).catch((error) => {
         console.error(error);
         Sentry.captureException(error);
         throw new ORPCError("INTERNAL_SERVER_ERROR", {
           message: "Failed to parse audio",
         });
+      });
+
+      duration = media.slowDurationInSeconds;
+
+      if (isNaN(duration) || duration > MAX_DURATION) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Audio is too long",
+        });
       }
 
-      try {
-        const transcript = await transcribe(input.audioBlob);
-
-        posthog?.capture({
-          distinctId: context.userCtx.user.id,
-          event: "voice_message_transcribed",
-          properties: {
-            duration,
-            model: "fireworks-whisper-v3-large",
-          },
-        });
-
-        return { transcript: transcript.text };
-      } catch (error) {
+      const transcript = await transcribe(input.audioBlob).catch((error) => {
         console.error(error);
         Sentry.captureException(error);
         throw new ORPCError("INTERNAL_SERVER_ERROR", {
           message: "Failed to transcribe voice message",
         });
-      }
+      });
+
+      posthog?.capture({
+        distinctId: context.userCtx.user.id,
+        event: "voice_message_transcribed",
+        properties: {
+          duration,
+          model: "fireworks-whisper-v3-large",
+        },
+      });
+
+      return { transcript: transcript.text };
     }),
 });
