@@ -17,6 +17,9 @@ export interface RecordingResult {
   audioBlob: Blob;
   duration: number;
   volumeData: VolumeData[];
+  sampleRate: number;
+  channels: number;
+  bitDepth: "16" | "32f";
 }
 
 /**
@@ -213,7 +216,7 @@ export class VoiceMessageService {
   }
 
   /**
-   * Stop recording and return the audio data including the WAV blob and volume data.
+   * Stop recording and return the audio data including the audio blob and volume data.
    * @returns {Promise<RecordingResult | null>} Recording result with audio blob, duration, and volume data, or null if not recording
    * @example
    * ```typescript
@@ -243,29 +246,28 @@ export class VoiceMessageService {
     return new Promise((resolve) => {
       this.mediaRecorder!.onstop = async () => {
         try {
-          // Create audio blob
+          // Create audio blob with the original format
           const audioBlob = new Blob(this.recordedChunks, {
             type: this.getSupportedMimeType(),
           });
 
-          // Convert to WAV format
-          const wavBlob = await this.convertToWav(audioBlob);
-
           const result: RecordingResult = {
-            audioBlob: wavBlob,
+            audioBlob,
             duration: this.duration,
             volumeData: [...this.volumeData],
+            sampleRate: this.audioStream!.getAudioTracks()[0].getSettings().sampleRate ?? 44100,
+            channels: this.audioStream!.getAudioTracks()[0].getSettings().channelCount ?? 1,
+            bitDepth: "16",
           };
 
           this.cleanup();
-          this.state = "idle";
-          this.currentVolume = 0;
 
           resolve(result);
         } catch (error) {
           this.state = "error";
           this.errorMessage =
             error instanceof Error ? error.message : "Failed to process recording";
+          this.cleanup();
           resolve(null);
         }
       };
@@ -397,12 +399,6 @@ export class VoiceMessageService {
    */
   public dispose(): void {
     this.cancelRecording();
-
-    if (this.audioStream) {
-      this.audioStream.getTracks().forEach((track) => track.stop());
-      this.audioStream = null;
-    }
-
     this.hasPermission = false;
   }
 
@@ -497,85 +493,6 @@ export class VoiceMessageService {
   }
 
   /**
-   * Converts an audio blob to WAV format.
-   * @private
-   * @param {Blob} audioBlob - The audio blob to convert
-   * @returns {Promise<Blob>} The converted WAV blob
-   */
-  private async convertToWav(audioBlob: Blob): Promise<Blob> {
-    // For proper WAV conversion, we'd typically use the Web Audio API
-    // This is a simplified version - for production you might want to use a library like 'lamejs' or 'wav-encoder'
-
-    try {
-      const arrayBuffer = await audioBlob.arrayBuffer();
-      const audioContext = new AudioContext();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-
-      // Convert to WAV format
-      const wavBuffer = this.audioBufferToWav(audioBuffer);
-      return new Blob([wavBuffer], { type: "audio/wav" });
-    } catch (error) {
-      console.warn("WAV conversion failed, returning original blob:", error);
-      // Fallback to original blob if conversion fails
-      return audioBlob;
-    }
-  }
-
-  /**
-   * Converts an AudioBuffer to WAV format ArrayBuffer.
-   * @private
-   * @param {AudioBuffer} buffer - The audio buffer to convert
-   * @returns {ArrayBuffer} The WAV format array buffer
-   */
-  private audioBufferToWav(buffer: AudioBuffer): ArrayBuffer {
-    const length = buffer.length;
-    const numberOfChannels = buffer.numberOfChannels;
-    const sampleRate = buffer.sampleRate;
-    const bytesPerSample = 2;
-    const blockAlign = numberOfChannels * bytesPerSample;
-    const byteRate = sampleRate * blockAlign;
-    const dataSize = length * blockAlign;
-    const headerSize = 44;
-    const totalSize = headerSize + dataSize;
-
-    const arrayBuffer = new ArrayBuffer(totalSize);
-    const view = new DataView(arrayBuffer);
-
-    // WAV header
-    const writeString = (offset: number, string: string) => {
-      for (let i = 0; i < string.length; i++) {
-        view.setUint8(offset + i, string.charCodeAt(i));
-      }
-    };
-
-    writeString(0, "RIFF");
-    view.setUint32(4, totalSize - 8, true);
-    writeString(8, "WAVE");
-    writeString(12, "fmt ");
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, numberOfChannels, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, byteRate, true);
-    view.setUint16(32, blockAlign, true);
-    view.setUint16(34, bytesPerSample * 8, true);
-    writeString(36, "data");
-    view.setUint32(40, dataSize, true);
-
-    // Convert audio data
-    let offset = 44;
-    for (let i = 0; i < length; i++) {
-      for (let channel = 0; channel < numberOfChannels; channel++) {
-        const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[i]));
-        view.setInt16(offset, sample * 0x7fff, true);
-        offset += 2;
-      }
-    }
-
-    return arrayBuffer;
-  }
-
-  /**
    * Cleans up audio resources and disconnects audio nodes.
    * @private
    */
@@ -588,6 +505,12 @@ export class VoiceMessageService {
     if (this.audioContext && this.audioContext.state !== "closed") {
       this.audioContext.close();
       this.audioContext = null;
+    }
+
+    // Stop audio stream tracks to remove browser recording indicator
+    if (this.audioStream) {
+      this.audioStream.getTracks().forEach((track) => track.stop());
+      this.audioStream = null;
     }
 
     this.analyser = null;

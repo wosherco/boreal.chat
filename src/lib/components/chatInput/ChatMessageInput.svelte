@@ -32,6 +32,7 @@
   import { waitForInsert } from "$lib/client/hooks/waitForInsert";
   import { chatTable, messageTable } from "$lib/client/db/schema";
   import { VoiceMessageService } from "$lib/client/services/voiceMessageService.svelte";
+  import { env } from "$env/dynamic/public";
 
   interface Props {
     /**
@@ -213,7 +214,27 @@
   }
 
   async function stopRecording() {
-    await voiceMessageService.stopRecording();
+    const result = await voiceMessageService.stopRecording();
+
+    if (!result) {
+      voiceMessageService.reset();
+      toast.error("Failed to stop recording");
+      return;
+    }
+
+    try {
+      const { transcript } = await orpc.v1.voice.transcribe({
+        audioBlob: result.audioBlob,
+        duration: result.duration / 1000,
+      });
+
+      value += transcript;
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to transcribe voice message");
+    } finally {
+      voiceMessageService.reset();
+    }
   }
 </script>
 
@@ -316,14 +337,17 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="icon"
-            disabled={loading || !browser || voiceMessageService.state === "error"}
-            onclick={startRecording}
-          >
-            <MicIcon class="h-4 w-4" />
-          </Button>
+          {#if env.PUBLIC_VOICE_INPUT_ENABLED}
+            <Button
+              variant="secondary"
+              size="icon"
+              disabled={loading || !browser || voiceMessageService.state === "error"}
+              onclick={startRecording}
+            >
+              <MicIcon class="h-4 w-4" />
+            </Button>
+          {/if}
+
           <Button
             disabled={(!value.trim() && isLastMessageFinished) || loading || !browser}
             onclick={isLastMessageFinished ? onSendMessage : onCancelMessage}
@@ -382,9 +406,7 @@
 
           <!-- Duration display -->
           <div class="text-muted-foreground font-mono text-sm">
-            {Math.floor(voiceMessageService.duration / 60)}:{String(
-              voiceMessageService.duration % 60,
-            ).padStart(2, "0")}
+            {voiceMessageService.duration / 1000}
           </div>
 
           <!-- Recording state indicator -->
