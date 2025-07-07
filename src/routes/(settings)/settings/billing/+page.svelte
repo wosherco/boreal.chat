@@ -7,7 +7,8 @@
   import type { PageProps } from "./$types";
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { Loader2Icon } from "@lucide/svelte";
-  import { env } from "$env/dynamic/public";
+  import { isFlagEnabled } from "$lib/flagsmith";
+  import posthog from "posthog-js";
 
   let isBillingPageEnabled = $state(dev);
 
@@ -15,27 +16,11 @@
 
   const user = useCurrentUser(data.auth.currentUserInfo);
 
-  onMount(async () => {
+  onMount(() => {
     if (browser && !dev) {
-      // Use Flagsmith if available, otherwise fallback to PostHog or default
-      if (env.PUBLIC_FLAGSMITH_ENVIRONMENT_KEY) {
-        try {
-          const { isFlagEnabled } = await import("$lib/client/flagsmith");
-          isBillingPageEnabled = isFlagEnabled(FEATURE_FLAGS.BILLING.key, FEATURE_FLAGS.BILLING.defaultEnabled);
-        } catch (error) {
-          console.error("Failed to get Flagsmith flag, using default:", error);
-          isBillingPageEnabled = FEATURE_FLAGS.BILLING.defaultEnabled;
-        }
-      } else {
-        // Fallback to PostHog if Flagsmith is not configured
-        try {
-          const posthog = await import("posthog-js");
-          isBillingPageEnabled = posthog.default.isFeatureEnabled(FEATURE_FLAGS.BILLING.key) ?? FEATURE_FLAGS.BILLING.defaultEnabled;
-        } catch (error) {
-          console.error("Failed to get PostHog flag, using default:", error);
-          isBillingPageEnabled = FEATURE_FLAGS.BILLING.defaultEnabled;
-        }
-      }
+      // Try Flagsmith first, fallback to PostHog, then default
+      const flagsmithResult = isFlagEnabled(FEATURE_FLAGS.BILLING.key, FEATURE_FLAGS.BILLING.defaultEnabled);
+      isBillingPageEnabled = flagsmithResult;
     }
   });
 </script>

@@ -13,8 +13,17 @@
   import { onNavigate } from "$app/navigation";
   import TrackingConsentPrompt from "$lib/components/TrackingConsentPrompt.svelte";
   import { env } from "$env/dynamic/public";
+  import { initializeFlagsmith, identifyUser, logout } from "$lib/flagsmith";
+  import { onMount } from "svelte";
 
   let { children, data }: LayoutProps = $props();
+
+  // Initialize Flagsmith with server state
+  onMount(() => {
+    if (data.flagsmithState) {
+      initializeFlagsmith(data.flagsmithState);
+    }
+  });
 
   function onCopy(event: ClipboardEvent) {
     event.preventDefault();
@@ -65,27 +74,14 @@
       });
 
       // Flagsmith identification
-      if (browser && env.PUBLIC_FLAGSMITH_ENVIRONMENT_KEY && $currentUser.data?.data) {
-        import("$lib/client/flagsmith").then(({ identifyUser }) => {
-          identifyUser($currentUser.data!.data!.id, {
-            email: $currentUser.data!.data!.email,
-            name: $currentUser.data!.data!.name,
-          });
-        }).catch((error) => {
-          console.error("Failed to identify user with Flagsmith:", error);
-        });
-      }
+      identifyUser($currentUser.data.data.id, {
+        email: $currentUser.data.data.email,
+        name: $currentUser.data.data.name,
+      });
     } else {
       // Reset both tracking services
       posthog.reset();
-      
-      if (browser && env.PUBLIC_FLAGSMITH_ENVIRONMENT_KEY) {
-        import("$lib/client/flagsmith").then(({ resetUser }) => {
-          resetUser();
-        }).catch((error) => {
-          console.error("Failed to reset Flagsmith user:", error);
-        });
-      }
+      logout();
     }
   });
 

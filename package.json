@@ -116,7 +116,6 @@
     "drizzle-orm": "^0.44.2",
     "fast-tree-builder": "^2.0.1",
     "flagsmith": "^9.3.0",
-    "flagsmith-nodejs": "^6.1.0",
     "is-promise": "^4.0.0",
     "js-cookie": "^3.0.5",
     "katex": "^0.16.22",

@@ -98,43 +98,9 @@ const posthogProxyHandle: Handle = async ({ event, resolve }) => {
   return response;
 };
 
-const flagsmithSSRHandle: Handle = async ({ event, resolve }) => {
-  // Initialize Flagsmith SSR flags if environment key is available
-  if (publicEnv.PUBLIC_FLAGSMITH_ENVIRONMENT_KEY) {
-    try {
-      const { flagsmith } = await import("$lib/server/flagsmith");
-      if (flagsmith) {
-        // Get environment flags for SSR
-        const flags = await flagsmith.getEnvironmentFlags();
-        const flagsObject: Record<string, any> = {};
-        
-        if (Array.isArray(flags)) {
-          flags.forEach((flag: any) => {
-            flagsObject[flag.feature.name] = {
-              enabled: flag.enabled,
-              value: flag.feature_state_value,
-            };
-          });
-        }
-        
-        // Add flags to event locals for use in load functions
-        event.locals.flagsmithFlags = flagsObject;
-      }
-    } catch (error) {
-      console.error("Failed to initialize Flagsmith SSR:", error);
-      event.locals.flagsmithFlags = null;
-    }
-  } else {
-    event.locals.flagsmithFlags = null;
-  }
-
-  return resolve(event);
-};
-
 export const handle: Handle = sequence(
   Sentry.sentryHandle(),
   posthogProxyHandle,
-  flagsmithSSRHandle,
   sequence(handleParaglide, handleAuth),
 );
 

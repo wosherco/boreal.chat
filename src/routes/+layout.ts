@@ -16,16 +16,6 @@ export const load: LayoutLoad = async ({ data }) => {
         person_profiles: "identified_only",
       });
     }
-
-    // Initialize Flagsmith
-    if (env.PUBLIC_FLAGSMITH_ENVIRONMENT_KEY) {
-      try {
-        const { initializeFlagsmith } = await import("$lib/client/flagsmith");
-        await initializeFlagsmith(data.flagsmithFlags);
-      } catch (error) {
-        console.error("Failed to initialize Flagsmith:", error);
-      }
-    }
   }
 
   const currentUserInfo = await pickSSRorSPAPromise(
@@ -44,6 +34,6 @@ export const load: LayoutLoad = async ({ data }) => {
     auth: {
       currentUserInfo,
     },
-    flagsmithFlags: data?.flagsmithFlags || null,
+    flagsmithState: data?.flagsmithState || null,
   };
 };
