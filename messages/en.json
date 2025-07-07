@@ -1,4 +1,202 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "hello_world": "Hello, {name} from en!"
+  
+  "auth": {
+    "signIn": "Sign in",
+    "signUp": "Sign up Today",
+    "signInWithGoogle": "Sign in with Google",
+    "backToHome": "Back to home",
+    "welcomeBack": "👋 Welcome back, {name}!",
+    "pleaseLogInFirst": "Please, log in first",
+    "logIn": "Log In",
+    "termsAndPrivacy": "By signing in, you agree to our <link>Terms of Service</link> and <link>Privacy Policy</link>"
+  },
+
+  "navigation": {
+    "home": "Home",
+    "settings": "Settings",
+    "menu": "Menu",
+    "goBackHome": "Go back home"
+  },
+
+  "sidebar": {
+    "signIn": "Sign In",
+    "theme": "Theme",
+    "shortcuts": "Shortcuts", 
+    "docs": "Docs",
+    "logout": "Log out",
+    "free": "Free",
+    "pro": "Pro"
+  },
+
+  "chat": {
+    "welcomeTitle": "Welcome to boreal.chat!",
+    "welcomeFeatures": {
+      "bestPlatform": "The upcoming best AI chat platform.",
+      "anyModel": "Use any model you want, and add web search, and more!",
+      "payAsYouGo": "Pay for what you use, no subscription required for simple chatting.",
+      "openSource": "Completely open-source."
+    },
+    "whatDoYouWantToDo": "What do you want to do?",
+    "messageBot": "Message Bot...",
+    "webSearch": "Web Search",
+    "editYourMessage": "Edit your message...",
+    "copy": "Copy",
+    "edit": "Edit",
+    "regenerate": "Regenerate ({modelName})",
+    "cancel": "Cancel",
+    "save": "Save",
+    "copiedToClipboard": "Copied message to clipboard!",
+    "error": "Error",
+    "unknownError": "Unknown error",
+    "tryAgainLater": "Please try again later by regenerating the message.",
+    "failedToSendMessage": "Failed to send message",
+    "failedToCreateChat": "Failed to create chat",
+    "todoToolCall": "TODO: Tool call",
+    "todoToolResult": "TODO: Tool result"
+  },
+
+  "voice": {
+    "recording": "Recording...",
+    "paused": "Paused",
+    "processing": "Processing...",
+    "pause": "Pause",
+    "resume": "Resume",
+    "finish": "Finish",
+    "microphoneAccessError": "Failed to access microphone. Please, allow access in your browser settings.",
+    "recordingStopError": "Failed to stop recording",
+    "transcriptionError": "Failed to transcribe voice message"
+  },
+
+  "reasoning": {
+    "none": "None",
+    "low": "Low", 
+    "medium": "Medium",
+    "high": "High"
+  },
+
+  "search": {
+    "typeToSearch": "Type to search...",
+    "chats": "Chats",
+    "noResultsFound": "No results found."
+  },
+
+  "settings": {
+    "accountOverview": "Account Overview",
+    "overview": "Overview",
+    "customization": "Customization",
+    "billing": "Billing",
+    "byok": "BYOK (Bring Your Own Key)",
+    "contactUs": "Contact Us",
+    "profile": "Profile",
+    "profilePictureAlt": "Profile Picture",
+    "customizationDescription": "Customization options will go here.",
+    "comingSoon": "Coming soon"
+  },
+
+  "billing": {
+    "title": "Pricing & Billing",
+    "description": "Manage your subscription and billing details.",
+    "notEnabled": "Billing page is not enabled",
+    "subscriptionActive": "🎉 You are subscribed to the {plan} plan",
+    "activeUntil": "Your subscription is active until: <strong>{date}</strong>",
+    "manageSubscription": "Manage Subscription",
+    "cancelSubscription": "Cancel Subscription",
+    "addCredits": "Add Credits",
+    "subscribeToUnlimited": "Subscribe to Unlimited",
+    "subscribeToPremium": "Subscribe to Premium",
+    "manageAccount": "Manage Account",
+    "currentPlan": "Current Plan",
+    "getUnlimited": "Get Unlimited",
+    "currentlyActive": "Currently Active",
+    "viewProPlans": "View PRO Plans",
+    "createCheckoutSessionError": "Failed to create checkout session",
+    "createCustomerSessionError": "Failed to create customer session"
+  },
+
+  "billingSuccess": {
+    "title": "🎉 Welcome to PRO!",
+    "description": "Your subscription is now active.",
+    "youNowHaveAccess": "You now have access to:",
+    "unlimitedRequests": "Unlimited requests & files*",
+    "advancedWebSearching": "Advanced web searching", 
+    "advancedDataAnalysis": "Advanced data analysis",
+    "projectsAndMore": "Projects & more",
+    "fairRateLimits": "*Fair rate limits applied",
+    "startUsingProFeatures": "Start Using PRO Features",
+    "redirectingAutomatically": "Redirecting automatically in a few seconds...",
+    "questionsContactSupport": "Questions? <link>Contact support</link>"
+  },
+
+  "billingCanceled": {
+    "title": "Checkout Canceled",
+    "description": "No payment was processed. You can try again anytime.",
+    "continueWithFree": "Continue with FREE",
+    "freeDescription": "Use boreal.chat with your own API keys and pay only for what you use.",
+    "continueWithFreePlan": "Continue with Free Plan",
+    "or": "Or",
+    "tryProAgain": "Try PRO again",
+    "proDescription": "Unlock unlimited requests, advanced features, and more.",
+    "needHelpContactSupport": "Need help? <link>Contact support</link>"
+  },
+
+  "byok": {
+    "title": "Bring Your Own Key",
+    "description": "Connect your own API key to use boreal.chat without any limits.",
+    "openRouter": "OpenRouter",
+    "loginToManage": "Please log in to manage your OpenRouter connection.",
+    "checkingStatus": "Checking status...",
+    "accountConnected": "Your OpenRouter account is connected.",
+    "connectToGetStarted": "Connect your OpenRouter account to get started.",
+    "errorLoadingAccount": "Error loading your OpenRouter account",
+    "reconnect": "Reconnect",
+    "disconnect": "Disconnect",
+    "connectOpenRouter": "Connect OpenRouter"
+  },
+
+  "contact": {
+    "title": "Contact Us",
+    "description": "Reach out to us with any questions.",
+    "email": "Email",
+    "emailDescription": "Reach us at <code>contact@boreal.chat</code>",
+    "x": "X",
+    "xDescription": "Find us on x at <code>@borealchat</code>",
+    "discord": "Discord",
+    "discordDescription": "Join our Discord server and get the latest updates and support. You can also suggest new features!"
+  },
+
+  "shortcuts": {
+    "title": "Shortcuts",
+    "description": "A detailed list of all the shortcuts available in the app.",
+    "search": "Search",
+    "searchDescription": "Search for anything in the app.",
+    "newChat": "New chat", 
+    "newChatDescription": "Start a new conversation.",
+    "focusInput": "Focus input",
+    "focusInputDescription": "Focus the message input field.",
+    "openModelPicker": "Open model picker",
+    "openModelPickerDescription": "Choose a different model for the conversation.",
+    "toggleSidebar": "Toggle sidebar",
+    "toggleSidebarDescription": "Show or hide the conversation list.",
+    "submitMessage": "Submit message",
+    "submitMessageDescription": "Send the message in the input field."
+  },
+
+  "dialogs": {
+    "close": "Close",
+    "editChatTitle": "Edit Chat Title",
+    "title": "Title",
+    "submit": "Submit"
+  },
+
+  "errors": {
+    "chatTitleTooShort": "Chat title must be at least 2 characters long",
+    "chatTitleTooLong": "Chat title must be at most 100 characters long"
+  },
+
+  "common": {
+    "loading": "Loading...",
+    "or": "Or",
+    "and": "and"
+  }
 }
