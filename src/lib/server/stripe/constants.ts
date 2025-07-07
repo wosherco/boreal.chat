@@ -1,9 +1,36 @@
 import { dev } from "$app/environment";
+import {
+  PREMIUM_PLAN_NAME,
+  SUBSCRIPTION_PLANS,
+  UNLIMITED_PLAN_NAME,
+  type SubscriptionPlan,
+} from "$lib/common";
 
-const STRIPE_TEST_PRICE_ID = "price_1RhViVREiarlV7yiKm35WprI";
-const STRIPE_TEST_PRODUCT_ID = "prod_SclE79HKsObdzl";
-const STRIPE_PROD_PRICE_ID = "price_1Rhf74I3L7BksYZy7PVwyEY7";
-const STRIPE_PROD_PRODUCT_ID = "prod_ScuweThN6Ztrg0";
+// Premium Plan (6€/month)
+const STRIPE_TEST_PREMIUM_PRICE_ID = "price_1RiIt4REiarlV7yiwQFEIvUo";
+const STRIPE_TEST_PREMIUM_PRODUCT_ID = "prod_SclE79HKsObdzl";
+const STRIPE_PROD_PREMIUM_PRICE_ID = "price_1RiItpI3L7BksYZyjrbL13lh";
+const STRIPE_PROD_PREMIUM_PRODUCT_ID = "prod_Sda3QIdHsk6Bng";
 
-export const STRIPE_PRICE_ID = dev ? STRIPE_TEST_PRICE_ID : STRIPE_PROD_PRICE_ID;
-export const STRIPE_PRODUCT_ID = dev ? STRIPE_TEST_PRODUCT_ID : STRIPE_PROD_PRODUCT_ID;
+// Unlimited Plan (12€/month)
+const STRIPE_TEST_UNLIMITED_PRICE_ID = "price_1RiIuAREiarlV7yiR0hkEOcP";
+const STRIPE_TEST_UNLIMITED_PRODUCT_ID = "prod_Sda4CenWlzQish";
+const STRIPE_PROD_UNLIMITED_PRICE_ID = "price_1RiIuHI3L7BksYZyrhMAqZ8L";
+const STRIPE_PROD_UNLIMITED_PRODUCT_ID = "prod_Sda4omLZRIaKab";
+
+export { SUBSCRIPTION_PLANS, type SubscriptionPlan };
+
+export const STRIPE_PLANS = {
+  [PREMIUM_PLAN_NAME]: {
+    priceId: dev ? STRIPE_TEST_PREMIUM_PRICE_ID : STRIPE_PROD_PREMIUM_PRICE_ID,
+    productId: dev ? STRIPE_TEST_PREMIUM_PRODUCT_ID : STRIPE_PROD_PREMIUM_PRODUCT_ID,
+    name: "Premium",
+    price: 6,
+  },
+  [UNLIMITED_PLAN_NAME]: {
+    priceId: dev ? STRIPE_TEST_UNLIMITED_PRICE_ID : STRIPE_PROD_UNLIMITED_PRICE_ID,
+    productId: dev ? STRIPE_TEST_UNLIMITED_PRODUCT_ID : STRIPE_PROD_UNLIMITED_PRODUCT_ID,
+    name: "Unlimited",
+    price: 12,
+  },
+} as const;

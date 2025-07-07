@@ -1,23 +1,35 @@
 import { osBase } from "../../context";
 import { authenticatedMiddleware } from "../../middlewares";
-import { createCheckoutSession, createCustomerSession } from "$lib/server/stripe";
+import {
+  createCheckoutSession,
+  createCustomerSession,
+  createUpgradeSession,
+} from "$lib/server/stripe";
+import { SUBSCRIPTION_PLANS } from "$lib/common";
 import z from "zod";
 
 export const v1BillingRouter = osBase.router({
-  createCheckoutSession: osBase.use(authenticatedMiddleware).handler(async ({ context }) => {
-    const session = await createCheckoutSession(context.userCtx.user.id);
+  createCheckoutSession: osBase
+    .use(authenticatedMiddleware)
+    .input(
+      z.object({
+        plan: z.enum(SUBSCRIPTION_PLANS).optional().default("premium"),
+      }),
+    )
+    .handler(async ({ context, input }) => {
+      const session = await createCheckoutSession(context.userCtx.user.id, input.plan);
 
-    if (!session) {
+      if (!session) {
+        return {
+          success: false,
+        };
+      }
+
       return {
-        success: false,
+        success: true,
+        url: session.url,
       };
-    }
-
-    return {
-      success: true,
-      url: session.url,
-    };
-  }),
+    }),
 
   createCustomerSession: osBase
     .use(authenticatedMiddleware)
@@ -28,6 +40,24 @@ export const v1BillingRouter = osBase.router({
     )
     .handler(async ({ context, input }) => {
       const session = await createCustomerSession(context.userCtx.user.id, input.toCancel);
+
+      if (!session) {
+        return {
+          success: false,
+        };
+      }
+
+      return {
+        success: true,
+        url: session.url,
+      };
+    }),
+
+  createUpgradeSession: osBase
+    .use(authenticatedMiddleware)
+    .input(z.object({ toPlan: z.enum(SUBSCRIPTION_PLANS) }))
+    .handler(async ({ context, input }) => {
+      const session = await createUpgradeSession(context.userCtx.user.id, input.toPlan);
 
       if (!session) {
         return {
