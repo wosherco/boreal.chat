@@ -57,6 +57,13 @@
       "when": 1751757359361,
       "tag": "0007_cold_azazel",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1751899904845,
+      "tag": "0008_redundant_terror",
+      "breakpoints": true
     }
   ]
 }

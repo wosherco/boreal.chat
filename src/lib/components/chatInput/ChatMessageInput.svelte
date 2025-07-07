@@ -30,6 +30,10 @@
   import { isFinishedMessageStatus } from "$lib/common";
   import { waitForInsert } from "$lib/client/hooks/waitForInsert";
   import { chatTable, messageTable } from "$lib/client/db/schema";
+  import { debounce } from "$lib/utils/debounce";
+  import DraftManager from "../drafts/DraftManager.svelte";
+  import type { DBDraft } from "$lib/common/schema/drafts";
+  import { FileTextIcon } from "@lucide/svelte";
 
   interface Props {
     /**
@@ -42,6 +46,7 @@
 
   let value = $state(page.url.searchParams.get("prompt") ?? "");
   let loading = $state(false);
+  let currentDraftId = $state<string | null>(null);
 
   const defaultSelectedModel = browser ? getLastSelectedModel() : GEMINI_FLASH_2_5;
   const defaultWebSearchEnabled = false;
@@ -103,6 +108,7 @@
           });
 
           value = "";
+          clearDraft(); // Clear draft when message is sent
         } catch (e) {
           if (e instanceof ORPCError) {
             toast.error(e.message);
@@ -119,6 +125,7 @@
             webSearchEnabled: actualWebSearchEnabled,
           });
           value = "";
+          clearDraft(); // Clear draft when message is sent
 
           const chatStream = syncStreams()?.streams.chat;
           const messagesStream = syncStreams()?.streams.message;
@@ -186,6 +193,95 @@
     return currentChatState?.lastMessageStatus
       ? isFinishedMessageStatus(currentChatState.lastMessageStatus)
       : true;
+  });
+
+  // Draft functionality
+  async function saveDraft() {
+    if (!value.trim() || loading) return;
+
+    try {
+      if (currentDraftId) {
+        // Update existing draft
+        await orpc.v1.draft.update({
+          id: currentDraftId,
+          content: value,
+          selectedModel: actualSelectedModel,
+          reasoningLevel: actualReasoningLevel,
+          webSearchEnabled: actualWebSearchEnabled,
+        });
+      } else {
+        // Create new draft
+        const draft = await orpc.v1.draft.create({
+          content: value,
+          selectedModel: actualSelectedModel,
+          reasoningLevel: actualReasoningLevel,
+          webSearchEnabled: actualWebSearchEnabled,
+        });
+        currentDraftId = draft.id;
+        // Update URL with draft ID
+        const url = new URL(window.location.href);
+        url.searchParams.set("draft", draft.id);
+        window.history.replaceState({}, "", url.toString());
+      }
+    } catch (error) {
+      console.error("Failed to save draft:", error);
+    }
+  }
+
+  const debouncedSaveDraft = debounce(saveDraft, 1000);
+
+  async function loadDraftFromUrl() {
+    const draftId = page.url.searchParams.get("draft");
+    if (draftId && !value) {
+      try {
+        const draft = await orpc.v1.draft.get({ id: draftId });
+        value = draft.content;
+        selectedModel = draft.selectedModel;
+        reasoningLevel = draft.reasoningLevel;
+        webSearchEnabled = draft.webSearchEnabled;
+        currentDraftId = draft.id;
+      } catch (error) {
+        console.error("Failed to load draft from URL:", error);
+        // Remove invalid draft ID from URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete("draft");
+        window.history.replaceState({}, "", url.toString());
+      }
+    }
+  }
+
+  function loadDraft(draft: DBDraft) {
+    value = draft.content;
+    selectedModel = draft.selectedModel;
+    reasoningLevel = draft.reasoningLevel;
+    webSearchEnabled = draft.webSearchEnabled;
+    currentDraftId = draft.id;
+    
+    // Update URL with draft ID
+    const url = new URL(window.location.href);
+    url.searchParams.set("draft", draft.id);
+    window.history.replaceState({}, "", url.toString());
+  }
+
+  function clearDraft() {
+    currentDraftId = null;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("draft");
+    window.history.replaceState({}, "", url.toString());
+  }
+
+  // Save draft when typing
+  $effect(() => {
+    if (value.trim() && !getCurrentChatState()) {
+      debouncedSaveDraft();
+    }
+  });
+
+  // Load draft from URL on mount
+  $effect(() => {
+    if (browser) {
+      loadDraftFromUrl();
+    }
   });
 </script>
 
@@ -287,6 +383,12 @@
       </div>
 
       <div class="flex items-center gap-2">
+        <DraftManager onDraftSelect={loadDraft}>
+          <Button variant="ghost" size="icon" disabled={loading || !browser}>
+            <FileTextIcon class="h-4 w-4" />
+          </Button>
+        </DraftManager>
+        
         <!-- TODO: Add whisper support -->
         <!-- <Button variant="secondary" size="icon" disabled={loading || !browser}>
           <MicIcon class="h-4 w-4" />
