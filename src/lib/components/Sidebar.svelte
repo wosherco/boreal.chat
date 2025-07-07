@@ -51,7 +51,8 @@
   import { browser } from "$app/environment";
   import ShortcutsCheatsheetDialog from "./ShortcutsCheatsheetDialog.svelte";
   import SheetClosableOnlyOnPhone from "./utils/SheetClosableOnlyOnPhone.svelte";
-  import { isSubscribed } from "$lib/common/utils/subscription";
+  import { isSubscribed, isSubscribedToUnlimitedPlan } from "$lib/common/utils/subscription";
+  import { PREMIUM_PLAN_NAME } from "$lib/common";
 
   let shortcutsCheatsheetOpen = $state(false);
 
@@ -178,9 +179,13 @@
                   <p class="w-full truncate text-sm font-medium">{user.data.name}</p>
                   <p class="text-muted-foreground text-xs">
                     {#if isSubscribed(user.data)}
-                      Pro
+                      {#if user.data.subscriptionPlan === PREMIUM_PLAN_NAME}
+                        Premium <span class="text-xs">({user.data.credits} messages left)</span>
+                      {:else}
+                        Unlimited
+                      {/if}
                     {:else}
-                      Free
+                      Free <span class="text-xs">({user.data.credits} messages left)</span>
                     {/if}
                   </p>
                 </div>
@@ -195,6 +200,14 @@
                 <p class="text-muted-foreground text-xs leading-none">{user.data.email}</p>
               </div>
             </DropdownMenuLabel>
+            {#if !isSubscribedToUnlimitedPlan(user.data)}
+              <div class="px-2 py-2">
+                <div class="flex flex-row items-center justify-between gap-2">
+                  <span class="text-sm font-medium">Messages Left</span>
+                  <span class="font-mono text-sm">{Math.round(user.data.credits)}</span>
+                </div>
+              </div>
+            {/if}
             <DropdownMenuSeparator />
             <div class="px-2 py-2">
               <div class="flex flex-row items-center justify-between gap-2">

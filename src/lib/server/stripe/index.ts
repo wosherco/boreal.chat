@@ -106,8 +106,8 @@ export async function createCheckoutSession(
     // {CHECKOUT_SESSION_ID} is a string literal; do not change it!
     // the actual Session ID is returned in the query parameter when your customer
     // is redirected to the success page.
-    success_url: `${publicEnv.PUBLIC_URL}/settings/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${publicEnv.PUBLIC_URL}/settings/billing/canceled`,
+    success_url: `${publicEnv.PUBLIC_URL}/settings/billing/success/${plan}?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${publicEnv.PUBLIC_URL}/settings/billing/canceled/${plan}`,
   });
 }
 
@@ -172,7 +172,6 @@ export async function createCreditsSession(userId: string, messages: number) {
   if (!stripe) {
     return null;
   }
-
   const { customerId } = await ensureCustomerId(stripe, userId);
 
   const session = await stripe.checkout.sessions.create({
@@ -187,8 +186,8 @@ export async function createCreditsSession(userId: string, messages: number) {
     metadata: {
       messages: messages,
     },
-    success_url: `${publicEnv.PUBLIC_URL}/settings/billing/success?session_id={CHECKOUT_SESSION_ID}&type=credits`,
-    cancel_url: `${publicEnv.PUBLIC_URL}/settings/billing/canceled?type=credits`,
+    success_url: `${publicEnv.PUBLIC_URL}/settings/billing/success/credits?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${publicEnv.PUBLIC_URL}/settings/billing/canceled/credits`,
   });
 
   await db.insert(creditTransactionTable).values({
@@ -196,7 +195,6 @@ export async function createCreditsSession(userId: string, messages: number) {
     amount: messages,
     stripeCheckoutSessionId: session.id,
   });
-
   return session;
 }
 

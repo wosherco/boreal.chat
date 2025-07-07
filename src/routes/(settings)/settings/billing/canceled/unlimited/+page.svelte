@@ -1,12 +1,12 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
-  import { XCircle, ArrowLeft, Zap } from "@lucide/svelte";
+  import { XCircle, ArrowLeft, Infinity } from "@lucide/svelte";
   import SvelteSeo from "svelte-seo";
 </script>
 
 <SvelteSeo
-  title="Checkout Canceled | boreal.chat"
-  description="Your checkout was canceled. You can try again anytime or continue with the free plan."
+  title="Unlimited Checkout Canceled | boreal.chat"
+  description="Your Unlimited checkout was canceled. You can try again anytime or explore other plans."
 />
 
 <div class="flex min-h-screen items-center justify-center p-4">
@@ -20,7 +20,7 @@
 
     <!-- Header -->
     <div class="space-y-4">
-      <h1 class="text-4xl font-bold tracking-tight">Checkout Canceled</h1>
+      <h1 class="text-4xl font-bold tracking-tight">Unlimited Checkout Canceled</h1>
       <p class="text-muted-foreground text-xl">
         No payment was processed. You can try again anytime.
       </p>
@@ -50,17 +50,19 @@
         </div>
       </div>
 
-      <!-- Try PRO Again -->
+      <!-- Try Unlimited Again -->
       <div class="space-y-4">
-        <h2 class="text-lg font-semibold">Try PRO again</h2>
-        <p class="text-muted-foreground">Unlock unlimited requests, advanced features, and more.</p>
+        <h2 class="text-lg font-semibold">Try Unlimited again</h2>
+        <p class="text-muted-foreground">
+          Get unlimited access to all features, models, and priority support.
+        </p>
         <Button
           href="/settings/billing"
           class="from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground w-full bg-gradient-to-r shadow-lg"
           size="lg"
         >
-          <Zap class="mr-2 h-4 w-4" />
-          View PRO Plans
+          <Infinity class="mr-2 h-4 w-4" />
+          View Unlimited Plan
         </Button>
       </div>
     </div>

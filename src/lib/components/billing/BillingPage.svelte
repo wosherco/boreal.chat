@@ -1,11 +1,15 @@
 <script lang="ts">
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { orpcQuery } from "$lib/client/orpc";
-  import { isSubscribed } from "$lib/common/utils/subscription";
+  import {
+    getSubscribedPlan,
+    isSubscribed,
+    isSubscribedToUnlimitedPlan,
+  } from "$lib/common/utils/subscription";
   import { createMutation } from "@tanstack/svelte-query";
   import { Button } from "../ui/button";
   import { Loader2 } from "@lucide/svelte";
-  import { Check, Star, Zap } from "@lucide/svelte";
+  import { Check, Star, Zap, CoinsIcon } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
   import {
     Card,
@@ -16,11 +20,27 @@
     CardTitle,
   } from "$lib/components/ui/card";
   import { Badge } from "$lib/components/ui/badge";
+  import AddCreditsDialog from "./AddCreditsDialog.svelte";
 
   const user = useCurrentUser(null);
 
+  // Clear subscription state derivations
   const isLoggedIn = $derived($user.data?.authenticated ?? false);
-  const isUserSubscribed = $derived(isSubscribed($user.data?.data ?? null, false));
+  const userData = $derived($user.data?.data ?? null);
+
+  const userState = $derived.by(() => {
+    if (!isLoggedIn || !userData) return "not-logged-in";
+
+    return getSubscribedPlan(userData);
+  });
+
+  const subscriptionPlan = $derived.by(() => {
+    if (userState === "premium") return "premium";
+    if (userState === "unlimited") return "unlimited";
+    return undefined;
+  });
+
+  let addCreditsDialogOpen = $state(false);
 
   const createCheckoutSession = createMutation(
     orpcQuery.v1.billing.createCheckoutSession.mutationOptions({
@@ -58,17 +78,39 @@
   const isLoading = $derived($createCheckoutSession.isPending || $createCustomerSession.isPending);
 </script>
 
+<AddCreditsDialog
+  bind:open={addCreditsDialogOpen}
+  onOpenChange={(open) => (addCreditsDialogOpen = open)}
+/>
+
 <div class="space-y-6">
-  {#if isUserSubscribed}
+  {#if isLoggedIn && userData}
+    <!-- Credits Display -->
+    <div class="mb-6 rounded-lg border p-6">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-semibold">Your remaining messages</h2>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="text-center">
+            <div class="font-mono text-3xl font-bold">{Math.round(userData.credits)}</div>
+            <div class="text-muted-foreground text-sm">messages available</div>
+          </div>
+        </div>
+        <Button onclick={() => (addCreditsDialogOpen = true)}>Add Messages</Button>
+      </div>
+    </div>
+  {/if}
+
+  {#if subscriptionPlan}
     <div
       class="mb-6 rounded-lg border border-green-200 bg-green-50 p-6 dark:border-green-800 dark:bg-green-900/20"
     >
       <h2 class="mb-2 text-xl font-semibold text-green-800 dark:text-green-200">
-        🎉 You are subscribed to the {$user.data?.data?.subscriptionPlan ?? "Premium"} plan
+        🎉 You are subscribed to the {subscriptionPlan.charAt(0).toUpperCase() +
+          subscriptionPlan.slice(1)} plan
       </h2>
       <p class="mb-4 text-green-700 dark:text-green-300">
         Your subscription is active until:
-        <strong>{new Date($user.data?.data?.subscribedUntil ?? "").toLocaleDateString()}</strong>
+        <strong>{new Date(userData?.subscribedUntil ?? "").toLocaleDateString()}</strong>
       </p>
       <div class="flex gap-2">
         <Button disabled={isLoading} onclick={() => $createCustomerSession.mutate({})}>
@@ -91,14 +133,57 @@
     </div>
   {/if}
 
-  <div class="mx-auto grid max-w-5xl grid-cols-1 gap-8 md:grid-cols-2">
-    <!-- Premium Plan -->
-    <Card class="relative {isLoggedIn && !isUserSubscribed ? 'ring-primary ring-2' : ''}">
-      {#if isLoggedIn && !isUserSubscribed}
-        <div class="absolute -top-3 left-1/2 -translate-x-1/2 transform">
-          <Badge variant="default" class="bg-primary text-primary-foreground">Recommended</Badge>
+  <div class="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
+    <!-- Free Plan -->
+    <Card class="relative">
+      <CardHeader>
+        <CardTitle class="text-2xl text-gray-600 dark:text-gray-400">Free</CardTitle>
+        <CardDescription>Perfect for getting started with boreal.chat</CardDescription>
+        <div class="text-3xl font-bold">
+          Free<span class="text-muted-foreground text-base font-normal">/forever</span>
         </div>
-      {/if}
+      </CardHeader>
+      <CardContent class="space-y-4">
+        <ul class="space-y-3">
+          <li class="flex items-center gap-3">
+            <Check class="h-5 w-5 text-green-500" />
+            <span><strong>Pay-per-use credits</strong> - Only pay for what you need</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <Check class="h-5 w-5 text-green-500" />
+            <span>Bring your own key (BYOK) option</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <Check class="h-5 w-5 text-green-500" />
+            <span><strong>Access to all AI models</strong></span>
+          </li>
+          <li class="flex items-center gap-3">
+            <Check class="h-5 w-5 text-green-500" />
+            <span>Unlimited syncing across all platforms</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <Check class="h-5 w-5 text-green-500" />
+            <span>Basic chat functionality</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <Check class="h-5 w-5 text-green-500" />
+            <span>No censorship, complete privacy</span>
+          </li>
+        </ul>
+      </CardContent>
+      <CardFooter class="mt-auto">
+        {#if userState === "not-logged-in"}
+          <Button href="/auth" variant="outline" class="w-full">Get Started Free</Button>
+        {:else}
+          <Button onclick={() => (addCreditsDialogOpen = true)} variant="outline" class="w-full">
+            Add Credits
+          </Button>
+        {/if}
+      </CardFooter>
+    </Card>
+
+    <!-- Premium Plan -->
+    <Card class="relative {!userState ? 'ring-primary ring-2' : ''}">
       <CardHeader>
         <CardTitle class="text-2xl text-blue-600 dark:text-blue-400">Premium</CardTitle>
         <CardDescription>Perfect for regular users with moderate usage.</CardDescription>
@@ -110,41 +195,33 @@
         <ul class="space-y-3">
           <li class="flex items-center gap-3">
             <Check class="h-5 w-5 text-green-500" />
-            <span><strong>Usage-based AI requests</strong> - Pay for what you use</span>
+            <span><strong>Everything in the Free plan</strong></span>
           </li>
           <li class="flex items-center gap-3">
             <Check class="h-5 w-5 text-green-500" />
-            <span><strong>20GB storage limit</strong> for files and data</span>
+            <span><strong>20GB storage limit</strong> for files and attachments</span>
           </li>
           <li class="flex items-center gap-3">
             <Check class="h-5 w-5 text-green-500" />
-            <span>Sync of chats across unlimited platforms</span>
+            <span>Advanced Web Searching</span>
           </li>
           <li class="flex items-center gap-3">
             <Check class="h-5 w-5 text-green-500" />
-            <span>Advanced web searching</span>
+            <span>Advanced Data Analysis</span>
           </li>
           <li class="flex items-center gap-3">
             <Check class="h-5 w-5 text-green-500" />
-            <span>Basic Data Analysis</span>
-          </li>
-          <li class="flex items-center gap-3">
-            <Check class="h-5 w-5 text-green-500" />
-            <span>Projects support</span>
-          </li>
-          <li class="flex items-center gap-3">
-            <Check class="h-5 w-5 text-green-500" />
-            <span>Bring your own key (BYOK) option</span>
+            <span>Advanced Projects</span>
           </li>
         </ul>
       </CardContent>
       <CardFooter class="mt-auto">
-        {#if !isLoggedIn}
+        {#if userState === "not-logged-in"}
           <Button href="/auth" class="w-full bg-blue-600 text-white hover:bg-blue-700">
             <Star class="mr-2 h-4 w-4" />
             Get Premium
           </Button>
-        {:else if !isUserSubscribed}
+        {:else if !userState}
           <Button
             class="w-full bg-blue-600 text-white hover:bg-blue-700"
             disabled={isLoading}
@@ -156,6 +233,11 @@
               <Star class="mr-2 h-4 w-4" />
             {/if}
             Subscribe to Premium
+          </Button>
+        {:else if userState === "premium"}
+          <Button disabled class="w-full" variant="outline">
+            <Check class="mr-2 h-4 w-4" />
+            Currently Active
           </Button>
         {:else}
           <Button
@@ -175,11 +257,12 @@
 
     <!-- Unlimited Plan -->
     <Card
-      class="border-primary from-primary/5 via-primary/10 to-primary/5 relative border-2 bg-gradient-to-br {isUserSubscribed
+      class="border-primary from-primary/5 via-primary/10 to-primary/5 relative border-2 bg-gradient-to-br {userState ===
+      'premium'
         ? 'ring-primary shadow-lg ring-2'
         : ''}"
     >
-      {#if isUserSubscribed}
+      {#if userState === "unlimited"}
         <div class="absolute -top-3 left-1/2 -translate-x-1/2 transform">
           <Badge class="bg-primary text-primary-foreground">
             <Star class="mr-1 h-3 w-3" />
@@ -194,7 +277,6 @@
           </Badge>
         </div>
       {/if}
-
       <CardHeader>
         <CardTitle
           class="from-primary to-primary/80 bg-gradient-to-r bg-clip-text text-2xl text-transparent"
@@ -212,8 +294,14 @@
             <div class="bg-primary/20 rounded-full p-1">
               <Check class="text-primary h-3 w-3" />
             </div>
+            <span><strong>Everything in the Premium plan, plus:</strong></span>
+          </li>
+          <li class="flex items-center gap-3">
+            <div class="bg-primary/20 rounded-full p-1">
+              <Check class="text-primary h-3 w-3" />
+            </div>
             <span
-              ><strong>Unlimited AI requests</strong>
+              ><strong>Unlimited Messages</strong>
               <small class="text-muted-foreground">(fair rate limits applied)</small></span
             >
           </li>
@@ -226,30 +314,6 @@
               <small class="text-muted-foreground">(fair rate limits applied)</small></span
             >
           </li>
-          <li class="flex items-center gap-3">
-            <div class="bg-primary/20 rounded-full p-1">
-              <Check class="text-primary h-3 w-3" />
-            </div>
-            <span><strong>Advanced web searching</strong></span>
-          </li>
-          <li class="flex items-center gap-3">
-            <div class="bg-primary/20 rounded-full p-1">
-              <Check class="text-primary h-3 w-3" />
-            </div>
-            <span><strong>Advanced Data Analysis</strong></span>
-          </li>
-          <li class="flex items-center gap-3">
-            <div class="bg-primary/20 rounded-full p-1">
-              <Check class="text-primary h-3 w-3" />
-            </div>
-            <span><strong>Priority support</strong></span>
-          </li>
-          <li class="flex items-center gap-3">
-            <div class="bg-primary/20 rounded-full p-1">
-              <Check class="text-primary h-3 w-3" />
-            </div>
-            <span><strong>Projects with unlimited resources</strong></span>
-          </li>
         </ul>
 
         <!-- Everything from Premium plan included note -->
@@ -257,8 +321,8 @@
           <p class="text-muted-foreground text-sm">Plus everything from the Premium plan</p>
         </div>
       </CardContent>
-      <CardFooter>
-        {#if !isLoggedIn}
+      <CardFooter class="mt-auto">
+        {#if userState === "not-logged-in"}
           <Button
             href="/auth"
             class="from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground w-full bg-gradient-to-r shadow-lg"
@@ -266,7 +330,12 @@
             <Zap class="mr-2 h-4 w-4" />
             Get Unlimited
           </Button>
-        {:else if !isUserSubscribed}
+        {:else if userState === "unlimited"}
+          <Button disabled class="w-full" variant="outline">
+            <Check class="mr-2 h-4 w-4" />
+            Currently Active
+          </Button>
+        {:else}
           <Button
             class="from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground w-full bg-gradient-to-r shadow-lg"
             disabled={isLoading}
@@ -278,11 +347,6 @@
               <Zap class="mr-2 h-4 w-4" />
             {/if}
             Subscribe to Unlimited
-          </Button>
-        {:else}
-          <Button disabled class="w-full" variant="outline">
-            <Check class="mr-2 h-4 w-4" />
-            Currently Active
           </Button>
         {/if}
       </CardFooter>

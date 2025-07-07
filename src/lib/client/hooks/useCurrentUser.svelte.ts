@@ -18,6 +18,7 @@ export const useCurrentUser = (serverData: ServerData<CurrentUserInfo>) =>
             subscribedUntil: userTable.subscribedUntil,
             subscriptionStatus: userTable.subscriptionStatus,
             subscriptionPlan: userTable.subscriptionPlan,
+            credits: userTable.credits,
           })
           .from(userTable)
           .limit(1)
