@@ -1,5 +1,5 @@
 import { osBase } from "../../context";
-import { proMiddleware, ratelimitMiddleware } from "../../middlewares";
+import { subscribedMiddleware, ratelimitMiddleware } from "../../middlewares";
 import { transcribeRatelimiter } from "$lib/server/ratelimit";
 import z from "zod";
 import * as Sentry from "@sentry/sveltekit";
@@ -22,7 +22,7 @@ export const v1VoiceRouter = osBase.router({
 
       return next();
     })
-    .use(proMiddleware)
+    .use(subscribedMiddleware)
     .use(ratelimitMiddleware(transcribeRatelimiter))
     .input(
       z.object({

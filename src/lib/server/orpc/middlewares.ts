@@ -24,10 +24,10 @@ export const authenticatedMiddleware = osBase.middleware(async ({ context, next 
   });
 });
 
-export const proMiddleware = authenticatedMiddleware.concat(async ({ context, next }) => {
+export const subscribedMiddleware = authenticatedMiddleware.concat(async ({ context, next }) => {
   if (!isSubscribed(context.userCtx.user)) {
     throw new ORPCError("UNAUTHORIZED", {
-      message: "You need to be subscribed to use this feature.",
+      message: "You need to be subscribed to atleast Premium plan to use this feature.",
     });
   }
 
