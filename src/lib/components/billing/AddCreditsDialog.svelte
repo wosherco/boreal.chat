@@ -44,7 +44,6 @@
   );
 
   function handleAddCredits() {
-    console.log(messages);
     $addCreditsMutation.mutate({ messages });
   }
 

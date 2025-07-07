@@ -17,6 +17,7 @@
   } from "$lib/components/ui/card";
   import { Badge } from "$lib/components/ui/badge";
   import AddCreditsDialog from "./AddCreditsDialog.svelte";
+  import { cn } from "$lib/utils";
 
   const user = useCurrentUser(null);
 
@@ -253,10 +254,10 @@
 
     <!-- Unlimited Plan -->
     <Card
-      class="border-primary from-primary/5 via-primary/10 to-primary/5 relative border-2 bg-gradient-to-br {userState ===
-      'premium'
-        ? 'ring-primary shadow-lg ring-2'
-        : ''}"
+      class={cn(
+        "border-primary from-primary/5 via-primary/10 to-primary/5 relative border-2 bg-gradient-to-br",
+        userState === "unlimited" ? "ring-primary shadow-lg ring-2" : "",
+      )}
     >
       {#if userState === "unlimited"}
         <div class="absolute -top-3 left-1/2 -translate-x-1/2 transform">
