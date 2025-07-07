@@ -387,7 +387,12 @@
               <Button variant="outline" size="sm" onclick={resumeRecording}>Resume</Button>
             {/if}
 
-            <Button variant="default" size="sm" onclick={stopRecording}>Finish</Button>
+            {#if voiceMessageService.state === "processing"}
+              <Loader2Icon class="animate-spin" />
+              Processing...
+            {:else}
+              <Button variant="default" size="sm" onclick={stopRecording}>Finish</Button>
+            {/if}
           </div>
         </div>
 
@@ -395,7 +400,7 @@
         <div class="flex flex-col items-center gap-2">
           <!-- Animated vertical bars -->
           <div class="flex h-12 items-end gap-1">
-            {#each volumeLevels as level, index}
+            {#each volumeLevels as level, index (index)}
               <div
                 class="bg-primary rounded-sm transition-all duration-75 ease-out"
                 style="width: 3px; height: {Math.max(2, level * 48)}px; opacity: {0.3 +
