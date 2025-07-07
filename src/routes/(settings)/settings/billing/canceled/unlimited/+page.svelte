@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
-  import { XCircle, ArrowLeft, Infinity } from "@lucide/svelte";
+  import { XCircle, ArrowLeft, InfinityIcon } from "@lucide/svelte";
   import SvelteSeo from "svelte-seo";
 </script>
 
@@ -43,7 +43,7 @@
       <!-- Divider -->
       <div class="relative">
         <div class="absolute inset-0 flex items-center">
-          <span class="border-muted w-full border-t" />
+          <span class="border-muted w-full border-t"></span>
         </div>
         <div class="relative flex justify-center text-xs uppercase">
           <span class="bg-background text-muted-foreground px-2">Or</span>
@@ -61,7 +61,7 @@
           class="from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground w-full bg-gradient-to-r shadow-lg"
           size="lg"
         >
-          <Infinity class="mr-2 h-4 w-4" />
+          <InfinityIcon class="mr-2 h-4 w-4" />
           View Unlimited Plan
         </Button>
       </div>

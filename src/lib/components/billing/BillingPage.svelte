@@ -1,15 +1,11 @@
 <script lang="ts">
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { orpcQuery } from "$lib/client/orpc";
-  import {
-    getSubscribedPlan,
-    isSubscribed,
-    isSubscribedToUnlimitedPlan,
-  } from "$lib/common/utils/subscription";
+  import { getSubscribedPlan } from "$lib/common/utils/subscription";
   import { createMutation } from "@tanstack/svelte-query";
   import { Button } from "../ui/button";
   import { Loader2 } from "@lucide/svelte";
-  import { Check, Star, Zap, CoinsIcon } from "@lucide/svelte";
+  import { Check, Star, Zap } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
   import {
     Card,

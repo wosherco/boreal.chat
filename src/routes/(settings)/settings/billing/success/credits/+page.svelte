@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
-  import { CheckCircle, Zap, ArrowRight, Coins } from "@lucide/svelte";
+  import { CheckCircle, ArrowRight, Coins } from "@lucide/svelte";
   import SvelteSeo from "svelte-seo";
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";

@@ -51,8 +51,8 @@
   import { browser } from "$app/environment";
   import ShortcutsCheatsheetDialog from "./ShortcutsCheatsheetDialog.svelte";
   import SheetClosableOnlyOnPhone from "./utils/SheetClosableOnlyOnPhone.svelte";
-  import { isSubscribed, isSubscribedToUnlimitedPlan } from "$lib/common/utils/subscription";
-  import { PREMIUM_PLAN_NAME } from "$lib/common";
+  import { getSubscribedPlan } from "$lib/common/utils/subscription";
+  import { PREMIUM_PLAN_NAME, UNLIMITED_PLAN_NAME } from "$lib/common";
 
   let shortcutsCheatsheetOpen = $state(false);
 
@@ -72,6 +72,8 @@
       logoutLoading = false;
     }
   }
+
+  const subscribedPlan = $derived(getSubscribedPlan(user?.data ?? null));
 </script>
 
 <ShortcutsCheatsheetDialog bind:open={shortcutsCheatsheetOpen} />
@@ -178,12 +180,10 @@
                 <div class="flex min-w-0 flex-1 flex-col items-start">
                   <p class="w-full truncate text-sm font-medium">{user.data.name}</p>
                   <p class="text-muted-foreground text-xs">
-                    {#if isSubscribed(user.data)}
-                      {#if user.data.subscriptionPlan === PREMIUM_PLAN_NAME}
-                        Premium <span class="text-xs">({user.data.credits} messages left)</span>
-                      {:else}
-                        Unlimited
-                      {/if}
+                    {#if subscribedPlan === PREMIUM_PLAN_NAME}
+                      Premium <span class="text-xs">({user.data.credits} messages left)</span>
+                    {:else if subscribedPlan === UNLIMITED_PLAN_NAME}
+                      Unlimited
                     {:else}
                       Free <span class="text-xs">({user.data.credits} messages left)</span>
                     {/if}
@@ -200,7 +200,7 @@
                 <p class="text-muted-foreground text-xs leading-none">{user.data.email}</p>
               </div>
             </DropdownMenuLabel>
-            {#if !isSubscribedToUnlimitedPlan(user.data)}
+            {#if subscribedPlan !== UNLIMITED_PLAN_NAME}
               <div class="px-2 py-2">
                 <div class="flex flex-row items-center justify-between gap-2">
                   <span class="text-sm font-medium">Messages Left</span>

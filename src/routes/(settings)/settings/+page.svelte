@@ -1,6 +1,6 @@
 <script lang="ts">
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
-  import { ArrowRightIcon, Loader2Icon, CoinsIcon } from "@lucide/svelte";
+  import { ArrowRightIcon, Loader2Icon } from "@lucide/svelte";
   import { Card, CardContent, CardHeader, CardTitle } from "$lib/components/ui/card";
   import SvelteSeo from "svelte-seo";
   import type { PageProps } from "./$types";

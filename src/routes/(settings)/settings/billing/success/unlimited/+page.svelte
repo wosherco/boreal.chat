@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
-  import { CheckCircle, Zap, ArrowRight, Infinity } from "@lucide/svelte";
+  import { CheckCircle, ArrowRight, InfinityIcon } from "@lucide/svelte";
   import SvelteSeo from "svelte-seo";
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
@@ -43,7 +43,7 @@
           <div
             class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
           >
-            <Infinity class="h-4 w-4 text-green-600 dark:text-green-400" />
+            <InfinityIcon class="h-4 w-4 text-green-600 dark:text-green-400" />
           </div>
           <span
             ><strong>Unlimited Messages</strong>
@@ -54,7 +54,7 @@
           <div
             class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
           >
-            <Infinity class="h-4 w-4 text-green-600 dark:text-green-400" />
+            <InfinityIcon class="h-4 w-4 text-green-600 dark:text-green-400" />
           </div>
           <span
             ><strong>Unlimited storage</strong>
@@ -96,7 +96,7 @@
         class="from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground w-full bg-gradient-to-r shadow-lg"
         size="lg"
       >
-        <Infinity class="mr-2 h-4 w-4" />
+        <InfinityIcon class="mr-2 h-4 w-4" />
         Start Using Unlimited Features
         <ArrowRight class="ml-2 h-4 w-4" />
       </Button>
