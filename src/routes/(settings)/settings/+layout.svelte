@@ -66,7 +66,7 @@
 </script>
 
 {#snippet NavLinks()}
-  <nav class="flex h-full flex-col gap-1 px-2">
+  <nav class="flex h-full flex-col gap-1 px-2 py-4">
     {#each ROUTES as route (route.href)}
       {#if route === DIVIDER}
         <hr class="my-2" />
@@ -86,16 +86,15 @@
   </nav>
 {/snippet}
 
-<div
-  class="min-h-pwa mx-auto h-full w-full max-w-screen-lg p-4 md:pt-16"
-  style="view-transition-name: settings-wrapper"
->
-  <div class="grid h-full items-start gap-6 md:grid-cols-[220px_1fr] lg:grid-cols-[250px_1fr]">
+<div class="min-h-pwa h-full w-full p-4 md:pt-16" style="view-transition-name: settings-wrapper">
+  <div class="flex h-full min-h-[calc(100vh-8rem)] md:min-h-[calc(100vh-4rem)]">
     <Sheet>
-      <aside class="hidden h-full border-r md:block">
+      <aside
+        class="bg-background hidden h-full min-h-full w-64 border-r md:flex md:flex-col lg:w-72 2xl:w-80"
+      >
         {@render NavLinks()}
       </aside>
-      <main>
+      <main class="flex-1 overflow-auto">
         <div class="md:hidden">
           <SheetTrigger>
             <Button variant="outline" class="mb-4">
@@ -107,7 +106,9 @@
             {@render NavLinks()}
           </SheetContent>
         </div>
-        {@render children()}
+        <div class="h-full p-6">
+          {@render children()}
+        </div>
       </main>
     </Sheet>
   </div>
