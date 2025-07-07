@@ -6,10 +6,23 @@
   import { Button } from "$lib/components/ui/button";
   import SvelteSeo from "svelte-seo";
   import { goto } from "$app/navigation";
+  import CreditDisplay from "$lib/components/credits/CreditDisplay.svelte";
+  import { orpcQuery } from "$lib/client/orpc";
+  import { createQuery } from "@tanstack/svelte-query";
+  import { BILLING_ENABLED } from "$lib/common/constants";
 
   const { data }: PageProps = $props();
 
   const currentUser = useCurrentUser(data.auth.currentUserInfo);
+
+  // Credit balance query
+  const creditBalanceQuery = createQuery(
+    orpcQuery.v1.billing.getCreditBalance.queryOptions({
+      enabled: BILLING_ENABLED && $currentUser.data?.authenticated === true,
+    })
+  );
+
+  const creditBalance = $derived($creditBalanceQuery.data?.balance);
 
   interface PrewrittenPrompt {
     prompt: string;
@@ -63,6 +76,16 @@
   {#if $currentUser.data?.authenticated && $currentUser.data?.data}
     <h1 class="text-2xl font-bold">👋 Welcome back, {$currentUser.data.data.name}!</h1>
     <h2 class="text-muted-foreground text-lg">What do you want to do?</h2>
+    
+    {#if BILLING_ENABLED && creditBalance}
+      <div class="mt-4">
+        <CreditDisplay 
+          user={$currentUser.data.data} 
+          credits={creditBalance.credits} 
+          onBuyCredits={() => goto("/settings/billing")}
+        />
+      </div>
+    {/if}
 
     <div class="flex flex-col items-start gap-1 py-4">
       {#each prewrittenPrompts as prompt (prompt.prompt)}

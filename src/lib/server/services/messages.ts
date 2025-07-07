@@ -12,6 +12,7 @@ import { transformKeyToCamelCaseRecursive } from "$lib/client/hooks/utils";
 import type { ModelId } from "$lib/common/ai/models";
 import { addSeconds } from "date-fns";
 import { alias } from "drizzle-orm/pg-core";
+import { deductCreditsForMessage, checkSufficientCredits } from "./credits";
 
 export async function createChat(
   tx: TransactableDBType,
@@ -165,10 +166,23 @@ export async function createUserMessageAndStartAssistantMessage(
     throw new Error("Failed to create assistant message");
   }
 
+  // Deduct credits for the assistant message
+  const creditsDeducted = await deductCreditsForMessage(tx, userId, assistantMessage.id);
+  if (!creditsDeducted) {
+    throw new Error("Insufficient credits to send message");
+  }
+
   return {
     userMessage,
     assistantMessageId: assistantMessage.id,
   };
+}
+
+/**
+ * Check if user has sufficient credits before starting a conversation
+ */
+export async function checkCreditsBeforeMessage(userId: string): Promise<boolean> {
+  return await checkSufficientCredits(userId);
 }
 
 export async function createReplyUserMessageAndAssistantMessage(
@@ -286,6 +300,12 @@ export async function createReplyUserMessageAndAssistantMessage(
     throw new Error("Failed to create assistant message");
   }
 
+  // Deduct credits for the assistant message
+  const creditsDeducted = await deductCreditsForMessage(tx, params.userId, assistantMessage.id);
+  if (!creditsDeducted) {
+    throw new Error("Insufficient credits to send message");
+  }
+
   return {
     threadId,
     chatId: parentMessage.chatId,
@@ -381,6 +401,12 @@ export async function regenerateMessage(
 
   if (!newMessage) {
     throw new Error("Failed to create message");
+  }
+
+  // Deduct credits for the regenerated message
+  const creditsDeducted = await deductCreditsForMessage(tx, params.userId, newMessage.id);
+  if (!creditsDeducted) {
+    throw new Error("Insufficient credits to regenerate message");
   }
 
   return {

@@ -5,7 +5,8 @@ import Stripe from "stripe";
 import { userTable } from "../db/schema";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
-import { STRIPE_PRICE_ID, STRIPE_PRODUCT_ID } from "./constants";
+import { STRIPE_PRICE_ID, STRIPE_PRODUCT_ID, CREDIT_PACKAGES } from "./constants";
+import { addCredits } from "../services/credits";
 import * as Sentry from "@sentry/sveltekit";
 
 function createStripe() {
@@ -108,6 +109,49 @@ export async function createCustomerSession(userId: string, toCancel = false) {
   });
 }
 
+export async function createCreditCheckoutSession(userId: string, packageId: string, couponCode?: string) {
+  const stripe = createStripe();
+
+  if (!stripe) {
+    return null;
+  }
+
+  const creditPackage = CREDIT_PACKAGES.find(pkg => pkg.id === packageId);
+  if (!creditPackage) {
+    throw new Error("Invalid credit package");
+  }
+
+  const customerId = await ensureCustomerId(stripe, userId);
+
+  const sessionParams: Stripe.Checkout.SessionCreateParams = {
+    mode: "payment",
+    line_items: [
+      {
+        price: creditPackage.priceId,
+        quantity: 1,
+      },
+    ],
+    customer: customerId,
+    allow_promotion_codes: true,
+    metadata: {
+      type: "credit_purchase",
+      userId,
+      packageId,
+      credits: creditPackage.credits.toString(),
+      couponCode: couponCode || '',
+    },
+    success_url: `${publicEnv.PUBLIC_URL}/settings/billing/success?session_id={CHECKOUT_SESSION_ID}&type=credits`,
+    cancel_url: `${publicEnv.PUBLIC_URL}/settings/billing/canceled`,
+  };
+
+  // Apply coupon code if provided
+  if (couponCode) {
+    sessionParams.discounts = [{ coupon: couponCode }];
+  }
+
+  return stripe.checkout.sessions.create(sessionParams);
+}
+
 export async function handleStripeWebhook(req: Request): Promise<Response> {
   const stripe = createStripe();
 
@@ -156,6 +200,10 @@ export async function handleStripeWebhook(req: Request): Promise<Response> {
     case "customer.subscription.updated":
       subscription = event.data.object;
       break;
+    case "checkout.session.completed":
+      const session = event.data.object;
+      await handleCheckoutSessionCompleted(session);
+      break;
     // case "entitlements.active_entitlement_summary.updated":
     //   subscription = event.data.object;
     //   break;
@@ -169,6 +217,36 @@ export async function handleStripeWebhook(req: Request): Promise<Response> {
   }
 
   return new Response("OK");
+}
+
+async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+  // Check if this is a credit purchase
+  if (session.metadata?.type === "credit_purchase") {
+    const userId = session.metadata.userId;
+    const packageId = session.metadata.packageId;
+    const credits = parseInt(session.metadata.credits || "0");
+    const couponCode = session.metadata.couponCode || undefined;
+
+    if (!userId || !credits) {
+      console.error("Invalid credit purchase metadata", session.metadata);
+      return;
+    }
+
+    // Add credits to user account
+    await db.transaction(async (tx) => {
+      await addCredits(
+        tx,
+        userId,
+        credits,
+        "purchase",
+        `Purchased ${credits} credits (${packageId})`,
+        session.payment_intent as string,
+        couponCode || undefined
+      );
+    });
+
+    console.log(`Added ${credits} credits to user ${userId}`);
+  }
 }
 
 async function updateSubscriptionStatus(subscription: Stripe.Subscription) {

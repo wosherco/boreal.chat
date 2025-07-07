@@ -1,9 +1,13 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
-  import { CheckCircle, Zap, ArrowRight } from "@lucide/svelte";
+  import { CheckCircle, Zap, ArrowRight, Coins } from "@lucide/svelte";
   import SvelteSeo from "svelte-seo";
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
+  import { page } from "$app/state";
+
+  // Check if this is a credit purchase
+  const isCredits = $derived(page.url.searchParams.get("type") === "credits");
 
   // Redirect to main chat after a few seconds
   onMount(() => {
@@ -16,8 +20,8 @@
 </script>
 
 <SvelteSeo
-  title="Welcome to PRO! | boreal.chat"
-  description="Your subscription is now active. Start using all PRO features today."
+  title={isCredits ? "Credits Added! | boreal.chat" : "Welcome to PRO! | boreal.chat"}
+  description={isCredits ? "Your credits have been added successfully." : "Your subscription is now active. Start using all PRO features today."}
 />
 
 <div class="flex min-h-screen items-center justify-center p-4">
@@ -26,54 +30,103 @@
     <div
       class="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
     >
-      <CheckCircle class="h-16 w-16 text-green-600 dark:text-green-400" />
+      {#if isCredits}
+        <Coins class="h-16 w-16 text-green-600 dark:text-green-400" />
+      {:else}
+        <CheckCircle class="h-16 w-16 text-green-600 dark:text-green-400" />
+      {/if}
     </div>
 
     <!-- Header -->
     <div class="space-y-4">
-      <h1 class="text-4xl font-bold tracking-tight">🎉 Welcome to PRO!</h1>
-      <p class="text-muted-foreground text-xl">Your subscription is now active.</p>
+      {#if isCredits}
+        <h1 class="text-4xl font-bold tracking-tight">🎉 Credits Added!</h1>
+        <p class="text-muted-foreground text-xl">Your credits have been successfully added to your account.</p>
+      {:else}
+        <h1 class="text-4xl font-bold tracking-tight">🎉 Welcome to PRO!</h1>
+        <p class="text-muted-foreground text-xl">Your subscription is now active.</p>
+      {/if}
     </div>
 
     <!-- Features List -->
-    <div class="space-y-6">
-      <h2 class="text-lg font-semibold">You now have access to:</h2>
-      <div class="space-y-4 text-left">
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
-          >
-            <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
+    {#if isCredits}
+      <div class="space-y-6">
+        <h2 class="text-lg font-semibold">What you can do with credits:</h2>
+        <div class="space-y-4 text-left">
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
+            >
+              <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
+            </div>
+            <span>Send AI messages (1 credit per message)</span>
           </div>
-          <span>Unlimited requests & files*</span>
-        </div>
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
-          >
-            <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
+            >
+              <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
+            </div>
+            <span>Use any AI model available</span>
           </div>
-          <span>Advanced web searching</span>
-        </div>
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
-          >
-            <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
+            >
+              <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
+            </div>
+            <span>Access web search features</span>
           </div>
-          <span>Advanced data analysis</span>
-        </div>
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
-          >
-            <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
+            >
+              <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
+            </div>
+            <span>Credits never expire</span>
           </div>
-          <span>Projects & more</span>
         </div>
       </div>
-      <p class="text-muted-foreground text-sm">*Fair rate limits applied</p>
-    </div>
+    {:else}
+      <div class="space-y-6">
+        <h2 class="text-lg font-semibold">You now have access to:</h2>
+        <div class="space-y-4 text-left">
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
+            >
+              <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
+            </div>
+            <span>Unlimited requests & files*</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
+            >
+              <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
+            </div>
+            <span>Advanced web searching</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
+            >
+              <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
+            </div>
+            <span>Advanced data analysis</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
+            >
+              <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
+            </div>
+            <span>Projects & more</span>
+          </div>
+        </div>
+        <p class="text-muted-foreground text-sm">*Fair rate limits applied</p>
+      </div>
+    {/if}
 
     <!-- Primary CTA -->
     <div class="space-y-4">
@@ -82,8 +135,13 @@
         class="from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground w-full bg-gradient-to-r shadow-lg"
         size="lg"
       >
-        <Zap class="mr-2 h-4 w-4" />
-        Start Using PRO Features
+        {#if isCredits}
+          <Coins class="mr-2 h-4 w-4" />
+          Start Chatting
+        {:else}
+          <Zap class="mr-2 h-4 w-4" />
+          Start Using PRO Features
+        {/if}
         <ArrowRight class="ml-2 h-4 w-4" />
       </Button>
 

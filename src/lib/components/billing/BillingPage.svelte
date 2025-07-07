@@ -5,7 +5,7 @@
   import { createMutation } from "@tanstack/svelte-query";
   import { Button } from "../ui/button";
   import { Loader2 } from "@lucide/svelte";
-  import { Check, Star, Zap } from "@lucide/svelte";
+  import { Check, Star, Zap, Coins, History } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
   import {
     Card,
@@ -16,11 +16,34 @@
     CardTitle,
   } from "$lib/components/ui/card";
   import { Badge } from "$lib/components/ui/badge";
+  import { Tabs, TabsContent, TabsList, TabsTrigger } from "$lib/components/ui/tabs";
+  import CreditPurchase from "../credits/CreditPurchase.svelte";
+  import CreditDisplay from "../credits/CreditDisplay.svelte";
+  import { createQuery } from "@tanstack/svelte-query";
+  import { BILLING_ENABLED } from "$lib/common/constants";
 
   const user = useCurrentUser(null);
 
   const isLoggedIn = $derived($user.data?.authenticated ?? false);
   const isUserSubscribed = $derived(isSubscribed($user.data?.data ?? null, false));
+
+  // Credit balance query
+  const creditBalanceQuery = createQuery(
+    orpcQuery.v1.billing.getCreditBalance.queryOptions({
+      enabled: isLoggedIn && BILLING_ENABLED,
+    })
+  );
+
+  // Credit transactions query
+  const creditTransactionsQuery = createQuery(
+    orpcQuery.v1.billing.getCreditTransactions.queryOptions({
+      enabled: isLoggedIn && BILLING_ENABLED,
+      input: { limit: 20 },
+    })
+  );
+
+  const creditBalance = $derived($creditBalanceQuery.data?.balance);
+  const creditTransactions = $derived($creditTransactionsQuery.data?.transactions || []);
 
   const createCheckoutSession = createMutation(
     orpcQuery.v1.billing.createCheckoutSession.mutationOptions({
@@ -59,6 +82,37 @@
 </script>
 
 <div class="space-y-6">
+  {#if BILLING_ENABLED && isLoggedIn && !isUserSubscribed && creditBalance}
+    <!-- Credit Balance Display -->
+    <Card>
+      <CardHeader>
+        <CardTitle class="flex items-center gap-2">
+          <Coins class="h-5 w-5" />
+          Credit Balance
+        </CardTitle>
+        <CardDescription>Your current credit balance and usage</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-muted-foreground">Available Credits</span>
+            <span class="text-2xl font-bold">{creditBalance.credits}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="text-muted-foreground">Total Earned</span>
+              <p class="font-medium">{creditBalance.totalCreditsEarned}</p>
+            </div>
+            <div>
+              <span class="text-muted-foreground">Total Used</span>
+              <p class="font-medium">{creditBalance.totalCreditsUsed}</p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  {/if}
+
   {#if isUserSubscribed}
     <div
       class="mb-6 rounded-lg border border-green-200 bg-green-50 p-6 dark:border-green-800 dark:bg-green-900/20"
@@ -91,7 +145,14 @@
     </div>
   {/if}
 
-  <div class="mx-auto grid max-w-4xl grid-cols-1 gap-8 md:grid-cols-2">
+  <Tabs defaultValue={BILLING_ENABLED && !isUserSubscribed ? "credits" : "subscription"} class="w-full">
+    <TabsList class="grid w-full grid-cols-2">
+      <TabsTrigger value="subscription">Subscription Plans</TabsTrigger>
+      <TabsTrigger value="credits">Buy Credits</TabsTrigger>
+    </TabsList>
+
+    <TabsContent value="subscription" class="space-y-6">
+      <div class="mx-auto grid max-w-4xl grid-cols-1 gap-8 md:grid-cols-2">
     <!-- FREE Plan -->
     <Card class="relative {isLoggedIn && !isUserSubscribed ? 'ring-primary ring-2' : ''}">
       {#if isLoggedIn && !isUserSubscribed}
@@ -254,13 +315,71 @@
         {/if}
       </CardFooter>
     </Card>
-  </div>
+      </div>
 
-  <!-- FAQ or additional info section -->
-  <div class="pt-8 text-center">
-    <p class="text-muted-foreground text-sm">
-      Have questions? <a href="/settings/contact" class="text-primary hover:underline">Contact us</a
-      > for help choosing the right plan.
-    </p>
-  </div>
+      <!-- FAQ or additional info section -->
+      <div class="pt-8 text-center">
+        <p class="text-muted-foreground text-sm">
+          Have questions? <a href="/settings/contact" class="text-primary hover:underline">Contact us</a
+          > for help choosing the right plan.
+        </p>
+      </div>
+    </TabsContent>
+
+    <TabsContent value="credits" class="space-y-6">
+      {#if BILLING_ENABLED}
+        {#if isLoggedIn}
+          <CreditPurchase />
+          
+          {#if creditTransactions.length > 0}
+            <!-- Transaction History -->
+            <Card>
+              <CardHeader>
+                <CardTitle class="flex items-center gap-2">
+                  <History class="h-5 w-5" />
+                  Recent Transactions
+                </CardTitle>
+                <CardDescription>Your recent credit transactions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div class="space-y-3">
+                  {#each creditTransactions.slice(0, 10) as transaction}
+                    <div class="flex items-center justify-between py-2 border-b border-border last:border-0">
+                      <div class="flex-1">
+                        <p class="text-sm font-medium">{transaction.description}</p>
+                        <p class="text-xs text-muted-foreground">
+                          {new Date(transaction.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        {#if transaction.couponCode}
+                          <Badge variant="secondary" class="text-xs">
+                            {transaction.couponCode}
+                          </Badge>
+                        {/if}
+                        <span class={`text-sm font-medium ${
+                          transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {transaction.amount > 0 ? '+' : ''}{transaction.amount}
+                        </span>
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              </CardContent>
+            </Card>
+          {/if}
+        {:else}
+          <div class="text-center py-8">
+            <p class="text-muted-foreground">Please sign in to purchase credits</p>
+            <Button href="/auth" class="mt-4">Sign In</Button>
+          </div>
+        {/if}
+      {:else}
+        <div class="text-center py-8">
+          <p class="text-muted-foreground">Credit system is disabled</p>
+        </div>
+      {/if}
+    </TabsContent>
+  </Tabs>
 </div>

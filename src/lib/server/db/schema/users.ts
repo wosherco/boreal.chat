@@ -1,5 +1,5 @@
 import { SUBSCRIPTION_STATUS, USER_ROLES } from "../../../common";
-import { pgTable, serial, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, uuid, varchar, integer } from "drizzle-orm/pg-core";
 
 export const userTable = pgTable("user", {
   id: uuid().defaultRandom().primaryKey(),
@@ -16,6 +16,11 @@ export const userTable = pgTable("user", {
     length: 255,
     enum: SUBSCRIPTION_STATUS,
   }),
+
+  // Credit system
+  credits: integer().notNull().default(0),
+  totalCreditsEarned: integer().notNull().default(0),
+  totalCreditsUsed: integer().notNull().default(0),
 });
 
 export const sessionTable = pgTable("session", {
@@ -43,3 +48,18 @@ export const accountTable = pgTable("account", {
 });
 
 export type UserAccount = typeof accountTable.$inferSelect;
+
+// Credit transactions table for tracking credit usage and purchases
+export const creditTransactionTable = pgTable("credit_transaction", {
+  id: uuid().defaultRandom().primaryKey(),
+  userId: uuid()
+    .notNull()
+    .references(() => userTable.id),
+  type: varchar({ length: 50, enum: ["purchase", "usage", "bonus", "refund"] }).notNull(),
+  amount: integer().notNull(), // positive for credits added, negative for credits used
+  description: text().notNull(),
+  messageId: uuid(), // reference to message if this is a usage transaction
+  stripePaymentIntentId: text(), // reference to Stripe payment if this is a purchase
+  couponCode: text(), // coupon code used for this transaction
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});

@@ -30,6 +30,11 @@
   import { isFinishedMessageStatus } from "$lib/common";
   import { waitForInsert } from "$lib/client/hooks/waitForInsert";
   import { chatTable, messageTable } from "$lib/client/db/schema";
+  import { orpcQuery } from "$lib/client/orpc";
+  import { createQuery } from "@tanstack/svelte-query";
+  import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
+  import { BILLING_ENABLED } from "$lib/common/constants";
+  import { isSubscribed } from "$lib/common/utils/subscription";
 
   interface Props {
     /**
@@ -42,6 +47,24 @@
 
   let value = $state(page.url.searchParams.get("prompt") ?? "");
   let loading = $state(false);
+
+  // Get current user for credit checking
+  const currentUser = useCurrentUser(null);
+
+  // Credit balance query
+  const creditBalanceQuery = createQuery(
+    orpcQuery.v1.billing.getCreditBalance.queryOptions({
+      enabled: BILLING_ENABLED && $currentUser.data?.authenticated === true,
+    })
+  );
+
+  const creditBalance = $derived($creditBalanceQuery.data?.balance);
+  const userSubscribed = $derived(isSubscribed($currentUser.data?.data ?? null));
+  const hasEnoughCredits = $derived(
+    !BILLING_ENABLED || 
+    userSubscribed || 
+    (creditBalance && creditBalance.credits > 0)
+  );
 
   const defaultSelectedModel = browser ? getLastSelectedModel() : GEMINI_FLASH_2_5;
   const defaultWebSearchEnabled = false;
@@ -85,6 +108,18 @@
 
   async function onSendMessage() {
     if (loading) return;
+    
+    // Check if user has enough credits
+    if (!hasEnoughCredits) {
+      toast.error("Insufficient credits. Please buy more credits or upgrade to Pro.", {
+        action: {
+          label: "Buy Credits",
+          onClick: () => goto("/settings/billing"),
+        },
+      });
+      return;
+    }
+    
     loading = true;
 
     try {
@@ -292,9 +327,10 @@
           <MicIcon class="h-4 w-4" />
         </Button> -->
         <Button
-          disabled={(!value.trim() && isLastMessageFinished) || loading || !browser}
+          disabled={(!value.trim() && isLastMessageFinished) || loading || !browser || (!hasEnoughCredits && isLastMessageFinished)}
           onclick={isLastMessageFinished ? onSendMessage : onCancelMessage}
           size="icon"
+          title={!hasEnoughCredits && isLastMessageFinished ? "Insufficient credits" : undefined}
         >
           {#if loading}
             <Loader2Icon class="animate-spin" />

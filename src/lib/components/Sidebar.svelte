@@ -52,10 +52,23 @@
   import ShortcutsCheatsheetDialog from "./ShortcutsCheatsheetDialog.svelte";
   import SheetClosableOnlyOnPhone from "./utils/SheetClosableOnlyOnPhone.svelte";
   import { isSubscribed } from "$lib/common/utils/subscription";
+  import CreditDisplay from "./credits/CreditDisplay.svelte";
+  import { orpcQuery } from "$lib/client/orpc";
+  import { createQuery } from "@tanstack/svelte-query";
+  import { BILLING_ENABLED } from "$lib/common/constants";
 
   let shortcutsCheatsheetOpen = $state(false);
 
   let logoutLoading = $state(false);
+
+  // Credit balance query
+  const creditBalanceQuery = createQuery(
+    orpcQuery.v1.billing.getCreditBalance.queryOptions({
+      enabled: BILLING_ENABLED && user?.authenticated === true,
+    })
+  );
+
+  const creditBalance = $derived($creditBalanceQuery.data?.balance);
 
   async function onLogout() {
     if (logoutLoading) return;
@@ -142,6 +155,18 @@
         <VirtualizedChatList chats={chats.data} {isPhone} />
       {/if}
     </div>
+
+    <!-- Credit Display -->
+    {#if BILLING_ENABLED && user?.authenticated && user?.data && creditBalance}
+      <div class="px-3 py-2 border-t border-border">
+        <CreditDisplay 
+          user={user.data} 
+          credits={creditBalance.credits} 
+          onBuyCredits={() => goto("/settings/billing")}
+          compact={true}
+        />
+      </div>
+    {/if}
 
     <!-- Account Section -->
     <div class="p-3">
