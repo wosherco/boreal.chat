@@ -25,8 +25,8 @@ export interface CUCalculationResult {
 }
 
 // Base pricing for 1 CU calculation
-const BASE_INPUT_PRICE_PER_TOKEN = 0.000001; // $1/M tokens
-const BASE_OUTPUT_PRICE_PER_TOKEN = 0.0000025; // $2.5/M tokens
+const BASE_INPUT_PRICE_PER_TOKEN = 0.0000025; // $2.5/M tokens
+const BASE_OUTPUT_PRICE_PER_TOKEN = 0.000005; // $5/M tokens
 
 /**
  * Calculate CUs based on token usage and model pricing
