@@ -180,7 +180,9 @@
     </Card>
 
     <!-- Premium Plan -->
-    <Card class="relative {!userState ? 'ring-primary ring-2' : ''}">
+    <Card
+      class={cn("relative", !userState || (userState === "not-logged-in" && "ring-primary ring-2"))}
+    >
       <CardHeader>
         <CardTitle class="text-2xl text-blue-600 dark:text-blue-400">Premium</CardTitle>
         <CardDescription>Perfect for regular users with moderate usage.</CardDescription>
