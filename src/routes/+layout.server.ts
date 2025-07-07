@@ -21,5 +21,6 @@ export const load: LayoutServerLoad = async ({ locals, request, cookies }) => {
     auth: {
       currentUserInfo,
     },
+    flagsmithFlags: locals.flagsmithFlags,
   };
 };

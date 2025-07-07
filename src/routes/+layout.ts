@@ -9,11 +9,23 @@ import { POSTHOG_PROXY_PATH } from "$lib/common/constants";
 
 export const load: LayoutLoad = async ({ data }) => {
   if (browser) {
-    posthog.init(env.PUBLIC_POSTHOG_API_KEY, {
-      api_host: POSTHOG_PROXY_PATH,
-      ui_host: env.PUBLIC_POSTHOG_HOST,
-      person_profiles: "identified_only",
-    });
+    if (env.PUBLIC_POSTHOG_API_KEY) {
+      posthog.init(env.PUBLIC_POSTHOG_API_KEY, {
+        api_host: POSTHOG_PROXY_PATH,
+        ui_host: env.PUBLIC_POSTHOG_HOST,
+        person_profiles: "identified_only",
+      });
+    }
+
+    // Initialize Flagsmith
+    if (env.PUBLIC_FLAGSMITH_ENVIRONMENT_KEY) {
+      try {
+        const { initializeFlagsmith } = await import("$lib/client/flagsmith");
+        await initializeFlagsmith(data.flagsmithFlags);
+      } catch (error) {
+        console.error("Failed to initialize Flagsmith:", error);
+      }
+    }
   }
 
   const currentUserInfo = await pickSSRorSPAPromise(
@@ -32,5 +44,6 @@ export const load: LayoutLoad = async ({ data }) => {
     auth: {
       currentUserInfo,
     },
+    flagsmithFlags: data?.flagsmithFlags || null,
   };
 };

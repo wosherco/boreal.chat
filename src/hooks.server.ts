@@ -4,6 +4,7 @@ import * as auth from "$lib/server/auth.js";
 import type { Handle } from "@sveltejs/kit";
 import { paraglideMiddleware } from "$lib/paraglide/server";
 import { env } from "$env/dynamic/private";
+import { env as publicEnv } from "$env/dynamic/public";
 import { posthog } from "$lib/server/posthog";
 import { POSTHOG_PROXY_PATH } from "$lib/common/constants";
 
@@ -18,14 +19,14 @@ process.on("SIGTERM", async () => {
 });
 
 Sentry.init({
-  dsn: env.PUBLIC_SENTRY_DSN,
+  dsn: publicEnv.PUBLIC_SENTRY_DSN,
   tracesSampleRate: 1,
   _experiments: {
     enableLogs: true,
   },
 });
 
-if (env.PUBLIC_ENVIRONMENT === "development") {
+if (publicEnv.PUBLIC_ENVIRONMENT === "development") {
   // Not initializing Sentry in development to avoid sending events to Sentry
   Sentry.init({});
 }
@@ -97,9 +98,43 @@ const posthogProxyHandle: Handle = async ({ event, resolve }) => {
   return response;
 };
 
+const flagsmithSSRHandle: Handle = async ({ event, resolve }) => {
+  // Initialize Flagsmith SSR flags if environment key is available
+  if (publicEnv.PUBLIC_FLAGSMITH_ENVIRONMENT_KEY) {
+    try {
+      const { flagsmith } = await import("$lib/server/flagsmith");
+      if (flagsmith) {
+        // Get environment flags for SSR
+        const flags = await flagsmith.getEnvironmentFlags();
+        const flagsObject: Record<string, any> = {};
+        
+        if (Array.isArray(flags)) {
+          flags.forEach((flag: any) => {
+            flagsObject[flag.feature.name] = {
+              enabled: flag.enabled,
+              value: flag.feature_state_value,
+            };
+          });
+        }
+        
+        // Add flags to event locals for use in load functions
+        event.locals.flagsmithFlags = flagsObject;
+      }
+    } catch (error) {
+      console.error("Failed to initialize Flagsmith SSR:", error);
+      event.locals.flagsmithFlags = null;
+    }
+  } else {
+    event.locals.flagsmithFlags = null;
+  }
+
+  return resolve(event);
+};
+
 export const handle: Handle = sequence(
   Sentry.sentryHandle(),
   posthogProxyHandle,
+  flagsmithSSRHandle,
   sequence(handleParaglide, handleAuth),
 );
 
