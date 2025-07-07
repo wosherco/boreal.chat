@@ -3,6 +3,8 @@ import { osBase } from "./context";
 import { chatTable, openRouterKeyTable } from "../db/schema";
 import { and, eq } from "drizzle-orm";
 import { ORPCError } from "@orpc/client";
+import { isSubscribed } from "$lib/common/utils/subscription";
+import type { transcribeRatelimiter } from "../ratelimit";
 
 export const authenticatedMiddleware = osBase.middleware(async ({ context, next }) => {
   if (!context.userCtx.user || !context.userCtx.session) {
@@ -20,6 +22,16 @@ export const authenticatedMiddleware = osBase.middleware(async ({ context, next 
       },
     },
   });
+});
+
+export const subscribedMiddleware = authenticatedMiddleware.concat(async ({ context, next }) => {
+  if (!isSubscribed(context.userCtx.user)) {
+    throw new ORPCError("UNAUTHORIZED", {
+      message: "You need to be subscribed to atleast Premium plan to use this feature.",
+    });
+  }
+
+  return next();
 });
 
 export const openRouterMiddleware = authenticatedMiddleware.concat(async ({ context, next }) => {
@@ -76,3 +88,20 @@ export const chatOwnerMiddleware = authenticatedMiddleware.concat(
     });
   },
 );
+
+export const ratelimitMiddleware = (ratelimit: typeof transcribeRatelimiter) =>
+  authenticatedMiddleware.concat(async ({ context, next }) => {
+    const result = await ratelimit.limit(context.userCtx.user.id);
+
+    if (!result.success) {
+      context.headers.set("X-RateLimit-Limit", result.limit.toString());
+      context.headers.set("X-RateLimit-Remaining", result.remaining.toString());
+      context.headers.set("X-RateLimit-Reset", result.reset.toString());
+
+      throw new ORPCError("RATE_LIMIT_EXCEEDED", {
+        message: "You have reached the rate limit. Please, try again later.",
+      });
+    }
+
+    return next();
+  });

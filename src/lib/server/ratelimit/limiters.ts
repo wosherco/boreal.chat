@@ -1,3 +1,6 @@
 import { createRatelimit, Ratelimit } from "./client";
 
-export const deepgramRatelimiter = createRatelimit("deepgram", Ratelimit.slidingWindow(10, "10m"));
+export const transcribeRatelimiter = createRatelimit(
+  "transcribe",
+  Ratelimit.slidingWindow(10, "10m"),
+);
