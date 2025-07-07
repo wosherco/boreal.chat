@@ -2,6 +2,7 @@ import { osBase } from "../../context";
 import { authenticatedMiddleware } from "../../middlewares";
 import {
   createCheckoutSession,
+  createCreditsSession,
   createCustomerSession,
   createUpgradeSession,
 } from "$lib/server/stripe";
@@ -58,6 +59,24 @@ export const v1BillingRouter = osBase.router({
     .input(z.object({ toPlan: z.enum(SUBSCRIPTION_PLANS) }))
     .handler(async ({ context, input }) => {
       const session = await createUpgradeSession(context.userCtx.user.id, input.toPlan);
+
+      if (!session) {
+        return {
+          success: false,
+        };
+      }
+
+      return {
+        success: true,
+        url: session.url,
+      };
+    }),
+
+  addCredits: osBase
+    .use(authenticatedMiddleware)
+    .input(z.object({ messages: z.number().min(20).max(1000) }))
+    .handler(async ({ context, input }) => {
+      const session = await createCreditsSession(context.userCtx.user.id, input.messages);
 
       if (!session) {
         return {

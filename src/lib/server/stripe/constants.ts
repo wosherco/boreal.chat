@@ -34,3 +34,11 @@ export const STRIPE_PLANS = {
     price: 12,
   },
 } as const;
+
+// Credits system
+const STRIPE_TEST_CREDITS_PRICE_ID = "price_1RiJlXREiarlV7yiMaKWDd3i";
+const STRIPE_PROD_CREDITS_PRICE_ID = "price_1RiJlrI3L7BksYZyOwjev9GC";
+
+export const STRIPE_CREDITS_PRICE_ID = dev
+  ? STRIPE_TEST_CREDITS_PRICE_ID
+  : STRIPE_PROD_CREDITS_PRICE_ID;
