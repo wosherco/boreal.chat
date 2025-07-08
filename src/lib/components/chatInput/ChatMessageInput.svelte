@@ -33,6 +33,7 @@
   import { chatTable, messageTable } from "$lib/client/db/schema";
   import { VoiceMessageService } from "$lib/client/services/voiceMessageService.svelte";
   import { env } from "$env/dynamic/public";
+  import * as m from "$lib/paraglide/messages";
 
   interface Props {
     /**
@@ -110,7 +111,7 @@
           if (e instanceof ORPCError) {
             toast.error(e.message);
           } else {
-            toast.error("Failed to send message");
+            toast.error(m.chat_failedToSendMessage());
           }
         }
       } else {
@@ -141,7 +142,7 @@
           if (e instanceof ORPCError) {
             toast.error(e.message);
           } else {
-            toast.error("Failed to create chat");
+            toast.error(m.chat_failedToCreateChat());
           }
         }
       }
@@ -200,7 +201,7 @@
   async function startRecording() {
     const valid = await voiceMessageService.startRecording();
     if (!valid) {
-      toast.error("Failed to access microphone. Please, allow access in your browser settings.");
+      toast.error(m.voice_microphoneAccessError());
       return;
     }
   }
@@ -218,7 +219,7 @@
 
     if (!result) {
       voiceMessageService.reset();
-      toast.error("Failed to stop recording");
+      toast.error(m.voice_recordingStopError());
       return;
     }
 
@@ -231,7 +232,7 @@
       value += transcript;
     } catch (error) {
       console.error(error);
-      toast.error("Failed to transcribe voice message");
+      toast.error(m.voice_transcriptionError());
     } finally {
       voiceMessageService.reset();
     }
@@ -283,7 +284,7 @@
         disabled={loading}
         bind:this={textAreaElement}
         bind:value
-        placeholder="Message Bot..."
+        placeholder={m.chat_messageBot()}
         style="height: {textareaHeight}; line-height: {lineHeight}px;"
         class="placeholder:text-muted-foreground w-full resize-none overflow-y-auto border-none bg-transparent p-4 pb-2 transition-all duration-150 ease-out focus:ring-0 focus:outline-none"
       ></textarea>
@@ -311,7 +312,7 @@
             variant="outline"
           >
             <GlobeIcon />
-            <span class="hidden text-xs md:block">Web Search</span>
+            <span class="hidden text-xs md:block">{m.chat_webSearch()}</span>
           </Toggle>
 
           {#if MODEL_DETAILS[actualSelectedModel].reasoning}
@@ -327,10 +328,10 @@
                 </span>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="none">{m.reasoning_none()}</SelectItem>
+                <SelectItem value="low">{m.reasoning_low()}</SelectItem>
+                <SelectItem value="medium">{m.reasoning_medium()}</SelectItem>
+                <SelectItem value="high">{m.reasoning_high()}</SelectItem>
               </SelectContent>
             </Select>
           {/if}
@@ -376,22 +377,22 @@
             }}
             class="text-destructive hover:text-destructive"
           >
-            Cancel
+            {m.chat_cancel()}
           </Button>
 
           <!-- Pause/Resume and Finish buttons on the right -->
           <div class="flex items-center gap-2">
             {#if voiceMessageService.state === "recording"}
-              <Button variant="outline" size="sm" onclick={pauseRecording}>Pause</Button>
+              <Button variant="outline" size="sm" onclick={pauseRecording}>{m.voice_pause()}</Button>
             {:else if voiceMessageService.state === "paused"}
-              <Button variant="outline" size="sm" onclick={resumeRecording}>Resume</Button>
+              <Button variant="outline" size="sm" onclick={resumeRecording}>{m.voice_resume()}</Button>
             {/if}
 
             {#if voiceMessageService.state === "processing"}
               <Loader2Icon class="animate-spin" />
-              Processing...
+              {m.voice_processing()}
             {:else}
-              <Button variant="default" size="sm" onclick={stopRecording}>Finish</Button>
+              <Button variant="default" size="sm" onclick={stopRecording}>{m.voice_finish()}</Button>
             {/if}
           </div>
         </div>
@@ -418,13 +419,13 @@
           <div class="text-muted-foreground flex items-center gap-2 text-xs">
             {#if voiceMessageService.state === "recording"}
               <div class="h-2 w-2 animate-pulse rounded-full bg-red-500"></div>
-              Recording...
+              {m.voice_recording()}
             {:else if voiceMessageService.state === "paused"}
               <div class="h-2 w-2 rounded-full bg-yellow-500"></div>
-              Paused
+              {m.voice_paused()}
             {:else if voiceMessageService.state === "processing"}
               <div class="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
-              Processing...
+              {m.voice_processing()}
             {/if}
           </div>
         </div>

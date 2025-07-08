@@ -5,15 +5,16 @@
   import SvelteSeo from "svelte-seo";
   import type { PageProps } from "./$types";
   import { Button } from "$lib/components/ui/button";
+  import * as m from "$lib/paraglide/messages";
 
   const { data }: PageProps = $props();
 
   const user = useCurrentUser(data.auth.currentUserInfo);
 </script>
 
-<SvelteSeo title="Settings | boreal.chat" />
+<SvelteSeo title="{m.nav_settings()} | boreal.chat" />
 
-<h1 class="text-2xl font-semibold">Account Overview</h1>
+<h1 class="text-2xl font-semibold">{m.settings_accountOverview()}</h1>
 
 <div class="flex flex-col gap-2 pt-4">
   {#if $user.loading}
@@ -22,21 +23,21 @@
     </div>
   {:else if !$user.data?.authenticated || !$user.data?.data}
     <Button variant="link" href="/auth" class="w-fit"
-      >Please, log in first <ArrowRightIcon /></Button
+      >{m.auth_pleaseLogInFirst()} <ArrowRightIcon /></Button
     >
   {:else}
-    <p>👋 Welcome back, {$user.data.data.name}!</p>
+    <p>{m.auth_welcomeBack({ name: $user.data.data.name })}</p>
 
     <Card class="w-fit">
       <CardHeader>
-        <CardTitle>Profile</CardTitle>
+        <CardTitle>{m.settings_profile()}</CardTitle>
       </CardHeader>
       <CardContent>
         <div class="flex flex-row items-center gap-4">
           <!-- svelte-ignore a11y_img_redundant_alt -->
           <img
             src={$user.data.data.profilePicture}
-            alt="Profile Picture"
+            alt={m.settings_profilePictureAlt()}
             class="size-16 rounded-full"
           />
           <div class="flex flex-col gap-1">

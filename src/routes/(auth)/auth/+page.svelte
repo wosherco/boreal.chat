@@ -3,32 +3,29 @@
   import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "$lib/components/ui/card";
   import { ArrowLeftIcon } from "@lucide/svelte";
   import SvelteSeo from "svelte-seo";
+  import * as m from "$lib/paraglide/messages";
 </script>
 
-<SvelteSeo title="Sign in | boreal.chat" />
+<SvelteSeo title="{m.auth_signIn()} | boreal.chat" />
 
 <Button variant="link" href="/" class="absolute top-4 left-4">
   <ArrowLeftIcon class="size-4" />
-  Back to home
+  {m.auth_backToHome()}
 </Button>
 <div class="flex h-screen w-screen items-center justify-center">
   <Card>
     <CardHeader>
-      <CardTitle>Sign in</CardTitle>
+      <CardTitle>{m.auth_signIn()}</CardTitle>
     </CardHeader>
     <CardContent>
       <Button variant="default" href="/auth/google">
         <p>G</p>
-        Sign in with Google
+        {m.auth_signInWithGoogle()}
       </Button>
     </CardContent>
     <CardFooter>
       <p class="text-muted-foreground text-sm">
-        By signing in, you agree to our <a href="/terms-of-service" class="underline"
-          >Terms of Service</a
-        >
-        and
-        <a href="/privacy-policy" class="underline">Privacy Policy</a>
+        {m.auth_termsAndPrivacy()}
       </p>
     </CardFooter>
   </Card>

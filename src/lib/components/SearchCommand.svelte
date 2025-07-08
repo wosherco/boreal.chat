@@ -11,50 +11,55 @@
 </script>
 
 <script lang="ts">
-  import { searchChats } from "$lib/client/db/fts";
-
-  import * as Command from "$lib/components/ui/command";
-  import KeyboardShortcuts from "./utils/KeyboardShortcuts.svelte";
-  import { Debounced } from "runed";
+  import { Command } from "$lib/components/ui/command";
+  import { createQuery } from "@tanstack/svelte-query";
   import { Loader2Icon, MessageSquareIcon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
-  let searchInput = $state<string>("");
-  const debouncedSearchInput = new Debounced(() => searchInput, 500);
-  let searchedChats = $state<
-    | {
-        chatId: string;
-        messageId: string;
-        threadId: string;
-        title: string | null;
-        segmentContent: string | null;
-      }[]
-    | undefined
-  >(undefined);
+  import { orpc } from "$lib/client/orpc";
+  import { deferredPromise } from "$lib/utils";
+  import { browser } from "$app/environment";
+  import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
+  import * as m from "$lib/paraglide/messages";
 
-  $effect(() => {
-    if (!searchCommandOpen) {
-      searchInput = "";
-      debouncedSearchInput.cancel();
-    }
+  let searchInput = $state("");
+
+  const currentUser = useCurrentUser(null);
+
+  const debouncedSearchInput = $derived.by(() => {
+    const { promise, resolve } = deferredPromise<string>();
+
+    const timeout = setTimeout(() => {
+      resolve(searchInput);
+    }, 300);
+
+    return {
+      promise,
+      pending: true,
+      cleanup: () => clearTimeout(timeout),
+    };
   });
 
-  $effect(() => {
-    if (searchInput.trim().length === 0) {
-      debouncedSearchInput.updateImmediately();
-      searchedChats = undefined;
-    }
-  });
+  const searchedChats = createQuery(() => ({
+    queryKey: ["search-chats", debouncedSearchInput.promise],
+    queryFn: async () => {
+      const query = await debouncedSearchInput.promise;
 
-  // FTS effect
-  $effect(() => {
-    if (debouncedSearchInput.current.trim().length === 0) {
-      searchedChats = undefined;
-      return;
-    }
+      if (!query.trim()) {
+        return [];
+      }
 
-    void searchChats(debouncedSearchInput.current).then((chats) => {
-      searchedChats = chats;
-    });
+      return orpc.v1.chat.searchChats({ query });
+    },
+    enabled:
+      browser &&
+      !!$currentUser.data?.authenticated &&
+      !!$currentUser.data?.data &&
+      searchInput.trim() !== "",
+  }));
+
+  $effect(() => {
+    const cleanup = debouncedSearchInput.cleanup;
+    return cleanup;
   });
 </script>
 
@@ -69,9 +74,9 @@
 />
 
 <Command.Dialog bind:open={searchCommandOpen} shouldFilter={false}>
-  <Command.Input placeholder="Type to search..." bind:value={searchInput} />
+  <Command.Input placeholder={m.search_typeToSearch()} bind:value={searchInput} />
   <Command.List>
-    <Command.Group heading="Chats">
+    <Command.Group heading={m.search_chats()}>
       {#each searchedChats ?? [] as chat (chat.chatId)}
         <Command.Item
           onclick={() => {
@@ -90,7 +95,7 @@
           <Loader2Icon class="h-4 w-4 animate-spin" />
         </div>
       {:else}
-        No results found.
+        {m.search_noResultsFound()}
       {/if}
     </Command.Empty>
   </Command.List>

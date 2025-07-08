@@ -15,6 +15,7 @@
   import SheetClose from "$lib/components/ui/sheet/sheet-close.svelte";
   import { BILLING_ENABLED } from "$lib/common/constants";
   import type { Component } from "svelte";
+  import * as m from "$lib/paraglide/messages";
 
   interface Route {
     label: string;
@@ -32,33 +33,33 @@
 
   const ROUTES: Route[] = [
     {
-      label: "Home",
+      label: m.nav_home(),
       href: "/",
       icon: ArrowLeftIcon,
     },
     DIVIDER,
     {
-      label: "Overview",
+      label: m.settings_overview(),
       href: "/settings",
       icon: HomeIcon,
     },
     {
-      label: "Customization",
+      label: m.settings_customization(),
       href: "/settings/customization",
       icon: PaintbrushIcon,
     },
     BILLING_ENABLED && {
-      label: "Billing",
+      label: m.settings_billing(),
       href: "/settings/billing",
       icon: CreditCardIcon,
     },
     {
-      label: "BYOK (Bring Your Own Key)",
+      label: m.settings_byok(),
       href: "/settings/byok",
       icon: KeyIcon,
     },
     {
-      label: "Contact Us",
+      label: m.settings_contactUs(),
       href: "/settings/contact",
       icon: MailIcon,
     },
@@ -99,7 +100,7 @@
           <SheetTrigger>
             <Button variant="outline" class="mb-4">
               <MenuIcon class="mr-2 size-4" />
-              Menu
+              {m.nav_menu()}
             </Button>
           </SheetTrigger>
           <SheetContent side="left" class="p-4">

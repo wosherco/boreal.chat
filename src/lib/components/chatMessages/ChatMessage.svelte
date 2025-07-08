@@ -24,6 +24,7 @@
   import { isFinishedMessageStatus } from "$lib/common";
   import { messageTable } from "$lib/client/db/schema";
   import { waitForInsert } from "$lib/client/hooks/waitForInsert";
+  import * as m from "$lib/paraglide/messages";
 
   interface Props {
     message: MessageWithOptionalChainRow;
@@ -188,7 +189,7 @@
 
   function copyToClipboard() {
     navigator.clipboard.writeText(cleanedMessageText);
-    toast.success("Copied message to clipboard!");
+    toast.success(m.chat_copiedToClipboard());
   }
 
   async function regenerateMessage(newModel: ModelId) {
@@ -251,9 +252,9 @@
         {:else if segment.kind === "reasoning"}
           <ReasoningSegment reasoning={segment.content ?? ""} isReasoning={segment.streamed} />
         {:else if segment.kind === "tool_call"}
-          TODO: Tool call
+          {m.chat_todoToolCall()}
         {:else if segment.kind === "tool_result"}
-          TODO: Tool result
+          {m.chat_todoToolResult()}
         {/if}
       {/each}
     </div>
@@ -261,10 +262,10 @@
     {#if message.status === "error"}
       <Alert variant="destructive">
         <AlertCircleIcon />
-        <AlertTitle>Error</AlertTitle>
+        <AlertTitle>{m.chat_error()}</AlertTitle>
         <AlertDescription>
-          <p>{message.error ?? "Unknown error"}</p>
-          <p>Please try again later by regenerating the message.</p>
+          <p>{message.error ?? m.chat_unknownError()}</p>
+          <p>{m.chat_tryAgainLater()}</p>
         </AlertDescription>
       </Alert>
     {/if}
@@ -280,7 +281,7 @@
                 <CopyIcon />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Copy</TooltipContent>
+            <TooltipContent>{m.chat_copy()}</TooltipContent>
           </Tooltip>
 
           {#if isUser}
@@ -295,7 +296,7 @@
                   <EditIcon />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Edit</TooltipContent>
+              <TooltipContent>{m.chat_edit()}</TooltipContent>
             </Tooltip>
           {/if}
 
@@ -309,9 +310,9 @@
                   </Button>
                 </ModelPickerPopover>
               </TooltipTrigger>
-              <TooltipContent
-                >Regenerate ({MODEL_DETAILS[message.model].displayName})</TooltipContent
-              >
+              <TooltipContent>
+                {m.chat_regenerate({ modelName: MODEL_DETAILS[message.model].displayName })}
+              </TooltipContent>
             </Tooltip>
           {/if}
 

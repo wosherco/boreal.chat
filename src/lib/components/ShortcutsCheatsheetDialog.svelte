@@ -1,6 +1,7 @@
 <script lang="ts">
   import { controlKeyName } from "$lib/utils/platform";
   import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
+  import * as m from "$lib/paraglide/messages";
 
   interface Props {
     /**
@@ -14,33 +15,33 @@
   const shortcuts = [
     {
       keys: [controlKeyName, "K"],
-      action: "Search",
-      description: "Search for anything in the app.",
+      action: m.shortcuts_search(),
+      description: m.shortcuts_searchDescription(),
     },
     {
       keys: [controlKeyName, "Shift", "O"],
-      action: "New chat",
-      description: "Start a new conversation.",
+      action: m.shortcuts_newChat(),
+      description: m.shortcuts_newChatDescription(),
     },
     {
       keys: [controlKeyName, "J"],
-      action: "Focus input",
-      description: "Focus the message input field.",
+      action: m.shortcuts_focusInput(),
+      description: m.shortcuts_focusInputDescription(),
     },
     {
       keys: [controlKeyName, "M"],
-      action: "Open model picker",
-      description: "Choose a different model for the conversation.",
+      action: m.shortcuts_openModelPicker(),
+      description: m.shortcuts_openModelPickerDescription(),
     },
     {
       keys: [controlKeyName, "B"],
-      action: "Toggle sidebar",
-      description: "Show or hide the conversation list.",
+      action: m.shortcuts_toggleSidebar(),
+      description: m.shortcuts_toggleSidebarDescription(),
     },
     {
       keys: [controlKeyName, "Enter"],
-      action: "Submit message",
-      description: "Send the message in the input field.",
+      action: m.shortcuts_submitMessage(),
+      description: m.shortcuts_submitMessageDescription(),
     },
   ];
 </script>
@@ -48,9 +49,9 @@
 <Dialog bind:open>
   <DialogContent class="sm:max-w-2xl">
     <DialogHeader>
-      <DialogTitle>Shortcuts</DialogTitle>
+      <DialogTitle>{m.shortcuts_title()}</DialogTitle>
       <DialogDescription>
-        A detailed list of all the shortcuts available in the app.
+        {m.shortcuts_description()}
       </DialogDescription>
     </DialogHeader>
     <div class="grid gap-4 py-4">

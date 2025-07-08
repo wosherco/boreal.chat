@@ -52,6 +52,7 @@
   import ShortcutsCheatsheetDialog from "./ShortcutsCheatsheetDialog.svelte";
   import SheetClosableOnlyOnPhone from "./utils/SheetClosableOnlyOnPhone.svelte";
   import { isSubscribed } from "$lib/common/utils/subscription";
+  import * as m from "$lib/paraglide/messages";
 
   let shortcutsCheatsheetOpen = $state(false);
 
@@ -60,91 +61,83 @@
   async function onLogout() {
     if (logoutLoading) return;
     logoutLoading = true;
+
     try {
       await orpc.v1.auth.logout();
-      await clearLocalDb();
+
+      if (browser) {
+        clearLocalDb();
+      }
+
+      await goto("/");
       window.location.reload();
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to log out");
+    } catch (error) {
+      console.error(error);
     } finally {
       logoutLoading = false;
     }
   }
+
+  async function onNewChatLocal() {
+    if (!browser) return;
+
+    try {
+      await goto("/");
+      await onNewChat?.();
+    } catch (error) {
+      console.error(error);
+    }
+  }
 </script>
 
-<ShortcutsCheatsheetDialog bind:open={shortcutsCheatsheetOpen} />
-
-<TooltipProvider>
-  <div class="bg-sidebar text-sidebar-foreground flex h-full w-80 min-w-0 flex-col overflow-hidden">
-    <div class="flex w-full items-center justify-start px-4">
-      <!-- Header -->
-      {#if isPhone}
-        <SheetClose
-          class="ring-offset-background focus-visible:ring-ring rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none md:hidden"
-        >
-          <XIcon class="size-6" />
-          <span class="sr-only">Close</span>
-        </SheetClose>
-      {/if}
-
-      <a href="/" class="flex w-full items-center justify-between p-4 pr-0">
-        <div class="flex items-center gap-2">
-          <h1 class="text-lg font-semibold md:ml-12">boreal.chat</h1>
-        </div>
-        <BetaBadge />
-      </a>
+{#snippet SearchBar()}
+  <button
+    onclick={() => openSearchCommand()}
+    class="hover:bg-muted/50 border-border text-muted-foreground mx-2 flex h-10 w-full items-center gap-2 rounded-md border bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+  >
+    <SearchIcon class="h-4 w-4" />
+    Search...
+    <div class="ml-auto flex gap-1">
+      <kbd
+        class="bg-muted text-muted-foreground pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium opacity-100"
+      >
+        {controlKeyName}K
+      </kbd>
     </div>
+  </button>
+{/snippet}
 
-    <!-- New Chat and Search Row -->
-    <div class="flex items-center gap-2 p-3">
-      <!-- New Chat Button -->
-      <SheetClosableOnlyOnPhone {isPhone}>
-        <Tooltip>
-          <TooltipTrigger>
-            <Button variant="default" size="icon" onclick={onNewChat} class="flex-shrink-0">
-              <PlusIcon class="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>New chat ({controlKeyName}+Shift+O)</p>
-          </TooltipContent>
-        </Tooltip>
-      </SheetClosableOnlyOnPhone>
+<div class="flex h-full w-full flex-col">
+  <SheetClosableOnlyOnPhone {isPhone}>
+    <div class="space-y-4 py-4">
+      <!-- Search Bar -->
+      {@render SearchBar()}
 
-      <!-- Search Button -->
-      <SheetClosableOnlyOnPhone {isPhone} class="flex-1">
-        <Button
-          variant="secondary"
-          onclick={openSearchCommand}
-          class="bg-input/50 border-input hover:bg-input/70 text-foreground/70 hover:text-foreground w-full flex-1 justify-between border"
-        >
-          <div class="flex items-center gap-2">
-            <SearchIcon class="size-4" />
-            <span>Search...</span>
+      <!-- Create New Chat Button -->
+      <div class="mx-2">
+        <Button onclick={onNewChatLocal} class="w-full justify-start">
+          <PlusIcon />
+          New Chat
+          <div class="ml-auto flex gap-1">
+            <kbd
+              class="bg-muted text-muted-foreground pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium opacity-100"
+            >
+              {controlKeyName}Shift O
+            </kbd>
           </div>
-          {#if browser}
-            <div class="bg-muted/80 border-border rounded border px-1.5 py-0.5 font-mono text-xs">
-              {controlKeyName}+K
-            </div>
-          {/if}
         </Button>
-      </SheetClosableOnlyOnPhone>
-    </div>
+      </div>
 
-    <!-- Chat List -->
-    <div class="min-w-0 flex-1 overflow-y-auto p-2">
-      {#if chats.loading}
-        <div class="flex flex-col items-center justify-center">
-          <Loader2 class="size-4 animate-spin" />
-        </div>
-      {:else}
-        <VirtualizedChatList chats={chats.data} {isPhone} />
-      {/if}
+      <!-- Chats List -->
+      <div class="flex-1">
+        <VirtualizedChatList {chats} />
+      </div>
     </div>
+  </SheetClosableOnlyOnPhone>
 
-    <!-- Account Section -->
-    <div class="p-3">
+  <!-- User section at the bottom -->
+  <div class="border-t p-4">
+    <SheetClosableOnlyOnPhone {isPhone}>
       {#if loading || !user}
         <!-- Skeleton State -->
         <div class="flex items-center gap-2">
@@ -157,7 +150,7 @@
       {:else if !user.data || !user.authenticated}
         <!-- Login Button -->
         <div class="flex flex-row gap-2">
-          <Button href="/auth" class="w-full flex-1" variant="default">Sign In</Button>
+          <Button href="/auth" class="w-full flex-1" variant="default">{m.sidebar_signIn()}</Button>
           <Button href="/settings" class="shrink-0" variant="outline" size="icon">
             <SettingsIcon />
           </Button>
@@ -178,9 +171,9 @@
                   <p class="w-full truncate text-sm font-medium">{user.data.name}</p>
                   <p class="text-muted-foreground text-xs">
                     {#if isSubscribed(user.data)}
-                      Pro
+                      {m.sidebar_pro()}
                     {:else}
-                      Free
+                      {m.sidebar_free()}
                     {/if}
                   </p>
                 </div>
@@ -198,7 +191,7 @@
             <DropdownMenuSeparator />
             <div class="px-2 py-2">
               <div class="flex flex-row items-center justify-between gap-2">
-                <span class="text-sm font-medium">Theme</span>
+                <span class="text-sm font-medium">{m.sidebar_theme()}</span>
                 <Tabs
                   value={mode.current}
                   onValueChange={(value) => setMode(value as "system" | "light" | "dark")}
@@ -220,15 +213,15 @@
             <DropdownMenuSeparator />
             <DropdownMenuItem onclick={() => (shortcutsCheatsheetOpen = true)}>
               <KeyboardIcon class="mr-2 size-4" />
-              <span>Shortcuts</span>
+              <span>{m.sidebar_shortcuts()}</span>
             </DropdownMenuItem>
             <DropdownMenuItem onclick={() => goto("/settings")}>
               <SettingsIcon class="mr-2 size-4" />
-              <span>Settings</span>
+              <span>{m.nav_settings()}</span>
             </DropdownMenuItem>
             <DropdownMenuItem onclick={() => window.open("https://docs.boreal.chat", "_blank")}>
               <BookOpenIcon class="mr-2 size-4" />
-              <span>Docs</span>
+              <span>{m.sidebar_docs()}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onclick={onLogout} variant="destructive" disabled={logoutLoading}>
@@ -237,11 +230,13 @@
               {:else}
                 <LogOutIcon class="mr-2 size-4" />
               {/if}
-              <span>Log out</span>
+              <span>{m.sidebar_logout()}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       {/if}
-    </div>
+    </SheetClosableOnlyOnPhone>
   </div>
-</TooltipProvider>
+
+  <ShortcutsCheatsheetDialog bind:open={shortcutsCheatsheetOpen} />
+</div>

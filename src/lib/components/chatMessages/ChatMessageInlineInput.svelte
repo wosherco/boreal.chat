@@ -3,6 +3,7 @@
   import { Loader2Icon } from "@lucide/svelte";
   import { Button } from "../ui/button";
   import KeyboardShortcuts from "../utils/KeyboardShortcuts.svelte";
+  import * as m from "$lib/paraglide/messages";
 
   interface Props {
     defaultValue: string;
@@ -83,16 +84,16 @@
     bind:value={editValue}
     style="height: {editTextareaHeight}; line-height: {lineHeight}px;"
     class="w-full resize-none bg-transparent p-2 transition-all duration-150 ease-out focus:outline-none"
-    placeholder="Edit your message..."
+    placeholder={m.chat_editYourMessage()}
     autofocus
   ></textarea>
   <div class="flex flex-row items-center justify-end gap-2 p-2 pt-0">
-    <Button variant="ghost" size="sm" onclick={cancelEdit} disabled={loading}>Cancel</Button>
+    <Button variant="ghost" size="sm" onclick={cancelEdit} disabled={loading}>{m.chat_cancel()}</Button>
     <Button size="sm" onclick={saveEdit} disabled={loading}>
       {#if loading}
         <Loader2Icon class="animate-spin" />
       {:else}
-        Save
+        {m.chat_save()}
       {/if}
     </Button>
   </div>

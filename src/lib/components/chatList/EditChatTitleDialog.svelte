@@ -37,6 +37,7 @@
   import { createMutation } from "@tanstack/svelte-query";
   import { orpcQuery } from "$lib/client/orpc";
   import { zod } from "sveltekit-superforms/adapters";
+  import * as m from "$lib/paraglide/messages";
 
   const renameMutation = createMutation(
     orpcQuery.v1.chat.renameChat.mutationOptions({
@@ -69,21 +70,21 @@
   </DialogTrigger>
   <DialogContent>
     <DialogHeader>
-      <DialogTitle>Edit Chat Title</DialogTitle>
+      <DialogTitle>{m.dialog_editChatTitle()}</DialogTitle>
     </DialogHeader>
 
     <form method="POST" class="space-y-6" use:enhance>
       <Form.Field {form} name="title">
         <Form.Control>
           {#snippet children({ props })}
-            <Form.Label>Title</Form.Label>
+            <Form.Label>{m.dialog_title()}</Form.Label>
             <Input {...props} bind:value={$formData.title} />
           {/snippet}
         </Form.Control>
         <Form.FieldErrors />
       </Form.Field>
       <DialogFooter>
-        <Form.Button>Submit</Form.Button>
+        <Form.Button>{m.dialog_submit()}</Form.Button>
       </DialogFooter>
     </form>
   </DialogContent>
