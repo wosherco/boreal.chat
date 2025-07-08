@@ -30,9 +30,9 @@
   import { isFinishedMessageStatus } from "$lib/common";
   import { waitForInsert } from "$lib/client/hooks/waitForInsert";
   import { chatTable, messageTable } from "$lib/client/db/schema";
-  import { debounce } from "$lib/utils/debounce";
+  import { Debounced } from "runed";
   import DraftManager from "../drafts/DraftManager.svelte";
-  import type { DBDraft } from "$lib/common/schema/drafts";
+  import type { Draft } from "$lib/common/sharedTypes";
   import { FileTextIcon } from "@lucide/svelte";
 
   interface Props {
@@ -98,6 +98,9 @@
       if (currentChatState) {
         // We're replying to a message
         try {
+          // Cancel any pending draft saves
+          debouncedSaveDraft.cancel();
+          
           await orpc.v1.chat.sendMessage({
             chatId: currentChatState.chatId,
             model: actualSelectedModel,
@@ -105,6 +108,7 @@
             message: value,
             reasoningLevel: actualReasoningLevel,
             webSearchEnabled: actualWebSearchEnabled,
+            draftId: currentDraftId, // Pass draft ID for deletion
           });
 
           value = "";
@@ -118,11 +122,15 @@
         }
       } else {
         try {
+          // Cancel any pending draft saves
+          debouncedSaveDraft.cancel();
+          
           const chatDetails = await orpc.v1.chat.newChat({
             model: actualSelectedModel,
             message: value,
             reasoningLevel: actualReasoningLevel,
             webSearchEnabled: actualWebSearchEnabled,
+            draftId: currentDraftId, // Pass draft ID for deletion
           });
           value = "";
           clearDraft(); // Clear draft when message is sent
@@ -228,7 +236,7 @@
     }
   }
 
-  const debouncedSaveDraft = debounce(saveDraft, 1000);
+  const debouncedSaveDraft = new Debounced(() => saveDraft(), 1000);
 
   async function loadDraftFromUrl() {
     const draftId = page.url.searchParams.get("draft");
@@ -250,7 +258,7 @@
     }
   }
 
-  function loadDraft(draft: DBDraft) {
+  function loadDraft(draft: Draft) {
     value = draft.content;
     selectedModel = draft.selectedModel;
     reasoningLevel = draft.reasoningLevel;
@@ -273,7 +281,7 @@
   // Save draft when typing
   $effect(() => {
     if (value.trim() && !getCurrentChatState()) {
-      debouncedSaveDraft();
+      debouncedSaveDraft.updateImmediately();
     }
   });
 

@@ -17,7 +17,6 @@ export const createDraftsTable = (userTableFromSchema: typeof userTable, isClien
     {
       id: uuid().defaultRandom().primaryKey(),
       userId: uuid().notNull(),
-      title: text(),
       content: text().notNull(),
       selectedModel: varchar({ length: 50, enum: MODELS }).notNull(),
       reasoningLevel: varchar({ length: 50, enum: REASONING_LEVELS })

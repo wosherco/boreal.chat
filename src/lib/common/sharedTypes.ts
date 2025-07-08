@@ -42,6 +42,16 @@ export interface ChatWithSettings extends Chat {
   reasoningLevel: ReasoningLevel | null;
 }
 
+export interface Draft {
+  id: string;
+  content: string;
+  selectedModel: ModelId;
+  reasoningLevel: ReasoningLevel;
+  webSearchEnabled: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface SegmentJson {
   ordinal: number;
   kind: MessageSegmentKind;

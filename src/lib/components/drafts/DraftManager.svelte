@@ -11,36 +11,26 @@
   } from "../ui/dialog";
   import { TrashIcon, FileTextIcon, CalendarIcon } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
-  import type { DBDraft } from "$lib/common/schema/drafts";
+  import type { Draft } from "$lib/common/sharedTypes";
+  import { useDrafts } from "$lib/client/hooks/useDrafts.svelte";
   import { onMount } from "svelte";
 
   interface Props {
-    onDraftSelect?: (draft: DBDraft) => void;
+    onDraftSelect?: (draft: Draft) => void;
     children: any;
   }
 
   let { onDraftSelect, children }: Props = $props();
 
-  let drafts = $state<DBDraft[]>([]);
-  let loading = $state(false);
   let open = $state(false);
-
-  async function loadDrafts() {
-    try {
-      loading = true;
-      drafts = await orpc.v1.draft.list({ limit: 50 });
-    } catch (error) {
-      console.error("Failed to load drafts:", error);
-      toast.error("Failed to load drafts");
-    } finally {
-      loading = false;
-    }
-  }
+  
+  const draftsStore = useDrafts();
+  const drafts = $derived(draftsStore.data || []);
+  const loading = $derived(draftsStore.loading);
 
   async function deleteDraft(draftId: string) {
     try {
       await orpc.v1.draft.delete({ id: draftId });
-      drafts = drafts.filter((d) => d.id !== draftId);
       toast.success("Draft deleted");
     } catch (error) {
       console.error("Failed to delete draft:", error);
@@ -51,7 +41,6 @@
   async function deleteAllDrafts() {
     try {
       await orpc.v1.draft.deleteAll();
-      drafts = [];
       toast.success("All drafts deleted");
     } catch (error) {
       console.error("Failed to delete all drafts:", error);
@@ -59,7 +48,7 @@
     }
   }
 
-  function handleDraftSelect(draft: DBDraft) {
+  function handleDraftSelect(draft: Draft) {
     onDraftSelect?.(draft);
     open = false;
   }
@@ -78,11 +67,7 @@
     return content.substring(0, maxLength) + "...";
   }
 
-  $effect(() => {
-    if (open) {
-      loadDrafts();
-    }
-  });
+
 </script>
 
 <Dialog bind:open>
@@ -131,9 +116,6 @@
           >
             <div class="flex items-start justify-between">
               <div class="flex-1 min-w-0">
-                {#if draft.title}
-                  <h4 class="font-medium text-sm truncate mb-1">{draft.title}</h4>
-                {/if}
                 <p class="text-sm text-muted-foreground mb-2">
                   {truncateContent(draft.content)}
                 </p>

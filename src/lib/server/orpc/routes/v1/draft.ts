@@ -13,7 +13,6 @@ export const v1DraftRouter = osBase.router({
     .input(
       z.object({
         content: z.string().min(1).max(10000),
-        title: z.string().optional(),
         selectedModel: z.enum(MODELS),
         reasoningLevel: z.enum(REASONING_LEVELS).optional(),
         webSearchEnabled: z.boolean().optional(),
@@ -25,7 +24,6 @@ export const v1DraftRouter = osBase.router({
         .values({
           userId: context.userCtx.user.id,
           content: input.content,
-          title: input.title || null,
           selectedModel: input.selectedModel,
           reasoningLevel: input.reasoningLevel || "none",
           webSearchEnabled: input.webSearchEnabled || false,
@@ -41,7 +39,6 @@ export const v1DraftRouter = osBase.router({
       z.object({
         id: z.string().uuid(),
         content: z.string().min(1).max(10000),
-        title: z.string().optional(),
         selectedModel: z.enum(MODELS).optional(),
         reasoningLevel: z.enum(REASONING_LEVELS).optional(),
         webSearchEnabled: z.boolean().optional(),
@@ -53,9 +50,6 @@ export const v1DraftRouter = osBase.router({
         updatedAt: new Date(),
       };
 
-      if (input.title !== undefined) {
-        updateData.title = input.title || null;
-      }
       if (input.selectedModel !== undefined) {
         updateData.selectedModel = input.selectedModel;
       }
