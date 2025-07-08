@@ -9,13 +9,12 @@ import { ChatContextAnnotation, type ChatContext } from "../state";
 import OpenAI, { APIUserAbortError } from "openai";
 import { dispatchCustomEvent } from "@langchain/core/callbacks/dispatch";
 import type { ChatCompletionChunk } from "openai/resources/chat/completions";
-import BufferedTokenInsert from "../utils/BufferedTokenInsert";
+import DebouncedMessageUpdater from "../utils/DebouncedMessageUpdater";
 import { db } from "../../db";
 import {
   messageSegmentsTable,
   messageSegmentUsageTable,
   messageTable,
-  messageTokensTable,
 } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { createOpenAIClient } from "../utils/client";
@@ -243,25 +242,41 @@ export async function invokeAgent(
   context: ChatContext,
 ) {
   const stream = await agent.streamEvents(context, { version: "v2" });
-  const bufferedTokenInsert = new BufferedTokenInsert(context.userId, context.currentMessageId);
+  const messageUpdater = new DebouncedMessageUpdater();
+  let reasoningOrdinal = 0;
+  let textOrdinal = 1;
 
   for await (const eventData of stream) {
     const { name, data } = eventData as unknown as StreamEvent;
 
     switch (name) {
       case STREAMED_REASONING_TOKEN:
-        bufferedTokenInsert.insert(data.generationId, "reasoning", data.reasoning);
+        await messageUpdater.addToken(
+          data.generationId,
+          context.userId,
+          context.currentMessageId,
+          "reasoning",
+          reasoningOrdinal,
+          data.reasoning
+        );
         break;
       case STREAMED_TOKEN:
-        bufferedTokenInsert.insert(data.generationId, "text", data.content);
+        await messageUpdater.addToken(
+          data.generationId,
+          context.userId,
+          context.currentMessageId,
+          "text",
+          textOrdinal,
+          data.content
+        );
         break;
       case STREAMED_TOOL_CALL_CHUNK:
         // TODO: Add support for tool calls.
         break;
       case MESSAGE_FINISHED:
         {
-          await bufferedTokenInsert.flushImmediate();
-          await bufferedTokenInsert.destroy();
+          await messageUpdater.finalize();
+          await messageUpdater.destroy();
 
           if (data.message.role !== "assistant") {
             throw new Error("Message is not an assistant message");
@@ -287,36 +302,13 @@ export async function invokeAgent(
             }
             return null;
           };
+          // Check if segments already exist from streaming
+          const existingSegments = await db
+            .select()
+            .from(messageSegmentsTable)
+            .where(eq(messageSegmentsTable.messageId, context.currentMessageId));
+
           const content = getTextFromMessage(data.message);
-
-          let i = 0;
-          const toInsertMessages: (typeof messageSegmentsTable.$inferInsert)[] = [];
-
-          if (reasoning) {
-            toInsertMessages.push({
-              userId: context.userId,
-              messageId: context.currentMessageId,
-              generationId: data.generationId,
-              // TODO: Ordinal will need a more complex logic when we implement tools.
-              ordinal: i,
-              kind: "reasoning",
-              content: reasoning,
-            });
-
-            i++;
-          }
-
-          if (content) {
-            toInsertMessages.push({
-              userId: context.userId,
-              messageId: context.currentMessageId,
-              generationId: data.generationId,
-              ordinal: i,
-              kind: "text",
-              content: content,
-            });
-            i++;
-          }
 
           const promises = [
             db
@@ -328,17 +320,42 @@ export async function invokeAgent(
               .execute(),
           ];
 
-          if (toInsertMessages.length > 0) {
-            promises.push(db.insert(messageSegmentsTable).values(toInsertMessages).execute());
+          // Only create segments if they don't exist (i.e., no streaming occurred)
+          if (existingSegments.length === 0) {
+            let i = 0;
+            const toInsertMessages: (typeof messageSegmentsTable.$inferInsert)[] = [];
+
+            if (reasoning) {
+              toInsertMessages.push({
+                userId: context.userId,
+                messageId: context.currentMessageId,
+                generationId: data.generationId,
+                ordinal: i,
+                kind: "reasoning",
+                content: reasoning,
+              });
+              i++;
+            }
+
+            if (content) {
+              toInsertMessages.push({
+                userId: context.userId,
+                messageId: context.currentMessageId,
+                generationId: data.generationId,
+                ordinal: i,
+                kind: "text",
+                content: content,
+              });
+              i++;
+            }
+
+            if (toInsertMessages.length > 0) {
+              promises.push(db.insert(messageSegmentsTable).values(toInsertMessages).execute());
+            }
           }
 
           // Inserting the message into the database.
           await Promise.all(promises);
-
-          // Cleaning up temporal tokens
-          await db
-            .delete(messageTokensTable)
-            .where(eq(messageTokensTable.messageId, context.currentMessageId));
 
           // Getting usage and saving it to DB
           try {
