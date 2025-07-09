@@ -22,10 +22,11 @@ export const localCULimiter = new TokenBucketRateLimiter(
 
 const burstLimitSize = 200000;
 const burstRefillTime = 15 * 60; // 15m
+const quarterInHours = 60 / 15;
 
 export const burstCULimiter = new TokenBucketRateLimiter(
   env.REDIS_URI,
   burstLimitSize,
-  burstLimitSize / (24 * 15),
+  burstLimitSize / (24 * quarterInHours),
   burstRefillTime,
 );
