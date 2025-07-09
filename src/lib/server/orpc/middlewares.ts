@@ -89,7 +89,8 @@ export const inferenceMiddleware = authenticatedMiddleware.concat(
 
     if (!isSubscribed(context.userCtx.user)) {
       throw new ORPCError("UNAUTHORIZED", {
-        message: "You need to be subscribed to atleast Premium plan to use this feature.",
+        message:
+          "You need to be subscribed to atleast Premium plan to use this feature, or bring your own OpenRouter key (in settings).",
       });
     }
 

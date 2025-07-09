@@ -104,7 +104,7 @@
     </div>
   {/if}
 
-  <div class="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
+  <div class="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-2">
     <!-- Free Plan -->
     <Card class="relative">
       <CardHeader>

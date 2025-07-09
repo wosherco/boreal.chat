@@ -8,6 +8,7 @@ import { db } from "../db";
 import { RateLimitError } from "openai";
 import { listenForCancelMessage } from "../db/mq/messageCancellation";
 import type { CUResult } from "../ratelimit/cu";
+import { burstCULimiter, localCULimiter } from "../ratelimit";
 
 export async function executeAgentSafely(
   params: {
@@ -78,6 +79,12 @@ export async function executeAgentSafely(
       });
       await markMessageAsErrored(db, context.currentMessageId, errorMessage);
       console.error("Error invoking agent: ", error);
+
+      // We're refunding the estimated CUs.
+      if (params.ratelimit && params.estimatedCUs) {
+        const ratelimiter = params.ratelimit === "burst" ? burstCULimiter : localCULimiter;
+        await ratelimiter.addTokens(context.userId, params.estimatedCUs.total);
+      }
     })
     .finally(() => {
       cancelListener.unlisten();

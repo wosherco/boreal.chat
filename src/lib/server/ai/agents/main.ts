@@ -362,56 +362,73 @@ export async function invokeAgent(
               },
             });
 
+            // We're refunding the estimated CUs.
+            if (params.ratelimit && params.estimatedCUs) {
+              const ratelimiter = params.ratelimit === "burst" ? burstCULimiter : localCULimiter;
+              await ratelimiter.addTokens(context.userId, params.estimatedCUs.total);
+            }
+
             // We will keep the estimated CUs, since it's fair most of the times.
             return;
           }
 
-          let actualCUs: number | undefined;
+          // We'll try adding the usage. If it doesn't work out, we'll just log the error.
+          try {
+            let actualOutputCUs: number | undefined;
 
-          if (params.ratelimit && params.estimatedCUs) {
-            const actualCUs = calculateCUs(
-              // The input we'll keep the estimated for now. We're not charging on previous messages for now.
-              0,
-              generationUsage.tokens_completion,
-              params.model,
-            );
+            if (params.ratelimit && params.estimatedCUs) {
+              const actualCUs = calculateCUs(
+                // The input we'll keep the estimated for now. We're not charging on previous messages for now.
+                0,
+                generationUsage.tokens_completion,
+                params.model,
+              );
+              actualOutputCUs = actualCUs.outputCUs;
 
-            // We'll compare the estimated CUs with the actual CUs for output, and apply it to the ratelimit.
+              // We'll compare the estimated CUs with the actual CUs for output, and apply it to the ratelimit.
 
-            /**
-             * Positive means we used more CUs than estimated. We're going to remove them from the ratelimit.
-             * Negative means we used less CUs than estimated. We're going to add them to the ratelimit.
-             */
-            const diffOutput = actualCUs.total - params.estimatedCUs.total;
+              /**
+               * Positive means we used more CUs than estimated. We're going to remove them from the ratelimit.
+               * Negative means we used less CUs than estimated. We're going to add them to the ratelimit.
+               */
+              const diffOutput = actualCUs.outputCUs - params.estimatedCUs.outputCUs;
 
-            const ratelimiter = params.ratelimit === "burst" ? burstCULimiter : localCULimiter;
-            if (diffOutput > 0) {
-              await ratelimiter.removeTokens(context.userId, diffOutput);
-            } else {
-              await ratelimiter.addTokens(context.userId, Math.abs(diffOutput));
+              const ratelimiter = params.ratelimit === "burst" ? burstCULimiter : localCULimiter;
+              if (diffOutput > 0) {
+                await ratelimiter.removeTokens(context.userId, diffOutput);
+              } else {
+                await ratelimiter.addTokens(context.userId, Math.abs(diffOutput));
+              }
             }
+
+            await db.insert(messageSegmentUsageTable).values({
+              userId: context.userId,
+              generationId: data.generationId,
+              private: !params.publicUsage,
+
+              estimatedCUs: params.estimatedCUs?.total
+                ? Math.round(params.estimatedCUs.total)
+                : undefined,
+              actualCUs: actualOutputCUs ? Math.round(actualOutputCUs) : undefined,
+
+              isByok: generationUsage.is_byok,
+              model: generationUsage.model,
+              origin: generationUsage.origin,
+              providerName: generationUsage.provider_name,
+              usage: generationUsage.usage,
+              cacheDiscount: generationUsage.cache_discount,
+              tokensPrompt: generationUsage.tokens_prompt,
+              tokensCompletion: generationUsage.tokens_completion,
+              numMediaPrompt: generationUsage.num_media_prompt,
+              numMediaCompletion: generationUsage.num_media_completion,
+              numSearchResults: generationUsage.num_search_results,
+            });
+          } catch (e) {
+            console.error("Failed to insert message segment usage", e);
+            Sentry.captureException(e, {
+              user: { id: context.userId },
+            });
           }
-
-          await db.insert(messageSegmentUsageTable).values({
-            userId: context.userId,
-            generationId: data.generationId,
-            private: !params.publicUsage,
-
-            estimatedCUs: params.estimatedCUs?.total,
-            actualCUs,
-
-            isByok: generationUsage.is_byok,
-            model: generationUsage.model,
-            origin: generationUsage.origin,
-            providerName: generationUsage.provider_name,
-            usage: generationUsage.usage,
-            cacheDiscount: generationUsage.cache_discount,
-            tokensPrompt: generationUsage.tokens_prompt,
-            tokensCompletion: generationUsage.tokens_completion,
-            numMediaPrompt: generationUsage.num_media_prompt,
-            numMediaCompletion: generationUsage.num_media_completion,
-            numSearchResults: generationUsage.num_search_results,
-          });
         }
         break;
     }
