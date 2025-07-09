@@ -4,6 +4,7 @@ import type { ModelId } from "$lib/common/ai/models";
 const BASE_CU_TOKEN_COST = 2.5 / 1_000_000;
 
 export function aproximateTokens(text: string) {
+  if (text.length === 0) return 0;
   const words = text.split(" ");
   return words.length * 4;
 }

@@ -13,6 +13,13 @@ declare module "ioredis" {
       currentTime: number,
       requestedTokens: number,
     ): Promise<[number, number, number]>; // [success_flag, remaining_tokens, next_refill_at]
+    getRemainingTokens(
+      key: string,
+      capacity: number,
+      refillAmount: number,
+      refillInterval: number,
+      currentTime: number,
+    ): Promise<[number, number]>; // [remaining_tokens, next_refill_at]
   }
 }
 
@@ -25,6 +32,15 @@ export interface ConsumeResult {
   nextRefillAt: number;
 }
 
+export interface TokenCountResult {
+  /** The number of tokens currently in the bucket. */
+  remainingTokens: number;
+  /** A Unix timestamp (in seconds) indicating when the next refill will occur. */
+  nextRefillAt: number;
+}
+
+const PREFIX = "token_bucket";
+
 export class TokenBucketRateLimiter {
   private redis: Redis;
   private capacity: number;
@@ -32,6 +48,7 @@ export class TokenBucketRateLimiter {
   private refillInterval: number;
 
   constructor(
+    redisUri: string,
     capacity: number,
     refillAmount: number,
     /*
@@ -40,7 +57,7 @@ export class TokenBucketRateLimiter {
     refillInterval: number,
   ) {
     const redisClient =
-      env.RATE_LIMIT_ENABLED === "true" ? new Redis(env.REDIS_URL) : DISABLED_RATELIMIT_CLIENT;
+      env.RATE_LIMIT_ENABLED === "true" ? new Redis(redisUri) : DISABLED_RATELIMIT_CLIENT;
 
     if (capacity <= 0 || refillAmount <= 0 || refillInterval <= 0) {
       throw new Error("Capacity, refill amount, and interval must be positive values.");
@@ -108,6 +125,55 @@ export class TokenBucketRateLimiter {
         end
       `,
     });
+
+    // Define the Lua script for getting remaining tokens without consuming any
+    this.redis.defineCommand("getRemainingTokens", {
+      numberOfKeys: 1,
+      lua: `
+        local key = KEYS[1]
+        local capacity = tonumber(ARGV[1])
+        local refill_amount = tonumber(ARGV[2])
+        local refill_interval = tonumber(ARGV[3])
+        local current_time = tonumber(ARGV[4])
+
+        local bucket = redis.call('HGETALL', key)
+        local last_tokens = 0
+        local last_updated = current_time 
+
+        if #bucket > 0 then
+            for i=1, #bucket, 2 do
+                if bucket[i] == 'tokens' then
+                    last_tokens = tonumber(bucket[i+1])
+                elseif bucket[i] == 'last_updated' then
+                    last_updated = tonumber(bucket[i+1])
+                end
+            end
+        else
+            last_tokens = capacity
+        end
+
+        local elapsed_time = current_time - last_updated
+        local current_tokens = last_tokens
+        local new_last_updated = last_updated
+
+        if elapsed_time >= refill_interval then
+            local refills_to_add = math.floor(elapsed_time / refill_interval)
+            local tokens_to_add = refills_to_add * refill_amount
+            current_tokens = math.min(capacity, last_tokens + tokens_to_add)
+            new_last_updated = last_updated + (refills_to_add * refill_interval)
+        end
+        
+        local next_refill_at = new_last_updated + refill_interval
+
+        -- Update the bucket state to reflect calculated refills (but don't consume tokens)
+        if elapsed_time >= refill_interval then
+            redis.call('HSET', key, 'tokens', current_tokens, 'last_updated', new_last_updated)
+        end
+
+        -- Return [remaining_tokens, next_refill_at]
+        return {current_tokens, next_refill_at}
+      `,
+    });
   }
 
   /**
@@ -125,8 +191,7 @@ export class TokenBucketRateLimiter {
       };
     }
 
-    const prefix = "token_bucket";
-    const redisKey = `${prefix}:${key}`;
+    const redisKey = `${PREFIX}:${key}`;
 
     const [successFlag, remaining, nextRefill] = await this.redis.consumeToken(
       redisKey,
@@ -144,23 +209,68 @@ export class TokenBucketRateLimiter {
     };
   }
 
+  /**
+   * Gets the current number of tokens in the bucket without consuming any.
+   * @param key A unique identifier for the bucket (e.g., user ID, IP address).
+   * @returns A promise that resolves to the current token count and next refill time.
+   */
+  public async getRemainingTokens(key: string): Promise<TokenCountResult> {
+    if (this.redis === DISABLED_RATELIMIT_CLIENT) {
+      return {
+        remainingTokens: this.capacity,
+        nextRefillAt: Date.now() + 9999,
+      };
+    }
+
+    const redisKey = `${PREFIX}:${key}`;
+
+    const [remaining, nextRefill] = await this.redis.getRemainingTokens(
+      redisKey,
+      this.capacity,
+      this.refillAmount,
+      this.refillInterval,
+      Date.now() / 1000, // Pass current time in seconds
+    );
+
+    return {
+      remainingTokens: Math.floor(remaining), // Return a whole number
+      nextRefillAt: Math.ceil(nextRefill), // Round up to be safe
+    };
+  }
+
   public async addTokens(key: string, amount: number): Promise<void> {
     if (this.redis === DISABLED_RATELIMIT_CLIENT) {
       return;
     }
 
     if (amount <= 0) return;
-    const prefix = "token_bucket";
-    const redisKey = `${prefix}:${key}`;
+    const redisKey = `${PREFIX}:${key}`;
     const addScript = `
-        local current_val = redis.call('HINCRBYFLOAT', KEYS[1], 'tokens', ARGV[1])
+        local key = KEYS[1]
+        local amount = tonumber(ARGV[1])
         local capacity = tonumber(ARGV[2])
-        if tonumber(current_val) > capacity then
-            redis.call('HSET', KEYS[1], 'tokens', capacity)
+        local current_time = tonumber(ARGV[3])
+
+        local bucket = redis.call('HGETALL', key)
+        local current_tokens = capacity
+
+        if #bucket > 0 then
+            for i=1, #bucket, 2 do
+                if bucket[i] == 'tokens' then
+                    current_tokens = tonumber(bucket[i+1])
+                    break
+                end
+            end
+        else
+            -- Initialize bucket with full capacity and current time
+            redis.call('HSET', key, 'tokens', capacity, 'last_updated', current_time)
         end
+
+        local new_tokens = math.min(capacity, current_tokens + amount)
+        redis.call('HSET', key, 'tokens', new_tokens)
         return 0
     `;
-    await this.redis.eval(addScript, 1, redisKey, amount, this.capacity);
+    await this.redis.eval(addScript, 1, redisKey, amount, this.capacity, Date.now() / 1000);
   }
 
   public async removeTokens(key: string, amount: number): Promise<void> {
@@ -169,16 +279,33 @@ export class TokenBucketRateLimiter {
     }
 
     if (amount <= 0) return;
-    const prefix = "token_bucket";
-    const redisKey = `${prefix}:${key}`;
+    const redisKey = `${PREFIX}:${key}`;
     const removeScript = `
-        local current_val = redis.call('HINCRBYFLOAT', KEYS[1], 'tokens', -tonumber(ARGV[1]))
-        if tonumber(current_val) < 0 then
-            redis.call('HSET', KEYS[1], 'tokens', 0)
+        local key = KEYS[1]
+        local amount = tonumber(ARGV[1])
+        local capacity = tonumber(ARGV[2])
+        local current_time = tonumber(ARGV[3])
+
+        local bucket = redis.call('HGETALL', key)
+        local current_tokens = capacity
+
+        if #bucket > 0 then
+            for i=1, #bucket, 2 do
+                if bucket[i] == 'tokens' then
+                    current_tokens = tonumber(bucket[i+1])
+                    break
+                end
+            end
+        else
+            -- Initialize bucket with full capacity and current time
+            redis.call('HSET', key, 'tokens', capacity, 'last_updated', current_time)
         end
+
+        local new_tokens = math.max(0, current_tokens - amount)
+        redis.call('HSET', key, 'tokens', new_tokens)
         return 0
     `;
-    await this.redis.eval(removeScript, 1, redisKey, amount);
+    await this.redis.eval(removeScript, 1, redisKey, amount, this.capacity, Date.now() / 1000);
   }
 
   public getCapacity(): number {
