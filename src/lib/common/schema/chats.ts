@@ -166,6 +166,12 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
       numMediaPrompt: integer(),
       numMediaCompletion: integer(),
       numSearchResults: integer(),
+
+      estimatedCUs: integer(),
+      actualCUs: integer(),
+
+      // Will be private when we pay for inference
+      private: boolean().notNull().default(false),
     },
     (t) => [
       !isClient &&

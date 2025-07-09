@@ -21,6 +21,8 @@ import { eq } from "drizzle-orm";
 import { createOpenAIClient } from "../utils/client";
 import { getUsageData } from "$lib/server/services/openapi";
 import * as Sentry from "@sentry/sveltekit";
+import { calculateCUs, type CUResult } from "$lib/server/ratelimit/cu";
+import { burstCULimiter, localCULimiter } from "$lib/server/ratelimit";
 
 // Custom context interface that extends beyond just messages
 
@@ -241,6 +243,12 @@ export function createAgent(
 export async function invokeAgent(
   { agent, openRouterKey }: ReturnType<typeof createAgent>,
   context: ChatContext,
+  params: {
+    model: ModelId;
+    publicUsage: boolean;
+    estimatedCUs?: CUResult;
+    ratelimit: undefined | "burst" | "local";
+  },
 ) {
   const stream = await agent.streamEvents(context, { version: "v2" });
   const bufferedTokenInsert = new BufferedTokenInsert(context.userId, context.currentMessageId);
@@ -341,25 +349,9 @@ export async function invokeAgent(
             .where(eq(messageTokensTable.messageId, context.currentMessageId));
 
           // Getting usage and saving it to DB
+          let generationUsage: Awaited<ReturnType<typeof getUsageData>>;
           try {
-            const generationUsage = await getUsageData(openRouterKey, data.generationId);
-
-            await db.insert(messageSegmentUsageTable).values({
-              userId: context.userId,
-              generationId: data.generationId,
-
-              isByok: generationUsage.is_byok,
-              model: generationUsage.model,
-              origin: generationUsage.origin,
-              providerName: generationUsage.provider_name,
-              usage: generationUsage.usage,
-              cacheDiscount: generationUsage.cache_discount,
-              tokensPrompt: generationUsage.tokens_prompt,
-              tokensCompletion: generationUsage.tokens_completion,
-              numMediaPrompt: generationUsage.num_media_prompt,
-              numMediaCompletion: generationUsage.num_media_completion,
-              numSearchResults: generationUsage.num_search_results,
-            });
+            generationUsage = await getUsageData(openRouterKey, data.generationId);
           } catch (e) {
             console.error("Failed to get usage data", e);
             Sentry.captureException(e, {
@@ -369,7 +361,57 @@ export async function invokeAgent(
                 threadId: context.threadId,
               },
             });
+
+            // We will keep the estimated CUs, since it's fair most of the times.
+            return;
           }
+
+          let actualCUs: number | undefined;
+
+          if (params.ratelimit && params.estimatedCUs) {
+            const actualCUs = calculateCUs(
+              // The input we'll keep the estimated for now. We're not charging on previous messages for now.
+              0,
+              generationUsage.tokens_completion,
+              params.model,
+            );
+
+            // We'll compare the estimated CUs with the actual CUs for output, and apply it to the ratelimit.
+
+            /**
+             * Positive means we used more CUs than estimated. We're going to remove them from the ratelimit.
+             * Negative means we used less CUs than estimated. We're going to add them to the ratelimit.
+             */
+            const diffOutput = actualCUs.total - params.estimatedCUs.total;
+
+            const ratelimiter = params.ratelimit === "burst" ? burstCULimiter : localCULimiter;
+            if (diffOutput > 0) {
+              await ratelimiter.removeTokens(context.userId, diffOutput);
+            } else {
+              await ratelimiter.addTokens(context.userId, Math.abs(diffOutput));
+            }
+          }
+
+          await db.insert(messageSegmentUsageTable).values({
+            userId: context.userId,
+            generationId: data.generationId,
+            private: !params.publicUsage,
+
+            estimatedCUs: params.estimatedCUs?.total,
+            actualCUs,
+
+            isByok: generationUsage.is_byok,
+            model: generationUsage.model,
+            origin: generationUsage.origin,
+            providerName: generationUsage.provider_name,
+            usage: generationUsage.usage,
+            cacheDiscount: generationUsage.cache_discount,
+            tokensPrompt: generationUsage.tokens_prompt,
+            tokensCompletion: generationUsage.tokens_completion,
+            numMediaPrompt: generationUsage.num_media_prompt,
+            numMediaCompletion: generationUsage.num_media_completion,
+            numSearchResults: generationUsage.num_search_results,
+          });
         }
         break;
     }

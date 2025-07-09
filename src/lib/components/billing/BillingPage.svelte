@@ -16,7 +16,6 @@
     CardTitle,
   } from "$lib/components/ui/card";
   import { Badge } from "$lib/components/ui/badge";
-  import AddCreditsDialog from "./AddCreditsDialog.svelte";
   import { cn } from "$lib/utils";
 
   const user = useCurrentUser(null);
@@ -32,12 +31,9 @@
   });
 
   const subscriptionPlan = $derived.by(() => {
-    if (userState === "premium") return "premium";
     if (userState === "unlimited") return "unlimited";
     return undefined;
   });
-
-  let addCreditsDialogOpen = $state(false);
 
   const createCheckoutSession = createMutation(
     orpcQuery.v1.billing.createCheckoutSession.mutationOptions({
@@ -75,35 +71,13 @@
   const isLoading = $derived($createCheckoutSession.isPending || $createCustomerSession.isPending);
 </script>
 
-<AddCreditsDialog
-  bind:open={addCreditsDialogOpen}
-  onOpenChange={(open) => (addCreditsDialogOpen = open)}
-/>
-
 <div class="space-y-6">
-  {#if isLoggedIn && userData}
-    <!-- Credits Display -->
-    <div class="mb-6 rounded-lg border p-6">
-      <h2 class="mb-4 flex items-center gap-2 text-xl font-semibold">Your remaining messages</h2>
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="text-center">
-            <div class="font-mono text-3xl font-bold">{Math.round(userData.credits)}</div>
-            <div class="text-muted-foreground text-sm">messages available</div>
-          </div>
-        </div>
-        <Button onclick={() => (addCreditsDialogOpen = true)}>Add Messages</Button>
-      </div>
-    </div>
-  {/if}
-
   {#if subscriptionPlan}
     <div
       class="mb-6 rounded-lg border border-green-200 bg-green-50 p-6 dark:border-green-800 dark:bg-green-900/20"
     >
       <h2 class="mb-2 text-xl font-semibold text-green-800 dark:text-green-200">
-        🎉 You are subscribed to the {subscriptionPlan.charAt(0).toUpperCase() +
-          subscriptionPlan.slice(1)} plan
+        🎉 You are subscribed to the <strong>{subscriptionPlan}</strong> plan
       </h2>
       <p class="mb-4 text-green-700 dark:text-green-300">
         Your subscription is active until:
@@ -144,10 +118,6 @@
         <ul class="space-y-3">
           <li class="flex items-center gap-3">
             <Check class="h-5 w-5 text-green-500" />
-            <span><strong>Pay-per-use credits</strong> - Only pay for what you need</span>
-          </li>
-          <li class="flex items-center gap-3">
-            <Check class="h-5 w-5 text-green-500" />
             <span>Bring your own key (BYOK) option</span>
           </li>
           <li class="flex items-center gap-3">
@@ -172,84 +142,7 @@
         {#if userState === "not-logged-in"}
           <Button href="/auth" variant="outline" class="w-full">Get Started Free</Button>
         {:else}
-          <Button onclick={() => (addCreditsDialogOpen = true)} variant="outline" class="w-full">
-            Add Credits
-          </Button>
-        {/if}
-      </CardFooter>
-    </Card>
-
-    <!-- Premium Plan -->
-    <Card
-      class={cn("relative", !userState || (userState === "not-logged-in" && "ring-primary ring-2"))}
-    >
-      <CardHeader>
-        <CardTitle class="text-2xl text-blue-600 dark:text-blue-400">Premium</CardTitle>
-        <CardDescription>Perfect for regular users with moderate usage.</CardDescription>
-        <div class="text-3xl font-bold">
-          6€<span class="text-muted-foreground text-base font-normal">/month</span>
-        </div>
-      </CardHeader>
-      <CardContent class="space-y-4">
-        <ul class="space-y-3">
-          <li class="flex items-center gap-3">
-            <Check class="h-5 w-5 text-green-500" />
-            <span><strong>Everything in the Free plan</strong></span>
-          </li>
-          <li class="flex items-center gap-3">
-            <Check class="h-5 w-5 text-green-500" />
-            <span><strong>20GB storage limit</strong> for files and attachments</span>
-          </li>
-          <li class="flex items-center gap-3">
-            <Check class="h-5 w-5 text-green-500" />
-            <span>Advanced Web Searching</span>
-          </li>
-          <li class="flex items-center gap-3">
-            <Check class="h-5 w-5 text-green-500" />
-            <span>Advanced Data Analysis</span>
-          </li>
-          <li class="flex items-center gap-3">
-            <Check class="h-5 w-5 text-green-500" />
-            <span>Advanced Projects</span>
-          </li>
-        </ul>
-      </CardContent>
-      <CardFooter class="mt-auto">
-        {#if userState === "not-logged-in"}
-          <Button href="/auth" class="w-full bg-blue-600 text-white hover:bg-blue-700">
-            <Star class="mr-2 h-4 w-4" />
-            Get Premium
-          </Button>
-        {:else if !userState}
-          <Button
-            class="w-full bg-blue-600 text-white hover:bg-blue-700"
-            disabled={isLoading}
-            onclick={() => $createCheckoutSession.mutate({ plan: "premium" })}
-          >
-            {#if isLoading}
-              <Loader2 class="mr-2 animate-spin" />
-            {:else}
-              <Star class="mr-2 h-4 w-4" />
-            {/if}
-            Subscribe to Premium
-          </Button>
-        {:else if userState === "premium"}
-          <Button disabled class="w-full" variant="outline">
-            <Check class="mr-2 h-4 w-4" />
-            Currently Active
-          </Button>
-        {:else}
-          <Button
-            disabled={isLoading}
-            onclick={() => $createCustomerSession.mutate({})}
-            class="w-full"
-            variant="outline"
-          >
-            {#if $createCustomerSession.isPending}
-              <Loader2 class="animate-spin" />
-            {/if}
-            Manage Account
-          </Button>
+          <Button variant="outline" class="w-full" disabled>Current plan</Button>
         {/if}
       </CardFooter>
     </Card>

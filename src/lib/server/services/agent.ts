@@ -7,13 +7,17 @@ import { markMessageAsErrored } from "./messages";
 import { db } from "../db";
 import { RateLimitError } from "openai";
 import { listenForCancelMessage } from "../db/mq/messageCancellation";
+import type { CUResult } from "../ratelimit/cu";
 
 export async function executeAgentSafely(
   params: {
     model: ModelId;
-    openRouterKey: string;
     reasoningLevel: ReasoningLevel;
     webSearchEnabled: boolean;
+    openRouterKey: string;
+    publicUsage: boolean;
+    ratelimit: undefined | "burst" | "local";
+    estimatedCUs?: CUResult;
   },
   context: ChatContext,
 ) {
@@ -29,7 +33,12 @@ export async function executeAgentSafely(
     abortSignal: abortController.signal,
   });
 
-  return invokeAgent(agent, context)
+  return invokeAgent(agent, context, {
+    model: params.model,
+    ratelimit: params.publicUsage ? undefined : "local",
+    publicUsage: params.publicUsage,
+    estimatedCUs: params.estimatedCUs,
+  })
     .then(() => {
       posthog?.capture({
         distinctId: context.userId,

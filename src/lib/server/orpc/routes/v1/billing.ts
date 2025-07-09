@@ -1,12 +1,7 @@
 import { osBase } from "../../context";
 import { authenticatedMiddleware } from "../../middlewares";
-import {
-  createCheckoutSession,
-  createCreditsSession,
-  createCustomerSession,
-  createUpgradeSession,
-} from "$lib/server/stripe";
-import { SUBSCRIPTION_PLANS } from "$lib/common";
+import { createCheckoutSession, createCustomerSession } from "$lib/server/stripe";
+import { SUBSCRIPTION_PLANS, UNLIMITED_PLAN_NAME } from "$lib/common";
 import z from "zod";
 
 export const v1BillingRouter = osBase.router({
@@ -14,7 +9,7 @@ export const v1BillingRouter = osBase.router({
     .use(authenticatedMiddleware)
     .input(
       z.object({
-        plan: z.enum(SUBSCRIPTION_PLANS).optional().default("premium"),
+        plan: z.enum(SUBSCRIPTION_PLANS).optional().default(UNLIMITED_PLAN_NAME),
       }),
     )
     .handler(async ({ context, input }) => {
@@ -41,42 +36,6 @@ export const v1BillingRouter = osBase.router({
     )
     .handler(async ({ context, input }) => {
       const session = await createCustomerSession(context.userCtx.user.id, input.toCancel);
-
-      if (!session) {
-        return {
-          success: false,
-        };
-      }
-
-      return {
-        success: true,
-        url: session.url,
-      };
-    }),
-
-  createUpgradeSession: osBase
-    .use(authenticatedMiddleware)
-    .input(z.object({ toPlan: z.enum(SUBSCRIPTION_PLANS) }))
-    .handler(async ({ context, input }) => {
-      const session = await createUpgradeSession(context.userCtx.user.id, input.toPlan);
-
-      if (!session) {
-        return {
-          success: false,
-        };
-      }
-
-      return {
-        success: true,
-        url: session.url,
-      };
-    }),
-
-  addCredits: osBase
-    .use(authenticatedMiddleware)
-    .input(z.object({ messages: z.number().min(20).max(1000) }))
-    .handler(async ({ context, input }) => {
-      const session = await createCreditsSession(context.userCtx.user.id, input.messages);
 
       if (!session) {
         return {

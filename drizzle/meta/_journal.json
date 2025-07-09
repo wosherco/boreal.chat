@@ -78,13 +78,6 @@
       "when": 1751898832160,
       "tag": "0010_clean_leopardon",
       "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1751917046622,
-      "tag": "0011_overrated_epoch",
-      "breakpoints": true
     }
   ]
 }

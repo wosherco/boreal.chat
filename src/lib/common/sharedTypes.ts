@@ -27,9 +27,6 @@ export type UserInfo = {
   subscribedUntil: Date | null;
   subscriptionStatus: SubscriptionStatus | null;
   subscriptionPlan: SubscriptionPlan | null;
-
-  // Credit system
-  credits: number;
 };
 
 export interface Chat {

@@ -7,6 +7,16 @@ import { $ } from "bun";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function safeNumberParse(value: string) {
+  const num = Number(value);
+
+  if (isNaN(num)) {
+    throw new Error(`Invalid number: ${value}`);
+  }
+
+  return num;
+}
+
 async function fetchModelFeatures() {
   console.log("Fetching model features from OpenRouter...");
   const response = await fetch("https://openrouter.ai/api/v1/models");
@@ -25,11 +35,11 @@ async function fetchModelFeatures() {
     features[model.id] = {
       contextLength: model.context_length,
       pricing: {
-        prompt: model.pricing.prompt,
-        completion: model.pricing.completion,
-        image: model.pricing.image,
-        web_search: model.pricing.web_search,
-        request: model.pricing.request,
+        prompt: safeNumberParse(model.pricing.prompt),
+        completion: safeNumberParse(model.pricing.completion),
+        image: safeNumberParse(model.pricing.image),
+        web_search: safeNumberParse(model.pricing.web_search),
+        request: safeNumberParse(model.pricing.request),
       },
       inputModalities: model.architecture.input_modalities,
     };
@@ -48,11 +58,11 @@ export const GENERATED_AT = "${generatedAt}";
 export type ModelFeatures = {
   contextLength: number;
   pricing: {
-    prompt: string;
-    completion: string;
-    image: string;
-    web_search: string;
-    request: string;
+    prompt: number;
+    completion: number;
+    image: number;
+    web_search: number;
+    request: number;
   };
   inputModalities: ("text" | "image" | "audio" | "video" | "file")[];
 };
