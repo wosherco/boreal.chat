@@ -59,7 +59,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup
-        uses: ./tooling/github/setup
+        uses: ./.github/setup
 
       - name: Set up Docker
         uses: docker/setup-docker-action@v4
