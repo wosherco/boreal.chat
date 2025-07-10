@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { aproximateTokens, calculateCUs } from "../../../../src/lib/server/ratelimit/cu";
+import { approximateTokens, calculateCUs } from "../../../../src/lib/server/ratelimit/cu";
 import type { ModelId } from "../../../../src/lib/common/ai/models";
 
 // Mock the model features
@@ -55,35 +55,35 @@ vi.mock("$lib/common/ai/modelFeatures", () => ({
 const BASE_CU_TOKEN_COST = 2.5 / 1_000_000;
 
 describe("cu.ts", () => {
-  describe("aproximateTokens", () => {
+  describe("approximateTokens", () => {
     it("should return 0 for empty string", () => {
-      const result = aproximateTokens("");
+      const result = approximateTokens("");
       expect(result).toBe(0);
     });
 
     it("should calculate tokens for single word", () => {
-      const result = aproximateTokens("hello");
+      const result = approximateTokens("hello");
       expect(result).toBe(4); // 1 word * 4
     });
 
     it("should calculate tokens for multiple words", () => {
-      const result = aproximateTokens("hello world test");
+      const result = approximateTokens("hello world test");
       expect(result).toBe(12); // 3 words * 4
     });
 
     it("should handle multiple spaces between words", () => {
-      const result = aproximateTokens("hello  world   test");
+      const result = approximateTokens("hello  world   test");
       expect(result).toBe(24); // 6 words (empty strings count) * 4
     });
 
     it("should handle leading and trailing spaces", () => {
-      const result = aproximateTokens(" hello world ");
+      const result = approximateTokens(" hello world ");
       expect(result).toBe(16); // 4 words (including empty strings) * 4
     });
 
     it("should handle long text", () => {
       const longText = Array(100).fill("word").join(" ");
-      const result = aproximateTokens(longText);
+      const result = approximateTokens(longText);
       expect(result).toBe(400); // 100 words * 4
     });
   });
@@ -215,9 +215,9 @@ describe("cu.ts", () => {
   });
 
   describe("edge cases and integration", () => {
-    it("should work correctly with aproximateTokens output", () => {
+    it("should work correctly with approximateTokens output", () => {
       const text = "hello world test message";
-      const approximatedTokens = aproximateTokens(text);
+      const approximatedTokens = approximateTokens(text);
 
       const result = calculateCUs(
         approximatedTokens,

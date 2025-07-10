@@ -13,7 +13,7 @@ import {
 import type { ModelId } from "$lib/common/ai/models";
 import { BILLING_ENABLED } from "$lib/common/constants";
 import { env } from "$env/dynamic/private";
-import { aproximateTokens, calculateCUs, type CUResult } from "../ratelimit/cu";
+import { approximateTokens, calculateCUs, type CUResult } from "../ratelimit/cu";
 
 export const authenticatedMiddleware = osBase.middleware(async ({ context, next }) => {
   if (!context.userCtx.user || !context.userCtx.session) {
@@ -36,7 +36,7 @@ export const authenticatedMiddleware = osBase.middleware(async ({ context, next 
 export const subscribedMiddleware = authenticatedMiddleware.concat(async ({ context, next }) => {
   if (!isSubscribed(context.userCtx.user)) {
     throw new ORPCError("UNAUTHORIZED", {
-      message: "You need to be subscribed to atleast Premium plan to use this feature.",
+      message: "You need to be subscribed to Unlimited plan to use this feature.",
     });
   }
 
@@ -96,7 +96,7 @@ export const inferenceMiddleware = authenticatedMiddleware.concat(
 
     // We process the rate limits
     const estimatedCUs = calculateCUs(
-      input.message ? aproximateTokens(input.message) : 500,
+      input.message ? approximateTokens(input.message) : 500,
       5000,
       input.model,
     );

@@ -3,7 +3,7 @@ import type { ModelId } from "$lib/common/ai/models";
 
 const BASE_CU_TOKEN_COST = 2.5 / 1_000_000;
 
-export function aproximateTokens(text: string) {
+export function approximateTokens(text: string) {
   if (text.length === 0) return 0;
   const words = text.split(" ");
   return words.length * 4;
@@ -24,7 +24,7 @@ export function calculateCUs(
 
   const inputCUs = calculateModelCUs(
     inputTokens,
-    modelFeatures?.pricing.completion ?? BASE_CU_TOKEN_COST,
+    modelFeatures?.pricing.prompt ?? BASE_CU_TOKEN_COST,
   );
   const outputCUs = calculateModelCUs(
     outputTokens,
