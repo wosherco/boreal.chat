@@ -93,7 +93,7 @@
 
       <a href="/" class="flex w-full items-center justify-between p-4 pr-0">
         <div class="flex items-center gap-2">
-          <h1 class="text-lg font-semibold md:ml-12">boreal.chat</h1>
+          <h1 class="text-lg font-semibold md:ml-8">boreal.chat</h1>
         </div>
         <BetaBadge />
       </a>
@@ -225,13 +225,13 @@
               <KeyboardIcon class="mr-2 size-4" />
               <span>Shortcuts</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onclick={() => goto("/settings")}>
-              <SettingsIcon class="mr-2 size-4" />
-              <span>Settings</span>
-            </DropdownMenuItem>
             <DropdownMenuItem onclick={() => window.open("https://docs.boreal.chat", "_blank")}>
               <BookOpenIcon class="mr-2 size-4" />
               <span>Docs</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onclick={() => goto("/settings")}>
+              <SettingsIcon class="mr-2 size-4" />
+              <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onclick={onLogout} variant="destructive" disabled={logoutLoading}>
