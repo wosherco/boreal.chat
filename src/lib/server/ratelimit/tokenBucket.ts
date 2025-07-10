@@ -187,7 +187,7 @@ export class TokenBucketRateLimiter {
       return {
         success: true,
         remainingTokens: this.capacity,
-        nextRefillAt: Date.now() + 9999,
+        nextRefillAt: Math.floor(Date.now() / 1000) + 9999,
       };
     }
 
@@ -218,7 +218,7 @@ export class TokenBucketRateLimiter {
     if (this.redis === DISABLED_RATELIMIT_CLIENT) {
       return {
         remainingTokens: this.capacity,
-        nextRefillAt: Date.now() + 9999,
+        nextRefillAt: Math.floor(Date.now() / 1000) + 9999,
       };
     }
 
