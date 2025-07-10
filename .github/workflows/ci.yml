@@ -67,5 +67,8 @@ jobs:
       - name: Pull Docker images
         run: docker compose pull
 
+      - name: Copy test env vars
+        run: cp .env.test .env
+
       - name: Test
         run: pnpm test
