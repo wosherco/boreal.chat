@@ -34,12 +34,7 @@ export async function executeAgentSafely(
     abortSignal: abortController.signal,
   });
 
-  return invokeAgent(agent, context, {
-    model: params.model,
-    ratelimit: params.publicUsage ? undefined : "local",
-    publicUsage: params.publicUsage,
-    estimatedCUs: params.estimatedCUs,
-  })
+  return invokeAgent(agent, context, params)
     .then(() => {
       posthog?.capture({
         distinctId: context.userId,
