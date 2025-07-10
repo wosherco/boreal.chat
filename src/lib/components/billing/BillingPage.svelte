@@ -1,7 +1,7 @@
 <script lang="ts">
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { orpcQuery } from "$lib/client/orpc";
-  import { getSubscribedPlan } from "$lib/common/utils/subscription";
+  import { isSubscribed } from "$lib/common/utils/subscription";
   import { createMutation } from "@tanstack/svelte-query";
   import { Button } from "../ui/button";
   import { Loader2 } from "@lucide/svelte";
@@ -23,17 +23,7 @@
   // Clear subscription state derivations
   const isLoggedIn = $derived($user.data?.authenticated ?? false);
   const userData = $derived($user.data?.data ?? null);
-
-  const userState = $derived.by(() => {
-    if (!isLoggedIn || !userData) return "not-logged-in";
-
-    return getSubscribedPlan(userData);
-  });
-
-  const subscriptionPlan = $derived.by(() => {
-    if (userState === "unlimited") return "unlimited";
-    return undefined;
-  });
+  const isUserSubscribed = $derived(isSubscribed(userData));
 
   const createCheckoutSession = createMutation(
     orpcQuery.v1.billing.createCheckoutSession.mutationOptions({
@@ -72,12 +62,12 @@
 </script>
 
 <div class="space-y-6">
-  {#if subscriptionPlan}
+  {#if isUserSubscribed}
     <div
       class="mb-6 rounded-lg border border-green-200 bg-green-50 p-6 dark:border-green-800 dark:bg-green-900/20"
     >
       <h2 class="mb-2 text-xl font-semibold text-green-800 dark:text-green-200">
-        🎉 You are subscribed to the <strong>{subscriptionPlan}</strong> plan
+        🎉 You are subscribed to the <strong>Unlimited</strong> plan
       </h2>
       <p class="mb-4 text-green-700 dark:text-green-300">
         Your subscription is active until:
@@ -139,7 +129,7 @@
         </ul>
       </CardContent>
       <CardFooter class="mt-auto">
-        {#if userState === "not-logged-in"}
+        {#if !$user.data?.authenticated}
           <Button href="/auth" variant="outline" class="w-full">Get Started Free</Button>
         {:else}
           <Button variant="outline" class="w-full" disabled>Current plan</Button>
@@ -151,10 +141,10 @@
     <Card
       class={cn(
         "border-primary from-primary/5 via-primary/10 to-primary/5 relative border-2 bg-gradient-to-br",
-        userState === "unlimited" ? "ring-primary shadow-lg ring-2" : "",
+        isUserSubscribed ? "ring-primary shadow-lg ring-2" : "",
       )}
     >
-      {#if userState === "unlimited"}
+      {#if isUserSubscribed}
         <div class="absolute -top-3 left-1/2 -translate-x-1/2 transform">
           <Badge class="bg-primary text-primary-foreground">
             <Star class="mr-1 h-3 w-3" />
@@ -214,7 +204,7 @@
         </div>
       </CardContent>
       <CardFooter class="mt-auto">
-        {#if userState === "not-logged-in"}
+        {#if !isLoggedIn}
           <Button
             href="/auth"
             class="from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground w-full bg-gradient-to-r shadow-lg"
@@ -222,7 +212,7 @@
             <Zap class="mr-2 h-4 w-4" />
             Get Unlimited
           </Button>
-        {:else if userState === "unlimited"}
+        {:else if isUserSubscribed}
           <Button disabled class="w-full" variant="outline">
             <Check class="mr-2 h-4 w-4" />
             Currently Active

@@ -51,8 +51,7 @@
   import { browser } from "$app/environment";
   import ShortcutsCheatsheetDialog from "./ShortcutsCheatsheetDialog.svelte";
   import SheetClosableOnlyOnPhone from "./utils/SheetClosableOnlyOnPhone.svelte";
-  import { getSubscribedPlan } from "$lib/common/utils/subscription";
-  import { UNLIMITED_PLAN_NAME } from "$lib/common";
+  import { isSubscribed } from "$lib/common/utils/subscription";
 
   let shortcutsCheatsheetOpen = $state(false);
 
@@ -73,7 +72,7 @@
     }
   }
 
-  const subscribedPlan = $derived(getSubscribedPlan(user?.data ?? null));
+  const isUserSubscribed = $derived(isSubscribed(user?.data ?? null));
 </script>
 
 <ShortcutsCheatsheetDialog bind:open={shortcutsCheatsheetOpen} />
@@ -180,7 +179,7 @@
                 <div class="flex min-w-0 flex-1 flex-col items-start">
                   <p class="w-full truncate text-sm font-medium">{user.data.name}</p>
                   <p class="text-muted-foreground text-xs">
-                    {#if subscribedPlan === UNLIMITED_PLAN_NAME}
+                    {#if isUserSubscribed}
                       Unlimited
                     {:else}
                       Free
