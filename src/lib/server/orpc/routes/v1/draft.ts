@@ -38,6 +38,8 @@ export const v1DraftRouter = osBase.router({
                 set: {
                   content: input.content,
                   selectedModel: input.selectedModel,
+                  reasoningLevel: input.reasoningLevel,
+                  webSearchEnabled: input.webSearchEnabled,
                 },
                 where: and(
                   eq(draftsTable.id, input.id),
