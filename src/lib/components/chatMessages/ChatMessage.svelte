@@ -236,10 +236,8 @@
   {:else}
     <div
       class={cn(
-        isUser
-          ? "bg-muted border-input ml-auto w-fit rounded-lg border px-4 py-2 shadow-sm"
-          : "mr-auto",
-        "max-w-full",
+        isUser && "bg-muted border-input w-fit rounded-lg border px-4 py-2 shadow-sm",
+        "mr-auto max-w-full",
       )}
     >
       {#each cleanedSegments as segment (segment.ordinal)}
@@ -272,9 +270,7 @@
 
     {#if isFinishedMessageStatus(message.status)}
       <TooltipProvider>
-        <div
-          class={cn("flex w-fit flex-row items-center gap-1 pt-2", isUser ? "ml-auto" : "mr-auto")}
-        >
+        <div class="mr-auto flex w-fit flex-row items-center gap-1 pt-2">
           <Tooltip>
             <TooltipTrigger>
               <Button variant="ghost" size="small-icon" onclick={copyToClipboard}>

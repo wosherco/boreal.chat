@@ -16,23 +16,21 @@
   import { createMutation } from "@tanstack/svelte-query";
   import { formatDateCompact } from "$lib/utils/date";
   import { truncateText, formatCount } from "$lib/utils/text";
+  import type { Snippet } from "svelte";
+  import { gotoWithSeachParams } from "$lib/utils/navigate";
+  import { page } from "$app/state";
 
   interface Props {
-    onDraftSelect?: (draft: Draft) => void;
-    children: any;
+    children: Snippet;
   }
 
-  let { onDraftSelect, children }: Props = $props();
+  let { children }: Props = $props();
 
   let open = $state(false);
 
   const draftsStore = useDrafts();
   const drafts = $derived($draftsStore?.data ?? []);
   const loading = $derived($draftsStore?.loading ?? true);
-
-  $effect(() => {
-    console.log("drafts", drafts);
-  });
 
   const deleteDraftMutation = createMutation(
     orpcQuery.v1.draft.delete.mutationOptions({
@@ -59,7 +57,11 @@
   );
 
   function handleDraftSelect(draft: Draft) {
-    onDraftSelect?.(draft);
+    gotoWithSeachParams(page.url, {
+      searchParams: {
+        draft: draft.id,
+      },
+    });
     open = false;
   }
 </script>

@@ -31,7 +31,7 @@
   import { isFinishedMessageStatus } from "$lib/common";
   import { waitForInsert } from "$lib/client/hooks/waitForInsert";
   import { chatTable, messageTable } from "$lib/client/db/schema";
-  import { Debounced, TextareaAutosize } from "runed";
+  import { TextareaAutosize, useDebounce } from "runed";
   import DraftManager from "../drafts/DraftManager.svelte";
   import type { Draft } from "$lib/common/sharedTypes";
   import { FileTextIcon } from "@lucide/svelte";
@@ -39,7 +39,7 @@
   import { env } from "$env/dynamic/public";
   import { createMutation } from "@tanstack/svelte-query";
   import { gotoWithSeachParams } from "$lib/utils/navigate";
-  import { useDraft } from "$lib/client/hooks/useDraft.svelte";
+  import { untrack } from "svelte";
 
   interface Props {
     /**
@@ -54,6 +54,7 @@
 
   let value = $state(page.url.searchParams.get("prompt") ?? "");
   let loading = $state(false);
+  let prevDraftId = $state<string | undefined>(undefined);
 
   const defaultSelectedModel = browser ? getLastSelectedModel() : GEMINI_FLASH_2_5;
   const defaultWebSearchEnabled = false;
@@ -86,13 +87,12 @@
 
     try {
       const currentChatState = getCurrentChatState();
+      // Cancel any pending draft saves
+      debouncedSaveDraft.cancel();
 
       if (currentChatState) {
         // We're replying to a message
         try {
-          // Cancel any pending draft saves
-          debouncedSaveDraft.cancel();
-
           await orpc.v1.chat.sendMessage({
             chatId: currentChatState.chatId,
             model: actualSelectedModel,
@@ -113,9 +113,6 @@
         }
       } else {
         try {
-          // Cancel any pending draft saves
-          debouncedSaveDraft.cancel();
-
           const chatDetails = await orpc.v1.chat.newChat({
             model: actualSelectedModel,
             message: value,
@@ -182,8 +179,19 @@
     }
   });
 
-  onNavigate(() => {
-    debouncedSaveDraft.updateImmediately();
+  onNavigate(({ from, to }) => {
+    // This means we're going out of the new chat page, or the current chat page, and we want to save the draft
+    if (from?.url.pathname !== to?.url.pathname) {
+      debouncedSaveDraft.runScheduledNow();
+    }
+  });
+
+  $effect(() => {
+    if (draft?.id !== untrack(() => prevDraftId)) {
+      debouncedSaveDraft.runScheduledNow();
+      prevDraftId = draft?.id;
+      value = draft?.content ?? "";
+    }
   });
 
   let modelPickerOpen = $state(false);
@@ -210,20 +218,44 @@
     }),
   );
 
+  const deleteDraftMutation = createMutation(
+    orpcQuery.v1.draft.delete.mutationOptions({
+      onSuccess: () => {
+        gotoWithSeachParams(page.url, {
+          searchParams: {
+            draft: undefined,
+          },
+        });
+      },
+      onError: (error) => {
+        console.error("Failed to delete draft:", error);
+      },
+    }),
+  );
+
   // Draft functionality
   async function saveDraft() {
-    if (!value.trim() || loading || chatId) return;
+    if (loading) return;
 
-    $upsertDraftMutation.mutate({
-      id: draft?.id,
-      content: value,
-      selectedModel: actualSelectedModel,
-      reasoningLevel: actualReasoningLevel,
-      webSearchEnabled: actualWebSearchEnabled,
-    });
+    if (!value.trim()) {
+      if (prevDraftId) {
+        // We delete the draft
+        $deleteDraftMutation.mutate({
+          id: prevDraftId,
+        });
+      }
+    } else {
+      $upsertDraftMutation.mutate({
+        id: prevDraftId,
+        content: value,
+        selectedModel: actualSelectedModel,
+        reasoningLevel: actualReasoningLevel,
+        webSearchEnabled: actualWebSearchEnabled,
+      });
+    }
   }
 
-  const debouncedSaveDraft = new Debounced(() => saveDraft(), 1000);
+  const debouncedSaveDraft = useDebounce(() => saveDraft(), 1000);
 
   // Mic stuff
   const voiceMessageService = new VoiceMessageService();
@@ -319,8 +351,9 @@
         disabled={loading}
         bind:this={textAreaElement}
         bind:value
+        oninput={debouncedSaveDraft}
         placeholder="Message Bot..."
-        class="placeholder:text-muted-foreground min-h-20 w-full resize-none overflow-y-auto border-none bg-transparent p-4 pb-2 duration-150 ease-out focus:ring-0 focus:outline-none"
+        class="placeholder:text-muted-foreground min-h-20 w-full resize-none overflow-y-auto border-none bg-transparent p-4 pb-2 focus:ring-0 focus:outline-none"
       ></textarea>
 
       <div class="flex items-center justify-between p-2 pt-0">

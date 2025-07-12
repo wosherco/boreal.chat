@@ -72,7 +72,7 @@
   <textarea
     bind:this={editTextAreaElement}
     bind:value={editValue}
-    class="w-full resize-none bg-transparent p-2 transition-all duration-150 ease-out focus:outline-none"
+    class="w-full resize-none bg-transparent px-4 py-3 focus:outline-none"
     placeholder="Edit your message..."
     autofocus
   ></textarea>
