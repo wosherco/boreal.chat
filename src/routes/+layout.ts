@@ -56,7 +56,9 @@ export const load: LayoutLoad = async ({ data }) => {
       currentUserInfo,
     },
     flags: {
-      flagsmith: localFlagsmithInstance,
+      flagsmith: browser
+        ? (flagsmithInstanceCache ?? localFlagsmithInstance)
+        : localFlagsmithInstance,
     },
   };
 };
