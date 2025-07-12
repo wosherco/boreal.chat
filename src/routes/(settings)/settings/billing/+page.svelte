@@ -1,9 +1,7 @@
 <script lang="ts">
-  import { browser, dev } from "$app/environment";
-  import { BILLING_FEATURE_FLAG } from "$lib/common/featureFlags";
+  import { dev } from "$app/environment";
+  import { BILLING_FEATURE_FLAG, getFeatureFlag } from "$lib/common/featureFlags";
   import BillingPage from "$lib/components/billing/BillingPage.svelte";
-  import posthog from "posthog-js";
-  import { onMount } from "svelte";
   import SvelteSeo from "svelte-seo";
   import type { PageProps } from "./$types";
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
@@ -15,10 +13,8 @@
 
   const user = useCurrentUser(data.auth.currentUserInfo);
 
-  onMount(() => {
-    if (browser && !dev) {
-      isBillingPageEnabled = posthog.isFeatureEnabled(BILLING_FEATURE_FLAG) ?? false;
-    }
+  $effect(() => {
+    isBillingPageEnabled = getFeatureFlag(BILLING_FEATURE_FLAG).enabled;
   });
 </script>
 
