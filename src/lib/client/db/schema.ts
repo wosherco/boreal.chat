@@ -1,4 +1,4 @@
-import { pgTable, real, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { SUBSCRIPTION_PLANS, SUBSCRIPTION_STATUS, USER_ROLES } from "../../common";
 import { createChatTables } from "../../common/schema/chats";
 
@@ -16,9 +16,6 @@ export const userTable = pgTable("user", {
     enum: SUBSCRIPTION_STATUS,
   }),
   subscriptionPlan: varchar({ length: 50, enum: SUBSCRIPTION_PLANS }),
-
-  // Credit system
-  credits: real().notNull().default(0.0),
 });
 
 const {

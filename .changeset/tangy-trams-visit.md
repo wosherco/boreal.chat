@@ -2,4 +2,4 @@
 "boreal.chat": patch
 ---
 
-Added credits/messages system
+added flagsmith

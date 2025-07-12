@@ -1,8 +1,10 @@
 <script lang="ts">
   import { orpc } from "$lib/client/orpc";
-  import { Loader2Icon } from "@lucide/svelte";
+  import { ChevronDownIcon, Loader2Icon } from "@lucide/svelte";
   import { Button } from "../ui/button";
   import KeyboardShortcuts from "../utils/KeyboardShortcuts.svelte";
+  import ModelPickerPopover from "../chatInput/ModelPickerPopover.svelte";
+  import { MODEL_DETAILS, type ModelId } from "$lib/common/ai/models";
 
   interface Props {
     defaultValue: string;
@@ -10,12 +12,14 @@
     parentMessageId: string | null;
     chatId: string;
     onCancel: () => void;
+    model: ModelId;
   }
 
-  const { defaultValue, onSubmit, parentMessageId, chatId, onCancel }: Props = $props();
+  const { defaultValue, onSubmit, parentMessageId, chatId, onCancel, model }: Props = $props();
 
   let editTextAreaElement = $state<HTMLTextAreaElement>();
   let editValue = $derived(defaultValue);
+  let selectedModel = $state(model);
 
   // Auto-growing textarea logic for editing
   const lineHeight = 24; // Line height in pixels
@@ -56,6 +60,7 @@
         parentMessageId,
         message: editValue,
         chatId,
+        model: selectedModel,
       });
 
       await onSubmit(result.threadId, result.userMessageId);
@@ -86,14 +91,27 @@
     placeholder="Edit your message..."
     autofocus
   ></textarea>
-  <div class="flex flex-row items-center justify-end gap-2 p-2 pt-0">
-    <Button variant="ghost" size="sm" onclick={cancelEdit} disabled={loading}>Cancel</Button>
-    <Button size="sm" onclick={saveEdit} disabled={loading}>
-      {#if loading}
-        <Loader2Icon class="animate-spin" />
-      {:else}
-        Save
-      {/if}
-    </Button>
+  <div class="flex flex-row items-center justify-between gap-2 p-2 pt-0">
+    <ModelPickerPopover
+      {selectedModel}
+      onSelect={(newModel) => {
+        selectedModel = newModel;
+      }}
+    >
+      <Button variant="ghost">
+        {MODEL_DETAILS[selectedModel].displayName}
+        <ChevronDownIcon class="h-4 w-4" />
+      </Button>
+    </ModelPickerPopover>
+    <div class="flex flex-row items-center justify-end gap-2">
+      <Button variant="ghost" size="sm" onclick={cancelEdit} disabled={loading}>Cancel</Button>
+      <Button size="sm" onclick={saveEdit} disabled={loading}>
+        {#if loading}
+          <Loader2Icon class="animate-spin" />
+        {:else}
+          Save
+        {/if}
+      </Button>
+    </div>
   </div>
 </div>

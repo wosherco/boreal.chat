@@ -51,8 +51,7 @@
   import { browser } from "$app/environment";
   import ShortcutsCheatsheetDialog from "./ShortcutsCheatsheetDialog.svelte";
   import SheetClosableOnlyOnPhone from "./utils/SheetClosableOnlyOnPhone.svelte";
-  import { getSubscribedPlan } from "$lib/common/utils/subscription";
-  import { PREMIUM_PLAN_NAME, UNLIMITED_PLAN_NAME } from "$lib/common";
+  import { isSubscribed } from "$lib/common/utils/subscription";
 
   let shortcutsCheatsheetOpen = $state(false);
 
@@ -73,7 +72,7 @@
     }
   }
 
-  const subscribedPlan = $derived(getSubscribedPlan(user?.data ?? null));
+  const isUserSubscribed = $derived(isSubscribed(user?.data ?? null));
 </script>
 
 <ShortcutsCheatsheetDialog bind:open={shortcutsCheatsheetOpen} />
@@ -93,7 +92,7 @@
 
       <a href="/" class="flex w-full items-center justify-between p-4 pr-0">
         <div class="flex items-center gap-2">
-          <h1 class="text-lg font-semibold md:ml-12">boreal.chat</h1>
+          <h1 class="text-lg font-semibold md:ml-8">boreal.chat</h1>
         </div>
         <BetaBadge />
       </a>
@@ -180,12 +179,10 @@
                 <div class="flex min-w-0 flex-1 flex-col items-start">
                   <p class="w-full truncate text-sm font-medium">{user.data.name}</p>
                   <p class="text-muted-foreground text-xs">
-                    {#if subscribedPlan === PREMIUM_PLAN_NAME}
-                      Premium <span class="text-xs">({user.data.credits} messages left)</span>
-                    {:else if subscribedPlan === UNLIMITED_PLAN_NAME}
+                    {#if isUserSubscribed}
                       Unlimited
                     {:else}
-                      Free <span class="text-xs">({user.data.credits} messages left)</span>
+                      Free
                     {/if}
                   </p>
                 </div>
@@ -200,14 +197,6 @@
                 <p class="text-muted-foreground text-xs leading-none">{user.data.email}</p>
               </div>
             </DropdownMenuLabel>
-            {#if subscribedPlan !== UNLIMITED_PLAN_NAME}
-              <div class="px-2 py-2">
-                <div class="flex flex-row items-center justify-between gap-2">
-                  <span class="text-sm font-medium">Messages Left</span>
-                  <span class="font-mono text-sm">{Math.round(user.data.credits)}</span>
-                </div>
-              </div>
-            {/if}
             <DropdownMenuSeparator />
             <div class="px-2 py-2">
               <div class="flex flex-row items-center justify-between gap-2">
@@ -235,13 +224,13 @@
               <KeyboardIcon class="mr-2 size-4" />
               <span>Shortcuts</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onclick={() => goto("/settings")}>
-              <SettingsIcon class="mr-2 size-4" />
-              <span>Settings</span>
-            </DropdownMenuItem>
             <DropdownMenuItem onclick={() => window.open("https://docs.boreal.chat", "_blank")}>
               <BookOpenIcon class="mr-2 size-4" />
               <span>Docs</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onclick={() => goto("/settings")}>
+              <SettingsIcon class="mr-2 size-4" />
+              <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onclick={onLogout} variant="destructive" disabled={logoutLoading}>

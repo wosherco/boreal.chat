@@ -1,5 +1,5 @@
 {
-  "id": "c0b4f891-ad94-4520-99f0-de1b208f303f",
+  "id": "aa689f4b-84be-4ca5-8c4e-8a9706f01186",
   "prevId": "8c93f2c9-a218-4b1a-92a5-c4000cbbdffd",
   "version": "7",
   "dialect": "postgresql",
@@ -189,6 +189,25 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": false
+        },
+        "estimated_c_us": {
+          "name": "estimated_c_us",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actual_c_us": {
+          "name": "actual_c_us",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "private": {
+          "name": "private",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         }
       },
       "indexes": {},
@@ -641,13 +660,6 @@
           "type": "varchar(50)",
           "primaryKey": false,
           "notNull": false
-        },
-        "credits": {
-          "name": "credits",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
         }
       },
       "indexes": {},

@@ -7,13 +7,18 @@ import { markMessageAsErrored } from "./messages";
 import { db } from "../db";
 import { RateLimitError } from "openai";
 import { listenForCancelMessage } from "../db/mq/messageCancellation";
+import type { CUResult } from "../ratelimit/cu";
+import { burstCULimiter, localCULimiter } from "../ratelimit";
 
 export async function executeAgentSafely(
   params: {
     model: ModelId;
-    openRouterKey: string;
     reasoningLevel: ReasoningLevel;
     webSearchEnabled: boolean;
+    openRouterKey: string;
+    publicUsage: boolean;
+    ratelimit: undefined | "burst" | "local";
+    estimatedCUs?: CUResult;
   },
   context: ChatContext,
 ) {
@@ -29,7 +34,7 @@ export async function executeAgentSafely(
     abortSignal: abortController.signal,
   });
 
-  return invokeAgent(agent, context)
+  return invokeAgent(agent, context, params)
     .then(() => {
       posthog?.capture({
         distinctId: context.userId,
@@ -69,6 +74,12 @@ export async function executeAgentSafely(
       });
       await markMessageAsErrored(db, context.currentMessageId, errorMessage);
       console.error("Error invoking agent: ", error);
+
+      // We're refunding the estimated CUs.
+      if (params.ratelimit && params.estimatedCUs) {
+        const ratelimiter = params.ratelimit === "burst" ? burstCULimiter : localCULimiter;
+        await ratelimiter.addTokens(context.userId, params.estimatedCUs.total);
+      }
     })
     .finally(() => {
       cancelListener.unlisten();

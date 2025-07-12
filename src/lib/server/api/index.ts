@@ -19,9 +19,10 @@ export interface UserContext {
 export interface CreateApiParams {
   ctx?: ExecutionContext;
   cookies?: Cookies;
+  setHeaders?: (headers: Record<string, string>) => void;
 }
 
-export function createApi({ ctx, cookies }: CreateApiParams = {}) {
+export function createApi({ ctx, cookies, setHeaders }: CreateApiParams = {}) {
   const api = new Hono<{
     Bindings: object;
     Variables: { userCtx: UserContext; ctx?: ExecutionContext };
@@ -130,6 +131,7 @@ export function createApi({ ctx, cookies }: CreateApiParams = {}) {
         userCtx: c.get("userCtx"),
         ctx: c.get("ctx"),
         cookies,
+        setHeaders,
       },
     });
 

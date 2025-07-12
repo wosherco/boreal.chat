@@ -1,4 +1,4 @@
-FROM node:20.17-slim AS base
+FROM node:22.16-slim AS base
 
 RUN npm install -g pnpm@9.12.2
 

@@ -142,6 +142,7 @@
       parentMessageId={message.parentMessageId}
       chatId={message.chatId}
       onCancel={onCancelEdit}
+      model={message.model}
     />
   {:else}
     <div

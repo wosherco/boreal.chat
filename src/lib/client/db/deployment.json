@@ -90,9 +90,13 @@
   },
   {
     "idx": 9,
-    "when": 1751917053264,
-    "tag": "0009_nebulous_annihilus",
-    "hash": "8237be00695763ccceaa8daecc4f7b830b153a5f089b0cbc8af7670116540146",
-    "sql": ["ALTER TABLE \"user\" ADD COLUMN \"credits\" real DEFAULT 0 NOT NULL;"]
+    "when": 1752094419545,
+    "tag": "0009_brief_mongoose",
+    "hash": "9f7fd66109fa11258f339845bba0c895f8df8afe229686397c76e78d131d4f92",
+    "sql": [
+      "ALTER TABLE \"message_segment_usage\" ADD COLUMN \"estimated_c_us\" integer;",
+      "ALTER TABLE \"message_segment_usage\" ADD COLUMN \"actual_c_us\" integer;",
+      "ALTER TABLE \"message_segment_usage\" ADD COLUMN \"private\" boolean DEFAULT false NOT NULL;"
+    ]
   }
 ]
