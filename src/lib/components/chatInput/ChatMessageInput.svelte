@@ -40,6 +40,9 @@
   import { createMutation } from "@tanstack/svelte-query";
   import { gotoWithSeachParams } from "$lib/utils/navigate";
   import { untrack } from "svelte";
+  import { PremiumWrapper } from "../ui/premium-badge";
+  import { isSubscribed } from "$lib/common/utils/subscription";
+  import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
 
   interface Props {
     /**
@@ -50,6 +53,10 @@
   }
 
   let { textAreaElement = $bindable(), draft }: Props = $props();
+
+  // Get current user to check subscription status
+  const currentUser = useCurrentUser(null);
+  const isUserSubscribed = $derived(isSubscribed($currentUser.data?.data ?? null));
 
   let value = $state(page.url.searchParams.get("prompt") ?? "");
   let loading = $state(false);
@@ -414,14 +421,19 @@
 
         <div class="flex items-center gap-2">
           {#if env.PUBLIC_VOICE_INPUT_ENABLED}
-            <Button
-              variant="secondary"
-              size="icon"
-              disabled={loading || !browser || voiceMessageService.state === "error"}
-              onclick={startRecording}
+            <PremiumWrapper 
+              showBadge={!isUserSubscribed}
+              badgeVariant="icon-only"
             >
-              <MicIcon class="h-4 w-4" />
-            </Button>
+              <Button
+                variant="secondary"
+                size="icon"
+                disabled={loading || !browser || voiceMessageService.state === "error" || !isUserSubscribed}
+                onclick={startRecording}
+              >
+                <MicIcon class="h-4 w-4" />
+              </Button>
+            </PremiumWrapper>
           {/if}
 
           <Button
