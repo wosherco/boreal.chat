@@ -24,6 +24,9 @@
   import { afterNavigate, goto } from "$app/navigation";
   import { useChats } from "$lib/client/hooks/useChats.svelte";
   import { fade } from "svelte/transition";
+  import { page } from "$app/state";
+  import { getDraftIdFromUrl } from "$lib/utils/drafts";
+  import { useDraft } from "$lib/client/hooks/useDraft.svelte";
 
   const { data, children }: LayoutProps = $props();
 
@@ -118,6 +121,10 @@
       chatContainer.scrollTop = chatContainer.scrollHeight;
     }
   }
+
+  // Draft functionality
+  const currentDraftId = $derived(getDraftIdFromUrl(page.url));
+  const currentDraft = $derived(useDraft(currentDraftId, data.draft ?? null));
 </script>
 
 {#snippet sidebar(isPhone = false)}
@@ -214,7 +221,11 @@
           Scroll to bottom
         </button>
       {/if}
-      <ChatMessageInput bind:textAreaElement={chatMessageInputElement} />
+      <ChatMessageInput
+        bind:textAreaElement={chatMessageInputElement}
+        draft={currentDraft ? ($currentDraft?.data ?? null) : null}
+        chatId={data.chatId}
+      />
     </div>
   </div>
 </div>

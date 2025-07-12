@@ -29,7 +29,7 @@ export const createDraftsTable = (userTableFromSchema: typeof userTable, isClien
         .defaultNow()
         .$onUpdateFn(() => new Date()),
     },
-    (t: any) => [
+    (t) => [
       index().on(t.userId, t.updatedAt),
       !isClient &&
         foreignKey({

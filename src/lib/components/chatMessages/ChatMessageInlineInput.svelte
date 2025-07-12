@@ -5,6 +5,7 @@
   import KeyboardShortcuts from "../utils/KeyboardShortcuts.svelte";
   import ModelPickerPopover from "../chatInput/ModelPickerPopover.svelte";
   import { MODEL_DETAILS, type ModelId } from "$lib/common/ai/models";
+  import { TextareaAutosize } from "runed";
 
   interface Props {
     defaultValue: string;
@@ -21,25 +22,10 @@
   let editValue = $derived(defaultValue);
   let selectedModel = $state(model);
 
-  // Auto-growing textarea logic for editing
-  const lineHeight = 24; // Line height in pixels
-  const minHeight = 40; // Minimum height for the textarea
-  let editTextareaHeight = $state("auto");
-
-  // Auto-resize textarea based on content
-  $effect(() => {
-    if (editTextAreaElement && editValue !== undefined) {
-      // Reset height to auto to get accurate scrollHeight
-      editTextAreaElement.style.height = "auto";
-
-      // Calculate new height based on content
-      const scrollHeight = editTextAreaElement.scrollHeight;
-      const newHeight = Math.max(scrollHeight, minHeight);
-
-      // Apply the calculated height
-      editTextAreaElement.style.height = `${newHeight}px`;
-      editTextareaHeight = `${newHeight}px`;
-    }
+  new TextareaAutosize({
+    element: () => editTextAreaElement,
+    input: () => editValue,
+    maxHeight: undefined,
   });
 
   let loading = $state(false);
@@ -86,7 +72,6 @@
   <textarea
     bind:this={editTextAreaElement}
     bind:value={editValue}
-    style="height: {editTextareaHeight}; line-height: {lineHeight}px;"
     class="w-full resize-none bg-transparent p-2 transition-all duration-150 ease-out focus:outline-none"
     placeholder="Edit your message..."
     autofocus

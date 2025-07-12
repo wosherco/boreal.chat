@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { orpc } from "$lib/client/orpc";
+  import { orpc, orpcQuery } from "$lib/client/orpc";
   import { Button } from "../ui/button";
   import {
     Dialog,
@@ -13,7 +13,9 @@
   import { toast } from "svelte-sonner";
   import type { Draft } from "$lib/common/sharedTypes";
   import { useDrafts } from "$lib/client/hooks/useDrafts.svelte";
-  import { onMount } from "svelte";
+  import { createMutation } from "@tanstack/svelte-query";
+  import { formatDateCompact } from "$lib/utils/date";
+  import { truncateText, formatCount } from "$lib/utils/text";
 
   interface Props {
     onDraftSelect?: (draft: Draft) => void;
@@ -23,106 +25,100 @@
   let { onDraftSelect, children }: Props = $props();
 
   let open = $state(false);
-  
+
   const draftsStore = useDrafts();
-  const drafts = $derived(draftsStore.data || []);
-  const loading = $derived(draftsStore.loading);
+  const drafts = $derived($draftsStore?.data ?? []);
+  const loading = $derived($draftsStore?.loading ?? true);
 
-  async function deleteDraft(draftId: string) {
-    try {
-      await orpc.v1.draft.delete({ id: draftId });
-      toast.success("Draft deleted");
-    } catch (error) {
-      console.error("Failed to delete draft:", error);
-      toast.error("Failed to delete draft");
-    }
-  }
+  $effect(() => {
+    console.log("drafts", drafts);
+  });
 
-  async function deleteAllDrafts() {
-    try {
-      await orpc.v1.draft.deleteAll();
-      toast.success("All drafts deleted");
-    } catch (error) {
-      console.error("Failed to delete all drafts:", error);
-      toast.error("Failed to delete all drafts");
-    }
-  }
+  const deleteDraftMutation = createMutation(
+    orpcQuery.v1.draft.delete.mutationOptions({
+      onSuccess: () => {
+        toast.success("Draft deleted");
+      },
+      onError: (error) => {
+        toast.error("Failed to delete draft");
+        console.error("Failed to delete draft:", error);
+      },
+    }),
+  );
+
+  const deleteAllDraftsMutation = createMutation(
+    orpcQuery.v1.draft.deleteAll.mutationOptions({
+      onSuccess: () => {
+        toast.success("All drafts deleted");
+      },
+      onError: (error) => {
+        toast.error("Failed to delete all drafts");
+        console.error("Failed to delete all drafts:", error);
+      },
+    }),
+  );
 
   function handleDraftSelect(draft: Draft) {
     onDraftSelect?.(draft);
     open = false;
   }
-
-  function formatDate(date: string) {
-    return new Date(date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  function truncateContent(content: string, maxLength = 100) {
-    if (content.length <= maxLength) return content;
-    return content.substring(0, maxLength) + "...";
-  }
-
-
 </script>
 
 <Dialog bind:open>
-  <DialogTrigger asChild let:builder>
-    <div use:builder.action {...builder}>
-      {@render children()}
-    </div>
+  <DialogTrigger>
+    {@render children()}
   </DialogTrigger>
-  <DialogContent class="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+  <DialogContent class="flex max-h-[80vh] max-w-2xl flex-col overflow-hidden">
     <DialogHeader>
       <DialogTitle>Draft Manager</DialogTitle>
-      <DialogDescription>
-        Manage your saved drafts. Click on a draft to load it.
-      </DialogDescription>
+      <DialogDescription>Manage your saved drafts. Click on a draft to load it.</DialogDescription>
     </DialogHeader>
 
-    <div class="flex justify-between items-center py-2">
-      <span class="text-sm text-muted-foreground">
-        {drafts.length} draft{drafts.length !== 1 ? "s" : ""}
+    <div class="flex items-center justify-between py-2">
+      <span class="text-muted-foreground text-sm">
+        {formatCount(drafts.length, "draft")}
       </span>
       {#if drafts.length > 0}
-        <Button variant="destructive" size="sm" onclick={deleteAllDrafts}>
+        <Button variant="destructive" size="sm" onclick={() => $deleteAllDraftsMutation.mutate({})}>
           Delete All
         </Button>
       {/if}
     </div>
 
-    <div class="flex-1 overflow-y-auto space-y-2">
+    <div class="flex-1 space-y-2 overflow-y-auto">
       {#if loading}
         <div class="flex items-center justify-center py-8">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
         </div>
       {:else if drafts.length === 0}
         <div class="flex flex-col items-center justify-center py-8 text-center">
-          <FileTextIcon class="h-12 w-12 text-muted-foreground mb-2" />
+          <FileTextIcon class="text-muted-foreground mb-2 h-12 w-12" />
           <p class="text-muted-foreground">No drafts found</p>
-          <p class="text-sm text-muted-foreground">
-            Start typing to create your first draft
-          </p>
+          <p class="text-muted-foreground text-sm">Start typing to create your first draft</p>
         </div>
       {:else}
         {#each drafts as draft (draft.id)}
           <div
-            class="border rounded-lg p-3 hover:bg-muted/50 transition-colors cursor-pointer group"
+            class="hover:bg-muted/50 group cursor-pointer rounded-lg border p-3 transition-colors"
             onclick={() => handleDraftSelect(draft)}
+            aria-label={`Load draft ${draft.id}`}
+            role="button"
+            tabindex="0"
+            onkeydown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                handleDraftSelect(draft);
+              }
+            }}
           >
             <div class="flex items-start justify-between">
-              <div class="flex-1 min-w-0">
-                <p class="text-sm text-muted-foreground mb-2">
-                  {truncateContent(draft.content)}
+              <div class="min-w-0 flex-1">
+                <p class="text-muted-foreground mb-2 text-sm">
+                  {truncateText(draft.content)}
                 </p>
-                <div class="flex items-center gap-4 text-xs text-muted-foreground">
+                <div class="text-muted-foreground flex items-center gap-4 text-xs">
                   <div class="flex items-center gap-1">
                     <CalendarIcon class="h-3 w-3" />
-                    {formatDate(draft.updatedAt)}
+                    {formatDateCompact(draft.updatedAt.toISOString())}
                   </div>
                   <span class="capitalize">{draft.selectedModel}</span>
                   {#if draft.webSearchEnabled}
@@ -136,10 +132,10 @@
               <Button
                 variant="ghost"
                 size="icon"
-                class="opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+                class="ml-2 opacity-0 transition-opacity group-hover:opacity-100"
                 onclick={(e) => {
                   e.stopPropagation();
-                  deleteDraft(draft.id);
+                  $deleteDraftMutation.mutate({ id: draft.id });
                 }}
               >
                 <TrashIcon class="h-4 w-4" />
