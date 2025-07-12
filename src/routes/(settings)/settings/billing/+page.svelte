@@ -7,15 +7,11 @@
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { Loader2Icon } from "@lucide/svelte";
 
-  let isBillingPageEnabled = $state(dev);
+  let isBillingPageEnabled = $derived(dev || getFeatureFlag(BILLING_FEATURE_FLAG).enabled);
 
   const { data }: PageProps = $props();
 
   const user = useCurrentUser(data.auth.currentUserInfo);
-
-  $effect(() => {
-    isBillingPageEnabled = getFeatureFlag(BILLING_FEATURE_FLAG).enabled;
-  });
 </script>
 
 <SvelteSeo title="Pricing & Billing | boreal.chat" />
