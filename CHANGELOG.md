@@ -1,5 +1,13 @@
 # boreal.chat
 
+## 0.1.1
+
+### Patch Changes
+
+- 8a774f2: Better token streaming, fixed layout issues
+- 795ee15: added flagsmith
+- 47c393d: Added draft messages
+
 ## 0.1.0
 
 ### Minor Changes
