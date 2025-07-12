@@ -1,9 +1,11 @@
 import type { PageServerLoad } from "./$types";
 import { db } from "$lib/server/db";
 import { fetchAllChatMessages } from "$lib/server/services/messages";
-import { error } from "@sveltejs/kit";
+import { error, redirect } from "@sveltejs/kit";
 import { ORPCError } from "@orpc/client";
 import { getChatShare } from "$lib/server/services/shares";
+import { chatTable } from "$lib/server/db/schema";
+import { eq } from "drizzle-orm";
 import type { MessageWithOptionalChainRow } from "$lib/common/sharedTypes";
 
 export const load: PageServerLoad = async ({ params, locals, setHeaders }) => {
@@ -21,6 +23,19 @@ export const load: PageServerLoad = async ({ params, locals, setHeaders }) => {
     throw e;
   }
 
+  // If user is logged in and is the owner of the chat, redirect to the original chat
+  if (locals.user) {
+    const [chat] = await db
+      .select({ userId: chatTable.userId })
+      .from(chatTable)
+      .where(eq(chatTable.id, chatId))
+      .limit(1);
+
+    if (chat && chat.userId === locals.user.id) {
+      throw redirect(302, `/chat/${chatId}`);
+    }
+  }
+
   setHeaders({ "X-Robots-Tag": "noindex" });
 
   const chatMessages = await fetchAllChatMessages(db, chatId);
@@ -28,6 +43,7 @@ export const load: PageServerLoad = async ({ params, locals, setHeaders }) => {
   return {
     share: {
       chatId,
+      isSharedView: true,
       messages: chatMessages satisfies MessageWithOptionalChainRow[],
     },
   };
