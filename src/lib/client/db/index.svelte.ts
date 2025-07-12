@@ -229,18 +229,18 @@ async function startShapesSync() {
         table: "message_segments",
         primaryKey: ["id"],
       },
-      message_token: {
+      draft: {
         shape: {
           url: `${env.PUBLIC_URL}/api/v1/shape`,
           params: {
-            table: "message_tokens",
-            columns: getTableColumnNames(schema.messageTokensTable),
+            table: "drafts",
+            columns: getTableColumnNames(schema.draftsTable),
           },
           headers: {
             "cache-control": "no-cache",
           },
         },
-        table: "message_tokens",
+        table: "drafts",
         primaryKey: ["id"],
       },
     },

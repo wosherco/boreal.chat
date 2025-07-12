@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { orpc } from "$lib/client/orpc";
+  import { orpc, orpcQuery } from "$lib/client/orpc";
   import {
     MODEL_DETAILS,
     type ReasoningLevel,
@@ -18,7 +18,7 @@
   import { Button } from "../ui/button";
   import KeyboardShortcuts from "../utils/KeyboardShortcuts.svelte";
   import ModelPickerPopover from "./ModelPickerPopover.svelte";
-  import { afterNavigate, goto } from "$app/navigation";
+  import { afterNavigate, goto, onNavigate } from "$app/navigation";
   import { syncStreams } from "$lib/client/db/index.svelte";
   import { getCurrentChatState } from "$lib/client/state/currentChatState.svelte";
   import { Toggle } from "../ui/toggle";
@@ -31,20 +31,29 @@
   import { isFinishedMessageStatus } from "$lib/common";
   import { waitForInsert } from "$lib/client/hooks/waitForInsert";
   import { chatTable, messageTable } from "$lib/client/db/schema";
+  import { TextareaAutosize, useDebounce } from "runed";
+  import DraftManager from "../drafts/DraftManager.svelte";
+  import type { Draft } from "$lib/common/sharedTypes";
+  import { FileTextIcon } from "@lucide/svelte";
   import { VoiceMessageService } from "$lib/client/services/voiceMessageService.svelte";
   import { env } from "$env/dynamic/public";
+  import { createMutation } from "@tanstack/svelte-query";
+  import { gotoWithSeachParams } from "$lib/utils/navigate";
+  import { untrack } from "svelte";
 
   interface Props {
     /**
      * @bindable
      */
     textAreaElement?: HTMLTextAreaElement;
+    draft: Draft | null;
   }
 
-  let { textAreaElement = $bindable() }: Props = $props();
+  let { textAreaElement = $bindable(), draft }: Props = $props();
 
   let value = $state(page.url.searchParams.get("prompt") ?? "");
   let loading = $state(false);
+  let prevDraftId = $state<string | undefined>(undefined);
 
   const defaultSelectedModel = browser ? getLastSelectedModel() : GEMINI_FLASH_2_5;
   const defaultWebSearchEnabled = false;
@@ -64,26 +73,11 @@
     reasoningLevel ?? getCurrentChatState()?.reasoningLevel ?? defaultReasoningLevel,
   );
 
-  let textareaHeight = $state("auto");
-  const minHeight = 48; // min-h-12 = 3rem = 48px
-  const lineHeight = 24; // Approximate line height in pixels
-  const maxLines = 10;
-  const maxHeight = minHeight + lineHeight * (maxLines - 1); // Calculate max height for 6 lines
-
   // Reactive statement to adjust textarea height
-  $effect(() => {
-    if (textAreaElement && value !== undefined) {
-      // Reset height to auto to get accurate scrollHeight
-      textAreaElement.style.height = "auto";
-
-      // Calculate new height based on content
-      const scrollHeight = textAreaElement.scrollHeight;
-      const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
-
-      // Apply the calculated height
-      textAreaElement.style.height = `${newHeight}px`;
-      textareaHeight = `${newHeight}px`;
-    }
+  new TextareaAutosize({
+    element: () => textAreaElement,
+    input: () => value,
+    maxHeight: 24 * 9,
   });
 
   async function onSendMessage() {
@@ -92,6 +86,8 @@
 
     try {
       const currentChatState = getCurrentChatState();
+      // Cancel any pending draft saves
+      debouncedSaveDraft.cancel();
 
       if (currentChatState) {
         // We're replying to a message
@@ -103,6 +99,7 @@
             message: value,
             reasoningLevel: actualReasoningLevel,
             webSearchEnabled: actualWebSearchEnabled,
+            draftId: draft?.id,
           });
 
           value = "";
@@ -120,6 +117,7 @@
             message: value,
             reasoningLevel: actualReasoningLevel,
             webSearchEnabled: actualWebSearchEnabled,
+            draftId: draft?.id,
           });
           value = "";
 
@@ -180,6 +178,24 @@
     }
   });
 
+  onNavigate(({ from, to }) => {
+    // This means we're going out of the new chat page, or the current chat page, and we want to save the draft
+    if (from?.url.pathname !== to?.url.pathname) {
+      debouncedSaveDraft.runScheduledNow();
+    }
+  });
+
+  $effect(() => {
+    if (draft?.id !== untrack(() => prevDraftId)) {
+      debouncedSaveDraft.runScheduledNow();
+      prevDraftId = draft?.id;
+      value = draft?.content ?? "";
+      selectedModel = draft?.selectedModel ?? untrack(() => actualSelectedModel);
+      webSearchEnabled = draft?.webSearchEnabled ?? untrack(() => actualWebSearchEnabled);
+      reasoningLevel = draft?.reasoningLevel ?? untrack(() => actualReasoningLevel);
+    }
+  });
+
   let modelPickerOpen = $state(false);
 
   const isLastMessageFinished = $derived.by(() => {
@@ -188,6 +204,60 @@
       ? isFinishedMessageStatus(currentChatState.lastMessageStatus)
       : true;
   });
+
+  const upsertDraftMutation = createMutation(
+    orpcQuery.v1.draft.upsert.mutationOptions({
+      onSuccess: (draft) => {
+        gotoWithSeachParams(page.url, {
+          searchParams: {
+            draft: draft.id,
+          },
+        });
+      },
+      onError: (error) => {
+        console.error("Failed to save draft:", error);
+      },
+    }),
+  );
+
+  const deleteDraftMutation = createMutation(
+    orpcQuery.v1.draft.delete.mutationOptions({
+      onSuccess: () => {
+        gotoWithSeachParams(page.url, {
+          searchParams: {
+            draft: undefined,
+          },
+        });
+      },
+      onError: (error) => {
+        console.error("Failed to delete draft:", error);
+      },
+    }),
+  );
+
+  // Draft functionality
+  async function saveDraft() {
+    if (loading) return;
+
+    if (!value.trim()) {
+      if (prevDraftId) {
+        // We delete the draft
+        $deleteDraftMutation.mutate({
+          id: prevDraftId,
+        });
+      }
+    } else {
+      $upsertDraftMutation.mutate({
+        id: prevDraftId,
+        content: value,
+        selectedModel: actualSelectedModel,
+        reasoningLevel: actualReasoningLevel,
+        webSearchEnabled: actualWebSearchEnabled,
+      });
+    }
+  }
+
+  const debouncedSaveDraft = useDebounce(() => saveDraft(), 1000);
 
   // Mic stuff
   const voiceMessageService = new VoiceMessageService();
@@ -283,13 +353,19 @@
         disabled={loading}
         bind:this={textAreaElement}
         bind:value
+        oninput={debouncedSaveDraft}
         placeholder="Message Bot..."
-        style="height: {textareaHeight}; line-height: {lineHeight}px;"
-        class="placeholder:text-muted-foreground w-full resize-none overflow-y-auto border-none bg-transparent p-4 pb-2 transition-all duration-150 ease-out focus:ring-0 focus:outline-none"
+        class="placeholder:text-muted-foreground min-h-20 w-full resize-none overflow-y-auto border-none bg-transparent p-4 pb-2 focus:ring-0 focus:outline-none"
       ></textarea>
 
       <div class="flex items-center justify-between p-2 pt-0">
         <div class="flex items-center gap-2">
+          <DraftManager>
+            <Button variant="ghost" size="icon" disabled={loading || !browser}>
+              <FileTextIcon class="h-4 w-4" />
+            </Button>
+          </DraftManager>
+
           <ModelPickerPopover
             selectedModel={actualSelectedModel}
             onSelect={(newModel) => {

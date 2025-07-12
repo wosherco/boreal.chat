@@ -16,17 +16,30 @@
   import Cookies from "js-cookie";
   import { SIDEBAR_COLLAPSED_COOKIE } from "$lib/common/cookies";
   import { Button } from "$lib/components/ui/button";
-  import { ArrowDownIcon, MenuIcon, SidebarCloseIcon, SidebarOpenIcon, ShareIcon } from "@lucide/svelte";
+  import {
+    ArrowDownIcon,
+    MenuIcon,
+    SidebarCloseIcon,
+    SidebarOpenIcon,
+    ShareIcon,
+  } from "@lucide/svelte";
   import KeyboardShortcuts from "$lib/components/utils/KeyboardShortcuts.svelte";
   import { Sheet, SheetContent, SheetTrigger } from "$lib/components/ui/sheet";
-  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "$lib/components/ui/tooltip";
+  import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+  } from "$lib/components/ui/tooltip";
   import { cn } from "$lib/utils";
   import ChatMessageInput from "$lib/components/chatInput/ChatMessageInput.svelte";
   import ChatShareModal from "$lib/components/chatMessages/ChatShareModal.svelte";
   import { afterNavigate, goto } from "$app/navigation";
   import { useChats } from "$lib/client/hooks/useChats.svelte";
   import { fade } from "svelte/transition";
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
+  import { getDraftIdFromUrl } from "$lib/utils/drafts";
+  import { useDraft } from "$lib/client/hooks/useDraft.svelte";
 
   const { data, children }: LayoutProps = $props();
 
@@ -36,10 +49,10 @@
   setSidebarCollapsed(data.sidebarCollapsed);
 
   let chatShareModalOpen = $state(false);
-  
+
   // Extract chatId from the current route
   const currentChatId = $derived(() => {
-    const pathname = $page.url.pathname;
+    const pathname = page.url.pathname;
     const chatMatch = pathname.match(/\/chat\/([a-f0-9-]+)/);
     return chatMatch ? chatMatch[1] : null;
   });
@@ -132,6 +145,10 @@
       chatContainer.scrollTop = chatContainer.scrollHeight;
     }
   }
+
+  // Draft functionality
+  const currentDraftId = $derived(getDraftIdFromUrl(page.url));
+  const currentDraft = $derived(useDraft(currentDraftId, data.draft ?? null));
 </script>
 
 {#snippet sidebar(isPhone = false)}
@@ -165,7 +182,7 @@
 <!-- Floating buttons -->
 <div
   class={cn(
-    "bg-accent/40 fixed z-50 m-2 rounded-lg p-1 backdrop-blur-lg transition-colors flex gap-1",
+    "bg-accent/40 fixed z-50 m-2 flex gap-1 rounded-lg p-1 backdrop-blur-lg transition-colors",
     isSidebarCollapsed() ? "md:bg-accent/40" : "md:bg-transparent",
   )}
 >
@@ -191,7 +208,7 @@
             variant="ghost"
             size="icon"
             class="hidden md:flex"
-            onclick={() => chatShareModalOpen = true}
+            onclick={() => (chatShareModalOpen = true)}
           >
             <ShareIcon />
           </Button>
@@ -231,7 +248,7 @@
   </div>
 
   <div class="relative flex-1 flex-grow">
-    <main class="h-full overflow-y-auto" bind:this={chatContainer} onscroll={handleScroll}>
+    <main class="relative h-full overflow-y-auto" bind:this={chatContainer} onscroll={handleScroll}>
       {@render children()}
     </main>
 
@@ -247,7 +264,10 @@
           Scroll to bottom
         </button>
       {/if}
-      <ChatMessageInput bind:textAreaElement={chatMessageInputElement} />
+      <ChatMessageInput
+        bind:textAreaElement={chatMessageInputElement}
+        draft={currentDraft ? ($currentDraft?.data ?? null) : null}
+      />
     </div>
   </div>
 </div>
@@ -257,6 +277,6 @@
   <ChatShareModal
     open={chatShareModalOpen}
     chatId={currentChatId() || ""}
-    on:close={() => chatShareModalOpen = false}
+    on:close={() => (chatShareModalOpen = false)}
   />
 {/if}

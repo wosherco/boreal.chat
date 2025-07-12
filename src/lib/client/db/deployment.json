@@ -98,5 +98,26 @@
       "ALTER TABLE \"message_segment_usage\" ADD COLUMN \"actual_c_us\" integer;",
       "ALTER TABLE \"message_segment_usage\" ADD COLUMN \"private\" boolean DEFAULT false NOT NULL;"
     ]
+  },
+  {
+    "idx": 10,
+    "when": 1752332765696,
+    "tag": "0010_curved_susan_delgado",
+    "hash": "dc8963ea1bf7572969b6fcbb512fd1d4dfe26e1398af4bb3aa52d5c4994e4fb7",
+    "sql": [
+      "CREATE TABLE \"drafts\" (\"id\" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,\"user_id\" uuid NOT NULL,\"content\" text NOT NULL,\"selected_model\" varchar(50) NOT NULL,\"reasoning_level\" varchar(50) DEFAULT 'none' NOT NULL,\"web_search_enabled\" boolean DEFAULT false NOT NULL,\"created_at\" timestamp with time zone DEFAULT now() NOT NULL,\"updated_at\" timestamp with time zone DEFAULT now() NOT NULL);",
+      "DROP INDEX \"messages_parent_message_id_version_index\";",
+      "CREATE INDEX \"drafts_user_id_updated_at_index\" ON \"drafts\" USING btree (\"user_id\",\"updated_at\");"
+    ]
+  },
+  {
+    "idx": 11,
+    "when": 1752354555793,
+    "tag": "0011_free_spot",
+    "hash": "37dd354787d1c5b680125ee6441d1346de1573a07e1672e6b4127910c3f0dd37",
+    "sql": [
+      "DROP TABLE \"message_tokens\" CASCADE;",
+      "ALTER TABLE \"message_segments\"ADD COLUMN \"streaming\" boolean DEFAULT false NOT NULL;"
+    ]
   }
 ]

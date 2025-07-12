@@ -26,6 +26,7 @@
   import { isFinishedMessageStatus } from "$lib/common";
   import { messageTable } from "$lib/client/db/schema";
   import { waitForInsert } from "$lib/client/hooks/waitForInsert";
+  import ThreeDotsStreaming from "$lib/common/loaders/ThreeDotsStreaming.svelte";
 
   interface Props {
     message: MessageWithOptionalChainRow;
@@ -65,16 +66,12 @@
     }
   }
 
-  type ChatSegment = SegmentJson & {
-    streamed: boolean;
-  };
-
   const cleanedSegments = $derived.by(() => {
-    const { segments: dbSegments, tokenStream: streamedSegments } = message;
-    let cleanedSegments: ChatSegment[] = [];
+    const { segments: dbSegments } = message;
+    let cleanedSegments: SegmentJson[] = [];
 
     if (dbSegments) {
-      let cacheSegment: ChatSegment | undefined;
+      let cacheSegment: SegmentJson | undefined;
 
       for (const segment of dbSegments) {
         switch (segment.kind) {
@@ -94,13 +91,11 @@
                   cleanedSegments.push(cacheSegment);
                   cacheSegment = {
                     ...segment,
-                    streamed: false,
                   };
                 }
               } else {
                 cacheSegment = {
                   ...segment,
-                  streamed: false,
                 };
               }
             }
@@ -115,7 +110,6 @@
 
               cleanedSegments.push({
                 ...segment,
-                streamed: false,
               });
             }
             continue;
@@ -124,59 +118,6 @@
 
       if (cacheSegment) {
         cleanedSegments.push(cacheSegment);
-      }
-    }
-
-    if (streamedSegments) {
-      let segmentCache: ChatSegment | undefined;
-
-      let i = 0;
-      for (const segment of streamedSegments) {
-        if (segment.kind === "tool_call" || segment.kind === "tool_result") {
-          // TODO: Add support for streaming tool calls and results
-          continue;
-        }
-
-        if (segmentCache) {
-          if (segmentCache.kind === segment.kind) {
-            if (!segmentCache.content) {
-              segmentCache.content = "";
-            }
-
-            if (segment.token) {
-              segmentCache.content += segment.token;
-            }
-          } else {
-            cleanedSegments.push(segmentCache);
-            segmentCache = {
-              kind: segment.kind,
-              content: segment.token ? segment.token : "",
-              ordinal: i,
-              toolCallId: null,
-              toolName: null,
-              toolArgs: null,
-              toolResult: null,
-              streamed: true,
-            };
-          }
-        } else {
-          segmentCache = {
-            kind: segment.kind,
-            content: segment.token ? segment.token : "",
-            ordinal: i,
-            toolCallId: null,
-            toolName: null,
-            toolArgs: null,
-            toolResult: null,
-            streamed: true,
-          };
-        }
-
-        i++;
-      }
-
-      if (segmentCache) {
-        cleanedSegments.push(segmentCache);
       }
     }
 
@@ -240,10 +181,8 @@
   {:else}
     <div
       class={cn(
-        isUser
-          ? "bg-muted border-input ml-auto w-fit rounded-lg border px-4 py-2 shadow-sm"
-          : "mr-auto",
-        "max-w-full",
+        isUser && "bg-muted border-input w-fit rounded-lg border px-4 py-2 shadow-sm",
+        "mr-auto max-w-full",
       )}
     >
       {#each cleanedSegments as segment (segment.ordinal)}
@@ -254,7 +193,7 @@
             <Markdown content={segment.content ?? ""} />
           {/if}
         {:else if segment.kind === "reasoning"}
-          <ReasoningSegment reasoning={segment.content ?? ""} isReasoning={segment.streamed} />
+          <ReasoningSegment reasoning={segment.content ?? ""} isReasoning={segment.streaming} />
         {:else if segment.kind === "tool_call"}
           TODO: Tool call
         {:else if segment.kind === "tool_result"}
@@ -274,11 +213,16 @@
       </Alert>
     {/if}
 
+    {#if message.status === "processing"}
+      <div class="pt-4 pl-4">
+        <span class="sr-only">Generating...</span>
+        <ThreeDotsStreaming />
+      </div>
+    {/if}
+
     {#if isFinishedMessageStatus(message.status)}
       <TooltipProvider>
-        <div
-          class={cn("flex w-fit flex-row items-center gap-1 pt-2", isUser ? "ml-auto" : "mr-auto")}
-        >
+        <div class="mr-auto flex w-fit flex-row items-center gap-1 pt-2">
           <Tooltip>
             <TooltipTrigger>
               <Button variant="ghost" size="small-icon" onclick={copyToClipboard}>

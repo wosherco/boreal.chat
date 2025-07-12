@@ -1,6 +1,7 @@
 import { pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { SUBSCRIPTION_PLANS, SUBSCRIPTION_STATUS, USER_ROLES } from "../../common";
 import { createChatTables } from "../../common/schema/chats";
+import { createDraftsTable } from "../../common/schema/drafts";
 
 export const userTable = pgTable("user", {
   id: uuid().defaultRandom().primaryKey(),
@@ -18,20 +19,16 @@ export const userTable = pgTable("user", {
   subscriptionPlan: varchar({ length: 50, enum: SUBSCRIPTION_PLANS }),
 });
 
-const {
-  chatTable,
-  threadTable,
-  messageTable,
-  messageSegmentsTable,
-  messageTokensTable,
-  messageSegmentUsageTable,
-} = createChatTables(userTable, true);
+const { chatTable, threadTable, messageTable, messageSegmentsTable, messageSegmentUsageTable } =
+  createChatTables(userTable, true);
+
+const { draftsTable } = createDraftsTable(userTable, true);
 
 export {
   chatTable,
   threadTable,
   messageTable,
   messageSegmentsTable,
-  messageTokensTable,
   messageSegmentUsageTable,
+  draftsTable,
 };
