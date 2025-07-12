@@ -136,6 +136,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Create and push tag from package.json version
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        run: |
+          # Version key/value should be on his own line
+          PACKAGE_VERSION=$(cat package.json \
+            | grep version \
+            | head -1 \
+            | awk -F: '{ print $2 }' \
+            | sed 's/[",]//g')
+
+          echo "Package version: $PACKAGE_VERSION"
+          git tag -a "v$PACKAGE_VERSION" -m "Release v$PACKAGE_VERSION"
+          git push origin "v$PACKAGE_VERSION"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Log in to the Container registry
         if: steps.changesets.outputs.hasChangesets == 'false'
         uses: docker/login-action@v3
