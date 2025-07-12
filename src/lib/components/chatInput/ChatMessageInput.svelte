@@ -47,10 +47,9 @@
      */
     textAreaElement?: HTMLTextAreaElement;
     draft: Draft | null;
-    chatId: string | undefined;
   }
 
-  let { textAreaElement = $bindable(), draft, chatId }: Props = $props();
+  let { textAreaElement = $bindable(), draft }: Props = $props();
 
   let value = $state(page.url.searchParams.get("prompt") ?? "");
   let loading = $state(false);
@@ -191,6 +190,9 @@
       debouncedSaveDraft.runScheduledNow();
       prevDraftId = draft?.id;
       value = draft?.content ?? "";
+      selectedModel = draft?.selectedModel ?? untrack(() => actualSelectedModel);
+      webSearchEnabled = draft?.webSearchEnabled ?? untrack(() => actualWebSearchEnabled);
+      reasoningLevel = draft?.reasoningLevel ?? untrack(() => actualReasoningLevel);
     }
   });
 

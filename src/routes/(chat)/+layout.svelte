@@ -224,7 +224,6 @@
       <ChatMessageInput
         bind:textAreaElement={chatMessageInputElement}
         draft={currentDraft ? ($currentDraft?.data ?? null) : null}
-        chatId={data.chatId}
       />
     </div>
   </div>

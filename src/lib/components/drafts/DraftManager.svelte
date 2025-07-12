@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { orpc, orpcQuery } from "$lib/client/orpc";
+  import { orpcQuery } from "$lib/client/orpc";
   import { Button } from "../ui/button";
   import {
     Dialog,
