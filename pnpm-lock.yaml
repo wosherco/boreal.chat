@@ -99,7 +99,7 @@ importers:
         specifier: ^6.0.0
         version: 6.0.0
       runed:
-        specifier: 0.30.0
+        specifier: ^0.30.0
         version: 0.30.0(svelte@5.33.18)
       shiki:
         specifier: ^3.6.0
