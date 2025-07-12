@@ -19,14 +19,8 @@ export const userTable = pgTable("user", {
   subscriptionPlan: varchar({ length: 50, enum: SUBSCRIPTION_PLANS }),
 });
 
-const {
-  chatTable,
-  threadTable,
-  messageTable,
-  messageSegmentsTable,
-  messageTokensTable,
-  messageSegmentUsageTable,
-} = createChatTables(userTable, true);
+const { chatTable, threadTable, messageTable, messageSegmentsTable, messageSegmentUsageTable } =
+  createChatTables(userTable, true);
 
 const { draftsTable } = createDraftsTable(userTable, true);
 
@@ -35,7 +29,6 @@ export {
   threadTable,
   messageTable,
   messageSegmentsTable,
-  messageTokensTable,
   messageSegmentUsageTable,
   draftsTable,
 };

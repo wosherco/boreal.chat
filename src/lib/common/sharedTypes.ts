@@ -65,11 +65,11 @@ export interface SegmentJson {
   toolName: string | null;
   toolArgs: unknown | null;
   toolResult: string | null;
-}
 
-export interface TokenStreamJson {
-  token: string;
-  kind: MessageSegmentKind;
+  /**
+   * If true, means that the message is still streaming, and will be updated when new tokens arrive.
+   */
+  streaming: boolean;
 }
 
 export type MessageWithSegments = DBMessage & {
@@ -77,17 +77,12 @@ export type MessageWithSegments = DBMessage & {
   segments: SegmentJson[] | null;
 };
 
-export type MessageWithSegmentsAndTokenStream = MessageWithSegments & {
-  /** live token stream while the message is still "processing" */
-  tokenStream: TokenStreamJson[] | null;
-};
-
-export type MessageWithOptionalChainRow = MessageWithSegmentsAndTokenStream & {
+export type MessageWithOptionalChainRow = MessageWithSegments & {
   /** depth in the parent-pointer chain (1 = newest) */
   depth?: number;
 };
 
-export type MessageChainRow = MessageWithSegmentsAndTokenStream & {
+export type MessageChainRow = MessageWithSegments & {
   /** depth in the parent-pointer chain (1 = newest) */
   depth: number;
 };

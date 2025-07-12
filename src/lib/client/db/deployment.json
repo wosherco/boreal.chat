@@ -109,5 +109,15 @@
       "DROP INDEX \"messages_parent_message_id_version_index\";",
       "CREATE INDEX \"drafts_user_id_updated_at_index\" ON \"drafts\" USING btree (\"user_id\",\"updated_at\");"
     ]
+  },
+  {
+    "idx": 11,
+    "when": 1752354555793,
+    "tag": "0011_free_spot",
+    "hash": "37dd354787d1c5b680125ee6441d1346de1573a07e1672e6b4127910c3f0dd37",
+    "sql": [
+      "DROP TABLE \"message_tokens\" CASCADE;",
+      "ALTER TABLE \"message_segments\"ADD COLUMN \"streaming\" boolean DEFAULT false NOT NULL;"
+    ]
   }
 ]

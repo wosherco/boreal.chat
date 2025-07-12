@@ -11,12 +11,7 @@ import { dispatchCustomEvent } from "@langchain/core/callbacks/dispatch";
 import type { ChatCompletionChunk } from "openai/resources/chat/completions";
 import BufferedTokenInsert from "../utils/BufferedTokenInsert";
 import { db } from "../../db";
-import {
-  messageSegmentsTable,
-  messageSegmentUsageTable,
-  messageTable,
-  messageTokensTable,
-} from "../../db/schema";
+import { messageSegmentUsageTable, messageTable } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { createOpenAIClient } from "../utils/client";
 import { getUsageData } from "$lib/server/services/openapi";
@@ -268,85 +263,19 @@ export async function invokeAgent(
         break;
       case MESSAGE_FINISHED:
         {
-          await bufferedTokenInsert.flushImmediate();
           await bufferedTokenInsert.destroy();
 
           if (data.message.role !== "assistant") {
             throw new Error("Message is not an assistant message");
           }
 
-          const reasoning = (data.message as { reasoning?: string }).reasoning;
-
-          const getTextFromMessage = (
-            message: OpenAI.ChatCompletionMessageParam,
-          ): string | null => {
-            if (message.content) {
-              if (typeof message.content === "string") {
-                return message.content;
-              }
-              if (Array.isArray(message.content)) {
-                return message.content
-                  .map((part) =>
-                    "text" in part ? part.text : "refusal" in part ? part.refusal : null,
-                  )
-                  .filter((text) => text !== null)
-                  .join("");
-              }
-            }
-            return null;
-          };
-          const content = getTextFromMessage(data.message);
-
-          let i = 0;
-          const toInsertMessages: (typeof messageSegmentsTable.$inferInsert)[] = [];
-
-          if (reasoning) {
-            toInsertMessages.push({
-              userId: context.userId,
-              messageId: context.currentMessageId,
-              generationId: data.generationId,
-              // TODO: Ordinal will need a more complex logic when we implement tools.
-              ordinal: i,
-              kind: "reasoning",
-              content: reasoning,
-            });
-
-            i++;
-          }
-
-          if (content) {
-            toInsertMessages.push({
-              userId: context.userId,
-              messageId: context.currentMessageId,
-              generationId: data.generationId,
-              ordinal: i,
-              kind: "text",
-              content: content,
-            });
-            i++;
-          }
-
-          const promises = [
-            db
-              .update(messageTable)
-              .set({
-                status: data.cancelled ? "cancelled" : "finished",
-              })
-              .where(eq(messageTable.id, context.currentMessageId))
-              .execute(),
-          ];
-
-          if (toInsertMessages.length > 0) {
-            promises.push(db.insert(messageSegmentsTable).values(toInsertMessages).execute());
-          }
-
-          // Inserting the message into the database.
-          await Promise.all(promises);
-
-          // Cleaning up temporal tokens
           await db
-            .delete(messageTokensTable)
-            .where(eq(messageTokensTable.messageId, context.currentMessageId));
+            .update(messageTable)
+            .set({
+              status: data.cancelled ? "cancelled" : "finished",
+            })
+            .where(eq(messageTable.id, context.currentMessageId))
+            .execute();
 
           // Getting usage and saving it to DB
           let generationUsage: Awaited<ReturnType<typeof getUsageData>>;
