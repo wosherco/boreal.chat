@@ -6,6 +6,7 @@
   import { Button } from "$lib/components/ui/button";
   import SvelteSeo from "svelte-seo";
   import { goto } from "$app/navigation";
+  import { m } from '$lib/paraglide/messages.js';
 
   const { data }: PageProps = $props();
 
@@ -25,19 +26,19 @@
 
   const prewrittenPrompts: PrewrittenPrompt[] = [
     {
-      prompt: "Write a story for a video game about a cat doing platforming",
+      prompt: m.prompts_writeVideoGameStory(),
       type: "writing",
     },
     {
-      prompt: "Code a BFS tree traversal algorithm in Python",
+      prompt: m.prompts_codeBfsAlgorithm(),
       type: "code",
     },
     {
-      prompt: "Create me 5 different ideas for a video game",
+      prompt: m.prompts_createVideoGameIdeas(),
       type: "creative",
     },
     {
-      prompt: "Lay down the basic equations for a simple physics simulation",
+      prompt: m.prompts_physicsSimulationEquations(),
       type: "math",
     },
   ];
@@ -61,8 +62,8 @@
 
 <div class="flex h-full w-full flex-col items-center justify-center px-4 pb-24">
   {#if $currentUser.data?.authenticated && $currentUser.data?.data}
-    <h1 class="text-2xl font-bold">👋 Welcome back, {$currentUser.data.data.name}!</h1>
-    <h2 class="text-muted-foreground text-lg">What do you want to do?</h2>
+    <h1 class="text-2xl font-bold">{m.home_welcomebackmessage2({ name: $currentUser.data.data.name })}</h1>
+    <h2 class="text-muted-foreground text-lg">{m.home_whatdoyouwanttodo5()}</h2>
 
     <div class="flex flex-col items-start gap-1 py-4">
       {#each prewrittenPrompts as prompt (prompt.prompt)}
@@ -70,15 +71,15 @@
       {/each}
     </div>
   {:else}
-    <h1 class="text-2xl font-bold">Welcome to boreal.chat!</h1>
+    <h1 class="text-2xl font-bold">{m.home_welcometoboreal2()}</h1>
     <ul class="list-inside list-disc space-y-2 pt-4">
-      <li>The upcoming best AI chat platform.</li>
-      <li>Use any model you want, and add web search, and more!</li>
-      <li>Pay for what you use, no subscription required for simple chatting.</li>
-      <li>Completely open-source.</li>
+      <li>{m.home_upcomingbestplatform2()}</li>
+      <li>{m.home_useanymodel2()}</li>
+      <li>{m.home_payforwhatyouuse4()}</li>
+      <li>{m.home_completelyopensource2()}</li>
     </ul>
     <div class="flex justify-center pt-4">
-      <Button href="/auth">Sign up Today</Button>
+      <Button href="/auth">{m.home_signuptoday2()}</Button>
     </div>
   {/if}
 </div>

@@ -9,6 +9,7 @@ import { RateLimitError } from "openai";
 import { listenForCancelMessage } from "../db/mq/messageCancellation";
 import type { CUResult } from "../ratelimit/cu";
 import { burstCULimiter, localCULimiter } from "../ratelimit";
+import { m } from '$lib/paraglide/messages.js';
 
 export async function executeAgentSafely(
   params: {

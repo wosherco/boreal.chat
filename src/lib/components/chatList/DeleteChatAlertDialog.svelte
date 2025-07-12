@@ -7,9 +7,11 @@
   import { createMutation } from "@tanstack/svelte-query";
   import type { Snippet } from "svelte";
   import { toast } from "svelte-sonner";
+  import type { Chat } from "$lib/common/sharedTypes";
+  import { m } from '$lib/paraglide/messages.js';
 
   interface Props {
-    chatId: string;
+    chat: Chat;
     children?: Snippet;
     /**
      * @bindable
@@ -17,7 +19,7 @@
     open?: boolean;
   }
 
-  let { chatId, children: trigger, open = $bindable(false) }: Props = $props();
+  let { chat, children: trigger, open = $bindable(false) }: Props = $props();
 
   const deleteMutation = createMutation(
     orpcQuery.v1.chat.deleteChat.mutationOptions({
@@ -25,7 +27,7 @@
         toast.success("Chat deleted");
         open = false;
 
-        if (page.params.chatId === chatId) {
+        if (page.params.chatId === chat.id) {
           goto("/");
         }
       },
@@ -39,23 +41,22 @@
   </AlertDialog.Trigger>
   <AlertDialog.Content>
     <AlertDialog.Header>
-      <AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
+      <AlertDialog.Title>{m.chat_deletechatconfirm()}</AlertDialog.Title>
       <AlertDialog.Description>
-        This action cannot be undone. This will permanently delete the chat and all its messages
-        from our servers.
+        {m.chat_thisactioncannotbeundone()}
       </AlertDialog.Description>
     </AlertDialog.Header>
     <AlertDialog.Footer>
-      <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+      <AlertDialog.Cancel>{m.chat_cancel()}</AlertDialog.Cancel>
       <AlertDialog.Action
-        onclick={() => $deleteMutation.mutate({ chatId })}
+        onclick={() => $deleteMutation.mutate({ chatId: chat.id })}
         disabled={$deleteMutation.isPending}
       >
         {#if $deleteMutation.isPending}
           <Loader2 class="animate-spin" />
-          Deleting...
+          {m.general_processing()}...
         {:else}
-          Delete
+          {m.chat_deleteaction()}
         {/if}
       </AlertDialog.Action>
     </AlertDialog.Footer>

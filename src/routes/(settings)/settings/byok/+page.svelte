@@ -10,6 +10,7 @@
   import SvelteSeo from "svelte-seo";
   import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "$lib/components/ui/card";
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
+  import { m } from '$lib/paraglide/messages.js';
 
   const { data }: PageProps = $props();
 
@@ -24,11 +25,11 @@
 
     try {
       await orpc.v1.byok.delete();
-      toast.success("OpenRouter disconnected");
+      toast.success(m.billing_openrouterdisconnected());
       invalidate(page.url);
     } catch (error) {
       console.error(error);
-      toast.error("Error disconnecting OpenRouter");
+      toast.error(m.error_disconnectingopenrouter());
     } finally {
       loadingMutation = false;
     }
@@ -37,71 +38,51 @@
 
 <SvelteSeo title="Bring Your Own Key | boreal.chat" />
 
-<h1 class="text-2xl font-semibold">Bring Your Own Key</h1>
+<h1 class="text-2xl font-semibold">{m.settings_bringyourownkey()}</h1>
 <h2 class="text-muted-foreground">
-  Connect your own API key to use boreal.chat without any limits.
+  {m.settings_connectyourapikey()}
 </h2>
 
 <div class="space-y-6 pt-4">
-  <Card>
-    <CardHeader>
-      <CardTitle>OpenRouter</CardTitle>
-    </CardHeader>
-    <CardContent>
-      {#if !$user.data?.authenticated}
-        <p class="text-muted-foreground text-sm">
-          Please log in to manage your OpenRouter connection.
+  {#if $user.loading}
+    <div class="flex items-center justify-center">
+      <Loader2Icon class="size-4 animate-spin" />
+    </div>
+  {:else if !$user.data?.authenticated || !$user.data?.data}
+    <p>{m.settings_pleaseloginfirst()}</p>
+  {:else}
+    <Card>
+      <CardHeader>
+        <CardTitle>OpenRouter</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p class="text-sm text-muted-foreground">
+          {m.billing_openrouterdescription()}
         </p>
-      {:else}
-        {#await openRouterAccount}
-          <div class="text-muted-foreground flex items-center text-sm">
-            <Loader2Icon class="mr-2 h-4 w-4 animate-spin" />
-            Checking status...
-          </div>
-        {:then value}
-          {#if value}
-            <p class="text-muted-foreground text-sm">Your OpenRouter account is connected.</p>
-          {:else}
-            <p class="text-muted-foreground text-sm">
-              Connect your OpenRouter account to get started.
-            </p>
-          {/if}
-        {:catch}
-          <Alert variant="destructive">
-            <AlertCircleIcon class="h-4 w-4" />
-            <p>Error loading your OpenRouter account</p>
-          </Alert>
-        {/await}
-      {/if}
-    </CardContent>
-    <CardFooter class="justify-end">
-      {#if !$user.data?.authenticated}
-        <Button href="/auth">Log In</Button>
-      {:else}
-        {#await openRouterAccount}
-          <div class="bg-muted h-10 w-24 animate-pulse rounded-md"></div>
-        {:then value}
-          {#if value}
-            <div class="flex gap-2">
-              <Button href="/settings/byok/openrouter" variant="outline">Reconnect</Button>
-              <Button
-                variant="destructive"
-                onclick={disconnectOpenRouter}
-                disabled={loadingMutation}
-              >
-                {#if loadingMutation}
-                  <Loader2Icon class="mr-2 h-4 w-4 animate-spin" />
-                {/if}
-                Disconnect
-              </Button>
-            </div>
-          {:else}
-            <Button href="/settings/byok/openrouter">Connect OpenRouter</Button>
-          {/if}
-        {:catch}
-          <!-- Error is displayed in content -->
-        {/await}
-      {/if}
-    </CardFooter>
-  </Card>
+        <div class="mt-4">
+          <p class="text-sm font-medium">
+            {m.general_status()}: {openRouterAccount ? m.billing_connected() : m.billing_notconnected()}
+          </p>
+        </div>
+      </CardContent>
+      <CardFooter>
+        {#if openRouterAccount}
+          <Button 
+            variant="destructive" 
+            onclick={disconnectOpenRouter}
+            disabled={loadingMutation}
+          >
+            {#if loadingMutation}
+              <Loader2Icon class="mr-2 size-4 animate-spin" />
+            {/if}
+            {m.billing_disconnectopenrouter()}
+          </Button>
+        {:else}
+          <Button href="/settings/byok/openrouter">
+            {m.billing_connectopenrouter()}
+          </Button>
+        {/if}
+      </CardFooter>
+    </Card>
+  {/if}
 </div>

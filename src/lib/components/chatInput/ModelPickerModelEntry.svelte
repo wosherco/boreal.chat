@@ -4,6 +4,7 @@
   import { BrainIcon, DollarSignIcon } from "@lucide/svelte";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
   import { ICON_MAP } from "../icons/iconMap";
+  import { m } from '$lib/paraglide/messages.js';
 
   interface Props {
     model: ModelId;
@@ -27,7 +28,7 @@
           </span>
         </TooltipTrigger>
         <TooltipContent>
-          <p>This model supports reasoning.</p>
+          <p>{m.models_thismodelsupportsreasoning()}</p>
         </TooltipContent>
       </Tooltip>
     {/if}
@@ -39,7 +40,7 @@
           </span>
         </TooltipTrigger>
         <TooltipContent>
-          <p>This model can be used for free.</p>
+          <p>{m.models_thismodelcanbeusedforfree()}</p>
         </TooltipContent>
       </Tooltip>
     {/if}

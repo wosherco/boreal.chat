@@ -25,6 +25,7 @@
   import { messageTable } from "$lib/client/db/schema";
   import { waitForInsert } from "$lib/client/hooks/waitForInsert";
   import ThreeDotsStreaming from "$lib/common/loaders/ThreeDotsStreaming.svelte";
+  import { m } from '$lib/paraglide/messages.js';
 
   interface Props {
     message: MessageWithOptionalChainRow;
@@ -127,9 +128,14 @@
       .join("") || "",
   );
 
-  function copyToClipboard() {
-    navigator.clipboard.writeText(cleanedMessageText);
-    toast.success("Copied message to clipboard!");
+  async function copyToClipboard() {
+    try {
+      await navigator.clipboard.writeText(cleanedMessageText);
+      toast.success(m.chat_copiedtoclipboard());
+    } catch (error) {
+      console.error("Failed to copy to clipboard:", error);
+      toast.error(m.chat_failedtocopytoclipboard());
+    }
   }
 
   async function regenerateMessage(newModel: ModelId) {
@@ -191,9 +197,9 @@
         {:else if segment.kind === "reasoning"}
           <ReasoningSegment reasoning={segment.content ?? ""} isReasoning={segment.streaming} />
         {:else if segment.kind === "tool_call"}
-          TODO: Tool call
+          {m.chat_todotoolcall()}
         {:else if segment.kind === "tool_result"}
-          TODO: Tool result
+          {m.chat_todotoolresult()}
         {/if}
       {/each}
     </div>
@@ -201,17 +207,17 @@
     {#if message.status === "error"}
       <Alert variant="destructive">
         <AlertCircleIcon />
-        <AlertTitle>Error</AlertTitle>
+        <AlertTitle>{m.error_error()}</AlertTitle>
         <AlertDescription>
-          <p>{message.error ?? "Unknown error"}</p>
-          <p>Please try again later by regenerating the message.</p>
+          <p>{message.error ?? m.error_unknownerror1()}</p>
+          <p>{m.error_tryagainlater2()}</p>
         </AlertDescription>
       </Alert>
     {/if}
 
     {#if message.status === "processing"}
       <div class="pt-4 pl-4">
-        <span class="sr-only">Generating...</span>
+        <span class="sr-only">{m.chat_generating()}</span>
         <ThreeDotsStreaming />
       </div>
     {/if}
@@ -225,7 +231,7 @@
                 <CopyIcon />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Copy</TooltipContent>
+            <TooltipContent>{m.tooltips_copy()}</TooltipContent>
           </Tooltip>
 
           {#if isUser}
@@ -240,7 +246,7 @@
                   <EditIcon />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Edit</TooltipContent>
+              <TooltipContent>{m.tooltips_edit()}</TooltipContent>
             </Tooltip>
           {/if}
 
@@ -255,29 +261,35 @@
                 </ModelPickerPopover>
               </TooltipTrigger>
               <TooltipContent
-                >Regenerate ({MODEL_DETAILS[message.model].displayName})</TooltipContent
+                >{m.tooltips_regenerate({ model: MODEL_DETAILS[message.model].displayName })}</TooltipContent
               >
             </Tooltip>
           {/if}
 
           {#if otherVersions.length >= 1}
-            <Button
-              variant="ghost"
-              size="small-icon"
-              onclick={previousThread}
-              disabled={message.version === 1}
-            >
-              <ChevronLeftIcon />
-            </Button>
-            <p>{message.version}/{otherVersions.length + 1}</p>
-            <Button
-              variant="ghost"
-              size="small-icon"
-              onclick={nextThread}
-              disabled={message.version === otherVersions.length + 1}
-            >
-              <ChevronRightIcon />
-            </Button>
+            <div class="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger>
+                  <Button variant="ghost" size="small-icon" onclick={previousThread}>
+                    <ChevronLeftIcon />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{m.general_previous()}</TooltipContent>
+              </Tooltip>
+
+              <span class="text-muted-foreground text-xs font-mono">
+                {message.version}/{otherVersions.length + 1}
+              </span>
+
+              <Tooltip>
+                <TooltipTrigger>
+                  <Button variant="ghost" size="small-icon" onclick={nextThread}>
+                    <ChevronRightIcon />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{m.general_next()}</TooltipContent>
+              </Tooltip>
+            </div>
           {/if}
         </div>
       </TooltipProvider>

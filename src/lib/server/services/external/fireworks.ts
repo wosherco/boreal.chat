@@ -1,6 +1,7 @@
 import { env } from "$env/dynamic/private";
 import fetch, { FormData } from "node-fetch";
 import { z } from "zod";
+import { m } from '$lib/paraglide/messages.js';
 
 const transcriptionResponseSchema = z.object({
   text: z.string(),
@@ -9,7 +10,7 @@ const transcriptionResponseSchema = z.object({
 export async function transcribe(audioBlob: Blob) {
   if (!env.FIREWORKS_AI_API_KEY) {
     console.error("FIREWORKS_AI_API_KEY is not set");
-    throw new Error("Server configuration error: Missing Fireworks AI API key.");
+    throw new Error(m.error_serverConfigurationError());
   }
 
   const formData = new FormData();
@@ -36,7 +37,7 @@ export async function transcribe(audioBlob: Blob) {
     );
   } catch (error) {
     console.error("Fireworks transcription API request failed to send", error);
-    throw new Error("Could not connect to the transcription service.");
+    throw new Error(m.error_couldNotConnectTranscription());
   }
 
   if (!res.ok) {
@@ -44,7 +45,7 @@ export async function transcribe(audioBlob: Blob) {
     console.error(
       `Fireworks transcription API returned an error. Status: ${res.status}, Body: ${errorBody}`,
     );
-    throw new Error("The transcription service returned an error.");
+    throw new Error(m.error_transcriptionServiceError());
   }
 
   try {
@@ -52,6 +53,6 @@ export async function transcribe(audioBlob: Blob) {
     return transcriptionResponseSchema.parse(data);
   } catch (error) {
     console.error("Failed to parse or validate response from Fireworks AI API", error);
-    throw new Error("Invalid response from transcription service.");
+    throw new Error(m.error_invalidTranscriptionResponse());
   }
 }

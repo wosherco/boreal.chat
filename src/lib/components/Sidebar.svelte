@@ -36,6 +36,12 @@
   import { clearLocalDb } from "$lib/client/db/index.svelte";
   import { SheetClose } from "./ui/sheet";
   import { openSearchCommand } from "./SearchCommand.svelte";
+  import { controlKeyName } from "$lib/utils/platform";
+  import { browser } from "$app/environment";
+  import ShortcutsCheatsheetDialog from "./ShortcutsCheatsheetDialog.svelte";
+  import SheetClosableOnlyOnPhone from "./utils/SheetClosableOnlyOnPhone.svelte";
+  import { isSubscribed } from "$lib/common/utils/subscription";
+  import { m } from '$lib/paraglide/messages.js';
 
   interface Props {
     loading: boolean;
@@ -46,12 +52,6 @@
   }
 
   const { user, loading, chats, onNewChat, isPhone = false }: Props = $props();
-
-  import { controlKeyName } from "$lib/utils/platform";
-  import { browser } from "$app/environment";
-  import ShortcutsCheatsheetDialog from "./ShortcutsCheatsheetDialog.svelte";
-  import SheetClosableOnlyOnPhone from "./utils/SheetClosableOnlyOnPhone.svelte";
-  import { isSubscribed } from "$lib/common/utils/subscription";
 
   let shortcutsCheatsheetOpen = $state(false);
 
@@ -66,7 +66,7 @@
       window.location.reload();
     } catch (e) {
       console.error(e);
-      toast.error("Failed to log out");
+      toast.error(m.error_failedtologout3());
     } finally {
       logoutLoading = false;
     }
@@ -86,7 +86,7 @@
           class="ring-offset-background focus-visible:ring-ring rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none md:hidden"
         >
           <XIcon class="size-6" />
-          <span class="sr-only">Close</span>
+          <span class="sr-only">{m.sidebar_close()}</span>
         </SheetClose>
       {/if}
 
@@ -109,7 +109,7 @@
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>New chat ({controlKeyName}+Shift+O)</p>
+            <p>{m.sidebar_newchat({ shortcut: `${controlKeyName}+Shift+O` })}</p>
           </TooltipContent>
         </Tooltip>
       </SheetClosableOnlyOnPhone>
@@ -123,11 +123,11 @@
         >
           <div class="flex items-center gap-2">
             <SearchIcon class="size-4" />
-            <span>Search...</span>
+            <span>{m.sidebar_search()}</span>
           </div>
           {#if browser}
             <div class="bg-muted/80 border-border rounded border px-1.5 py-0.5 font-mono text-xs">
-              {controlKeyName}+K
+              {m.sidebar_searchshortcut({ shortcut: `${controlKeyName}+K` })}
             </div>
           {/if}
         </Button>
@@ -159,7 +159,7 @@
       {:else if !user.data || !user.authenticated}
         <!-- Login Button -->
         <div class="flex flex-row gap-2">
-          <Button href="/auth" class="w-full flex-1" variant="default">Sign In</Button>
+          <Button href="/auth" class="w-full flex-1" variant="default">{m.sidebar_signin()}</Button>
           <Button href="/settings" class="shrink-0" variant="outline" size="icon">
             <SettingsIcon />
           </Button>
@@ -180,9 +180,9 @@
                   <p class="w-full truncate text-sm font-medium">{user.data.name}</p>
                   <p class="text-muted-foreground text-xs">
                     {#if isUserSubscribed}
-                      Unlimited
+                      {m.sidebar_unlimited()}
                     {:else}
-                      Free
+                      {m.sidebar_free()}
                     {/if}
                   </p>
                 </div>
@@ -200,7 +200,7 @@
             <DropdownMenuSeparator />
             <div class="px-2 py-2">
               <div class="flex flex-row items-center justify-between gap-2">
-                <span class="text-sm font-medium">Theme</span>
+                <span class="text-sm font-medium">{m.sidebar_theme()}</span>
                 <Tabs
                   value={mode.current}
                   onValueChange={(value) => setMode(value as "system" | "light" | "dark")}
@@ -222,15 +222,15 @@
             <DropdownMenuSeparator />
             <DropdownMenuItem onclick={() => (shortcutsCheatsheetOpen = true)}>
               <KeyboardIcon class="mr-2 size-4" />
-              <span>Shortcuts</span>
+              <span>{m.sidebar_shortcuts()}</span>
             </DropdownMenuItem>
             <DropdownMenuItem onclick={() => window.open("https://docs.boreal.chat", "_blank")}>
               <BookOpenIcon class="mr-2 size-4" />
-              <span>Docs</span>
+              <span>{m.sidebar_docs()}</span>
             </DropdownMenuItem>
             <DropdownMenuItem onclick={() => goto("/settings")}>
               <SettingsIcon class="mr-2 size-4" />
-              <span>Settings</span>
+              <span>{m.sidebar_settings()}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onclick={onLogout} variant="destructive" disabled={logoutLoading}>
@@ -239,7 +239,7 @@
               {:else}
                 <LogOutIcon class="mr-2 size-4" />
               {/if}
-              <span>Log out</span>
+              <span>{m.sidebar_logout()}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -4,6 +4,7 @@
   import SvelteSeo from "svelte-seo";
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
+  import { m } from '$lib/paraglide/messages.js';
 
   // Redirect to main chat after a few seconds
   onMount(() => {
@@ -31,83 +32,40 @@
 
     <!-- Header -->
     <div class="space-y-4">
-      <h1 class="text-4xl font-bold tracking-tight">🚀 Welcome to Unlimited!</h1>
-      <p class="text-muted-foreground text-xl">Your Unlimited subscription is now active.</p>
+      <h1 class="text-4xl font-bold tracking-tight">{m.billing_welcometounlimited()}</h1>
+      <p class="text-muted-foreground text-xl">{m.billing_subscriptionactive()}</p>
     </div>
 
     <!-- Features List -->
     <div class="space-y-6">
-      <h2 class="text-lg font-semibold">You now have access to:</h2>
-      <div class="space-y-4 text-left">
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
-          >
-            <InfinityIcon class="h-4 w-4 text-green-600 dark:text-green-400" />
-          </div>
-          <span
-            ><strong>Unlimited Messages</strong>
-            <small class="text-muted-foreground">(fair rate limits applied)</small></span
-          >
-        </div>
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
-          >
-            <InfinityIcon class="h-4 w-4 text-green-600 dark:text-green-400" />
-          </div>
-          <span
-            ><strong>Unlimited storage</strong>
-            <small class="text-muted-foreground">(fair rate limits applied)</small></span
-          >
-        </div>
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
-          >
-            <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
-          </div>
-          <span>Advanced Web Searching</span>
-        </div>
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
-          >
-            <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
-          </div>
-          <span>Advanced Data Analysis</span>
-        </div>
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20"
-          >
-            <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400" />
-          </div>
-          <span>Advanced Projects</span>
-        </div>
+      <div class="space-y-4">
+        <h3 class="text-lg font-semibold">{m.billing_enjoyunlimitedaccess()}</h3>
+        <ul class="space-y-2 text-sm">
+          <li class="flex items-center gap-2">
+            <CheckCircle class="h-4 w-4 text-green-500" />
+            <span>{m.billing_unlimitedmessages()}</span>
+          </li>
+          <li class="flex items-center gap-2">
+            <CheckCircle class="h-4 w-4 text-green-500" />
+            <span>{m.billing_prioritysupport()}</span>
+          </li>
+          <li class="flex items-center gap-2">
+            <CheckCircle class="h-4 w-4 text-green-500" />
+            <span>{m.billing_advancedfeatures()}</span>
+          </li>
+        </ul>
       </div>
-      <p class="text-muted-foreground text-sm">Plus everything from the Premium plan</p>
     </div>
 
-    <!-- Primary CTA -->
+    <!-- Action Button -->
     <div class="space-y-4">
-      <Button
-        href="/"
-        class="from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground w-full bg-gradient-to-r shadow-lg"
-        size="lg"
-      >
-        <InfinityIcon class="mr-2 h-4 w-4" />
-        Start Using Unlimited Features
-        <ArrowRight class="ml-2 h-4 w-4" />
+      <Button href="/" class="w-full">
+        <ArrowRight class="mr-2 h-4 w-4" />
+        {m.billing_getstartedbutton()}
       </Button>
-
-      <p class="text-muted-foreground text-sm">Redirecting automatically in a few seconds...</p>
+      <p class="text-muted-foreground text-sm">
+        {m.billing_redirectingin({ seconds: "15" })}
+      </p>
     </div>
-
-    <!-- Support -->
-    <p class="text-muted-foreground text-sm">
-      Questions? <a href="/settings/contact" class="text-primary hover:underline">Contact support</a
-      >
-    </p>
   </div>
 </div>

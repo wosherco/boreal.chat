@@ -1,207 +1,118 @@
 <script lang="ts">
+  import { createMutation } from "@tanstack/svelte-query";
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { orpcQuery } from "$lib/client/orpc";
-  import { isSubscribed } from "$lib/common/utils/subscription";
-  import { createMutation } from "@tanstack/svelte-query";
   import { Button } from "../ui/button";
-  import { Loader2 } from "@lucide/svelte";
-  import { Check, Star, Zap } from "@lucide/svelte";
-  import { toast } from "svelte-sonner";
-  import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-  } from "$lib/components/ui/card";
-  import { Badge } from "$lib/components/ui/badge";
-  import { cn } from "$lib/utils";
+  import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
+  import { Check, Loader2, Zap } from "@lucide/svelte";
+  import { isSubscribed } from "$lib/common/utils/subscription";
+  import { m } from '$lib/paraglide/messages.js';
 
-  const user = useCurrentUser(null);
-
-  // Clear subscription state derivations
-  const isLoggedIn = $derived($user.data?.authenticated ?? false);
-  const userData = $derived($user.data?.data ?? null);
-  const isUserSubscribed = $derived(isSubscribed(userData));
+  const user = useCurrentUser();
 
   const createCheckoutSession = createMutation(
     orpcQuery.v1.billing.createCheckoutSession.mutationOptions({
-      onSuccess: (res) => {
-        if (!res.success || !res.url) {
-          toast.error("Failed to create checkout session");
-          return;
+      onSuccess: (data) => {
+        if (data.url) {
+          window.location.href = data.url;
         }
-
-        window.location.href = res.url;
-      },
-      onError: (err) => {
-        toast.error("Failed to create checkout session");
-        console.error(err);
-      },
-    }),
-  );
-  const createCustomerSession = createMutation(
-    orpcQuery.v1.billing.createCustomerSession.mutationOptions({
-      onSuccess: (res) => {
-        if (!res.success || !res.url) {
-          toast.error("Failed to create customer session");
-          return;
-        }
-
-        window.location.href = res.url;
-      },
-      onError: (err) => {
-        toast.error("Failed to create customer session");
-        console.error(err);
       },
     }),
   );
 
-  const isLoading = $derived($createCheckoutSession.isPending || $createCustomerSession.isPending);
+  const isLoading = $derived($createCheckoutSession.isPending);
+  const isLoggedIn = $derived($user.data?.authenticated);
+  const isUserSubscribed = $derived(isSubscribed($user.data?.data ?? null));
 </script>
 
-<div class="space-y-6">
-  {#if isUserSubscribed}
-    <div
-      class="mb-6 rounded-lg border border-green-200 bg-green-50 p-6 dark:border-green-800 dark:bg-green-900/20"
-    >
-      <h2 class="mb-2 text-xl font-semibold text-green-800 dark:text-green-200">
-        🎉 You are subscribed to the <strong>Unlimited</strong> plan
-      </h2>
-      <p class="mb-4 text-green-700 dark:text-green-300">
-        Your subscription is active until:
-        <strong>{new Date(userData?.subscribedUntil ?? "").toLocaleDateString()}</strong>
-      </p>
-      <div class="flex gap-2">
-        <Button disabled={isLoading} onclick={() => $createCustomerSession.mutate({})}>
-          {#if $createCustomerSession.isPending}
-            <Loader2 class="animate-spin" />
-          {/if}
-          Manage Subscription
-        </Button>
-        <Button
-          disabled={isLoading}
-          onclick={() => $createCustomerSession.mutate({ toCancel: true })}
-          variant="destructive"
-        >
-          {#if $createCustomerSession.isPending}
-            <Loader2 class="animate-spin" />
-          {/if}
-          Cancel Subscription
-        </Button>
-      </div>
-    </div>
-  {/if}
+<div class="space-y-12">
+  <!-- Header -->
+  <div class="text-center">
+    <h2 class="text-3xl font-bold tracking-tight">{m.settings_pricingbilling()}</h2>
+    <p class="text-muted-foreground text-lg">
+      {m.settings_managebilling()}
+    </p>
+  </div>
 
+  <!-- Pricing Cards -->
   <div class="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-2">
     <!-- Free Plan -->
     <Card class="relative">
       <CardHeader>
-        <CardTitle class="text-2xl text-gray-600 dark:text-gray-400">Free</CardTitle>
-        <CardDescription>Perfect for getting started with boreal.chat</CardDescription>
+        <CardTitle class="text-2xl text-gray-600 dark:text-gray-400">{m.billing_free()}</CardTitle>
+        <CardDescription>{m.billing_perfectforgettingstarted()}</CardDescription>
         <div class="text-3xl font-bold">
-          Free<span class="text-muted-foreground text-base font-normal">/forever</span>
+          {m.billing_freeforever()}<span class="text-muted-foreground text-base font-normal">{m.billing_forever()}</span>
         </div>
       </CardHeader>
       <CardContent class="space-y-4">
         <ul class="space-y-3">
           <li class="flex items-center gap-3">
             <Check class="h-5 w-5 text-green-500" />
-            <span>Bring your own key (BYOK) option</span>
+            <span>{m.billing_bringyourownkey()}</span>
           </li>
           <li class="flex items-center gap-3">
             <Check class="h-5 w-5 text-green-500" />
-            <span><strong>Access to all AI models</strong></span>
+            <span><strong>{m.billing_accesstoallmodels()}</strong></span>
           </li>
           <li class="flex items-center gap-3">
             <Check class="h-5 w-5 text-green-500" />
-            <span>Unlimited syncing across all platforms</span>
+            <span>{m.billing_unlimitedsyncing()}</span>
           </li>
           <li class="flex items-center gap-3">
             <Check class="h-5 w-5 text-green-500" />
-            <span>Basic chat functionality</span>
+            <span>{m.billing_basicchatfunctionality()}</span>
           </li>
           <li class="flex items-center gap-3">
             <Check class="h-5 w-5 text-green-500" />
-            <span>No censorship, complete privacy</span>
+            <span>{m.billing_nocensorshipprivacy()}</span>
           </li>
         </ul>
       </CardContent>
       <CardFooter class="mt-auto">
         {#if !$user.data?.authenticated}
-          <Button href="/auth" variant="outline" class="w-full">Get Started Free</Button>
+          <Button href="/auth" variant="outline" class="w-full">{m.billing_getstartedfree()}</Button>
         {:else}
-          <Button variant="outline" class="w-full" disabled>Current plan</Button>
+          <Button variant="outline" class="w-full" disabled>{m.billing_currentplan()}</Button>
         {/if}
       </CardFooter>
     </Card>
 
     <!-- Unlimited Plan -->
     <Card
-      class={cn(
-        "border-primary from-primary/5 via-primary/10 to-primary/5 relative border-2 bg-gradient-to-br",
-        isUserSubscribed ? "ring-primary shadow-lg ring-2" : "",
-      )}
+      class="relative border-2 border-primary bg-gradient-to-b from-primary/5 to-primary/10 shadow-lg"
     >
-      {#if isUserSubscribed}
-        <div class="absolute -top-3 left-1/2 -translate-x-1/2 transform">
-          <Badge class="bg-primary text-primary-foreground">
-            <Star class="mr-1 h-3 w-3" />
-            Current Plan
-          </Badge>
+      <div class="absolute -top-3 left-1/2 -translate-x-1/2 transform">
+        <div class="bg-primary text-primary-foreground rounded-full px-3 py-1 text-sm font-medium">
+          Most Popular
         </div>
-      {:else}
-        <div class="absolute -top-3 left-1/2 -translate-x-1/2 transform">
-          <Badge class="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
-            <Zap class="mr-1 h-3 w-3" />
-            Most Popular
-          </Badge>
-        </div>
-      {/if}
+      </div>
       <CardHeader>
-        <CardTitle
-          class="from-primary to-primary/80 bg-gradient-to-r bg-clip-text text-2xl text-transparent"
-        >
-          Unlimited
-        </CardTitle>
-        <CardDescription>For power users and teams who need everything.</CardDescription>
+        <CardTitle class="text-2xl">{m.billing_unlimited()}</CardTitle>
+        <CardDescription>{m.billing_unlimitedaccess()}</CardDescription>
         <div class="text-3xl font-bold">
-          12€<span class="text-muted-foreground text-base font-normal">/month</span>
+          $19<span class="text-muted-foreground text-base font-normal">{m.billing_permonth()}</span>
         </div>
       </CardHeader>
       <CardContent class="space-y-4">
         <ul class="space-y-3">
           <li class="flex items-center gap-3">
-            <div class="bg-primary/20 rounded-full p-1">
-              <Check class="text-primary h-3 w-3" />
-            </div>
-            <span><strong>Everything in the Premium plan, plus:</strong></span>
+            <Check class="h-5 w-5 text-green-500" />
+            <span>{m.billing_everythinginfree()}</span>
           </li>
           <li class="flex items-center gap-3">
-            <div class="bg-primary/20 rounded-full p-1">
-              <Check class="text-primary h-3 w-3" />
-            </div>
-            <span
-              ><strong>Unlimited Messages</strong>
-              <small class="text-muted-foreground">(fair rate limits applied)</small></span
-            >
+            <Check class="h-5 w-5 text-green-500" />
+            <span><strong>{m.billing_unlimitedmessages()}</strong></span>
           </li>
           <li class="flex items-center gap-3">
-            <div class="bg-primary/20 rounded-full p-1">
-              <Check class="text-primary h-3 w-3" />
-            </div>
-            <span
-              ><strong>Unlimited storage</strong>
-              <small class="text-muted-foreground">(fair rate limits applied)</small></span
-            >
+            <Check class="h-5 w-5 text-green-500" />
+            <span>{m.billing_prioritysupport()}</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <Check class="h-5 w-5 text-green-500" />
+            <span>{m.billing_advancedfeatures()}</span>
           </li>
         </ul>
-
-        <!-- Everything from Premium plan included note -->
-        <div class="border-primary/20 border-t pt-2">
-          <p class="text-muted-foreground text-sm">Plus everything from the Premium plan</p>
-        </div>
       </CardContent>
       <CardFooter class="mt-auto">
         {#if !isLoggedIn}
@@ -210,12 +121,12 @@
             class="from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground w-full bg-gradient-to-r shadow-lg"
           >
             <Zap class="mr-2 h-4 w-4" />
-            Get Unlimited
+            {m.billing_getunlimited()}
           </Button>
         {:else if isUserSubscribed}
           <Button disabled class="w-full" variant="outline">
             <Check class="mr-2 h-4 w-4" />
-            Currently Active
+            {m.billing_currentlyactive()}
           </Button>
         {:else}
           <Button
@@ -228,7 +139,7 @@
             {:else}
               <Zap class="mr-2 h-4 w-4" />
             {/if}
-            Subscribe to Unlimited
+            {m.billing_subscriptotounlimited()}
           </Button>
         {/if}
       </CardFooter>
@@ -238,8 +149,8 @@
   <!-- FAQ or additional info section -->
   <div class="pt-8 text-center">
     <p class="text-muted-foreground text-sm">
-      Have questions? <a href="/settings/contact" class="text-primary hover:underline">Contact us</a
-      > for help choosing the right plan.
+      {m.billing_havequestions()} <a href="/settings/contact" class="text-primary hover:underline">{m.billing_contactus()}</a
+      > {m.billing_helpchoosingplan()}
     </p>
   </div>
 </div>

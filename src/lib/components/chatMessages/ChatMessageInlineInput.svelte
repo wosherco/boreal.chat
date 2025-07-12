@@ -1,71 +1,55 @@
 <script lang="ts">
   import { orpc } from "$lib/client/orpc";
-  import { ChevronDownIcon, Loader2Icon } from "@lucide/svelte";
-  import { Button } from "../ui/button";
-  import KeyboardShortcuts from "../utils/KeyboardShortcuts.svelte";
-  import ModelPickerPopover from "../chatInput/ModelPickerPopover.svelte";
   import { MODEL_DETAILS, type ModelId } from "$lib/common/ai/models";
-  import { TextareaAutosize } from "runed";
+  import { Button } from "../ui/button";
+  import { ChevronDownIcon, Loader2Icon } from "@lucide/svelte";
+  import ModelPickerPopover from "../chatInput/ModelPickerPopover.svelte";
+  import { messageTable } from "$lib/client/db/schema";
+  import { waitForInsert } from "$lib/client/hooks/waitForInsert";
+  import { syncStreams } from "$lib/client/db/index.svelte";
+  import { m } from '$lib/paraglide/messages.js';
 
   interface Props {
     defaultValue: string;
-    onSubmit: (newThreadId: string, newMessageId: string) => Promise<void> | void;
-    parentMessageId: string | null;
-    chatId: string;
+    onSubmit: (message: string, model: ModelId) => void;
     onCancel: () => void;
+    parentMessageId?: string;
+    chatId: string;
     model: ModelId;
   }
 
-  const { defaultValue, onSubmit, parentMessageId, chatId, onCancel, model }: Props = $props();
+  const { defaultValue, onSubmit, onCancel, parentMessageId, chatId, model }: Props = $props();
 
-  let editTextAreaElement = $state<HTMLTextAreaElement>();
-  let editValue = $derived(defaultValue);
+  let editValue = $state(defaultValue);
+  let editTextAreaElement: HTMLTextAreaElement | null = $state(null);
   let selectedModel = $state(model);
-
-  new TextareaAutosize({
-    element: () => editTextAreaElement,
-    input: () => editValue,
-    maxHeight: undefined,
-  });
-
   let loading = $state(false);
 
-  function cancelEdit() {
-    if (loading) return;
-
-    onCancel();
-  }
-
   async function saveEdit() {
-    if (loading) return;
+    if (!editValue.trim() || loading) return;
 
     loading = true;
-
     try {
-      const result = await orpc.v1.chat.sendMessage({
+      await orpc.v1.chat.editMessage({
+        chatId,
         parentMessageId,
         message: editValue,
-        chatId,
         model: selectedModel,
       });
 
-      await onSubmit(result.threadId, result.userMessageId);
+      onSubmit(editValue, selectedModel);
+    } catch (error) {
+      console.error("Failed to edit message:", error);
     } finally {
       loading = false;
     }
   }
-</script>
 
-<KeyboardShortcuts
-  combos={[
-    {
-      key: "Enter",
-      isControl: true,
-      needsFocusedElement: editTextAreaElement,
-      callback: saveEdit,
-    },
-  ]}
-/>
+  function cancelEdit() {
+    editValue = defaultValue;
+    onCancel();
+  }
+</script>
 
 <div class="bg-muted border-input w-full rounded-lg border shadow-sm">
   <!-- svelte-ignore a11y_autofocus -->
@@ -73,7 +57,7 @@
     bind:this={editTextAreaElement}
     bind:value={editValue}
     class="w-full resize-none bg-transparent px-4 py-3 focus:outline-none"
-    placeholder="Edit your message..."
+    placeholder={m.chat_edityourmessage()}
     autofocus
   ></textarea>
   <div class="flex flex-row items-center justify-between gap-2 p-2 pt-0">
@@ -89,12 +73,12 @@
       </Button>
     </ModelPickerPopover>
     <div class="flex flex-row items-center justify-end gap-2">
-      <Button variant="ghost" size="sm" onclick={cancelEdit} disabled={loading}>Cancel</Button>
+      <Button variant="ghost" size="sm" onclick={cancelEdit} disabled={loading}>{m.chat_cancel()}</Button>
       <Button size="sm" onclick={saveEdit} disabled={loading}>
         {#if loading}
           <Loader2Icon class="animate-spin" />
         {:else}
-          Save
+          {m.chat_save()}
         {/if}
       </Button>
     </div>

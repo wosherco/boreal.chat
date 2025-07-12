@@ -1,65 +1,54 @@
 <script lang="ts">
-  import { cn } from "$lib/utils";
-  import {
-    EllipsisVerticalIcon,
-    MessageSquareIcon,
-    PencilIcon,
-    TrashIcon,
-    PinIcon,
-  } from "@lucide/svelte";
   import { Button } from "../ui/button";
-  import SheetClosableOnlyOnPhone from "../utils/SheetClosableOnlyOnPhone.svelte";
-  import type { Chat } from "$lib/common/sharedTypes";
+  import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+  import { EllipsisVerticalIcon, MessageSquareIcon, PinIcon, PencilIcon, TrashIcon } from "@lucide/svelte";
+  import { cn } from "$lib/utils";
   import { page } from "$app/state";
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-  } from "../ui/dropdown-menu";
-  import { hold } from "$lib/actions/hold";
+  import type { Chat } from "$lib/common/sharedTypes";
+  import { orpcQuery } from "$lib/client/orpc";
+  import { createMutation } from "@tanstack/svelte-query";
+  import { toast } from "svelte-sonner";
+  import SheetClosableOnlyOnPhone from "../utils/SheetClosableOnlyOnPhone.svelte";
+  import { hold } from "$lib/actions";
   import EditChatTitleDialog from "./EditChatTitleDialog.svelte";
   import DeleteChatAlertDialog from "./DeleteChatAlertDialog.svelte";
-  import { orpcQuery } from "$lib/client/orpc";
-  import { toast } from "svelte-sonner";
-  import { createMutation } from "@tanstack/svelte-query";
+  import { m } from '$lib/paraglide/messages.js';
 
   interface Props {
     chat: Chat;
-    isPhone: boolean;
+    isPhone?: boolean;
   }
 
-  const { chat, isPhone }: Props = $props();
+  let { chat, isPhone = false }: Props = $props();
+
+  const isActive = $derived(page.url.pathname === `/chat/${chat.id}`);
 
   let dropdownOpen = $state(false);
   let editChatTitleDialogOpen = $state(false);
   let deleteChatModalOpen = $state(false);
 
-  const isActive = $derived(page.params.chatId === chat.id || dropdownOpen);
-
   const pinToggleMutation = createMutation(
-    orpcQuery.v1.chat.pinChat.mutationOptions({
-      onSuccess: (res) => {
-        toast.success(res.pinned ? "Chat pinned" : "Chat unpinned");
+    orpcQuery.v1.chat.pinToggle.mutationOptions({
+      onSuccess: (data) => {
+        toast.success(data.pinned ? m.chat_pinned() : m.chat_unpinned());
       },
-      onError: () => {
+      onError: (error) => {
+        console.error("Error toggling pin:", error);
         toast.error("Failed to toggle pin");
       },
     }),
   );
 </script>
 
-<EditChatTitleDialog
-  chatId={chat.id}
-  currentTitle={chat.title ?? ""}
-  bind:open={editChatTitleDialogOpen}
-/>
-
-<DeleteChatAlertDialog chatId={chat.id} bind:open={deleteChatModalOpen} />
+<EditChatTitleDialog bind:open={editChatTitleDialogOpen} {chat} />
+<DeleteChatAlertDialog bind:open={deleteChatModalOpen} {chat} />
 
 <SheetClosableOnlyOnPhone
   {isPhone}
-  class="group flex w-full flex-row items-center justify-start text-start"
+  class={cn(
+    "group flex w-full items-center gap-2 rounded-lg px-2 py-1 text-start transition-colors hover:bg-accent",
+    isActive && "bg-accent",
+  )}
 >
   <Button
     variant="ghost"
@@ -73,7 +62,7 @@
     })}
   >
     <MessageSquareIcon class="text-muted-foreground" />
-    <span class="min-w-0 flex-1 truncate text-sm font-medium">{chat.title ?? "No title"}</span>
+    <span class="min-w-0 flex-1 truncate text-sm font-medium">{chat.title ?? m.chat_notitle()}</span>
     <DropdownMenu bind:open={dropdownOpen}>
       <DropdownMenuTrigger>
         <button
@@ -95,15 +84,15 @@
           disabled={$pinToggleMutation.isPending}
         >
           <PinIcon />
-          {chat.pinned ? "Unpin" : "Pin"}
+          {chat.pinned ? m.chat_unpin() : m.chat_pin()}
         </DropdownMenuItem>
         <DropdownMenuItem onclick={() => (editChatTitleDialogOpen = true)}>
           <PencilIcon />
-          Rename
+          {m.chat_rename()}
         </DropdownMenuItem>
         <DropdownMenuItem onclick={() => (deleteChatModalOpen = true)}>
           <TrashIcon />
-          Delete
+          {m.chat_delete()}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
