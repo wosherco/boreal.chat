@@ -9,7 +9,7 @@
     DialogTitle,
     DialogTrigger,
   } from "../ui/dialog";
-  import { TrashIcon, FileTextIcon, CalendarIcon } from "@lucide/svelte";
+  import { TrashIcon, FileTextIcon, CalendarIcon, GlobeIcon, BrainIcon } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
   import type { Draft } from "$lib/common/sharedTypes";
   import { useDrafts } from "$lib/client/hooks/useDrafts.svelte";
@@ -19,6 +19,9 @@
   import type { Snippet } from "svelte";
   import { gotoWithSeachParams } from "$lib/utils/navigate";
   import { page } from "$app/state";
+  import { MODEL_DETAILS, type ModelId } from "$lib/common/ai/models";
+  import { ICON_MAP } from "../icons/iconMap";
+  import { Badge } from "../ui/badge";
 
   interface Props {
     children: Snippet;
@@ -100,6 +103,8 @@
         </div>
       {:else}
         {#each drafts as draft (draft.id)}
+          {@const modelDetails = MODEL_DETAILS[draft.selectedModel as ModelId]}
+          {@const Icon = ICON_MAP[draft.selectedModel as ModelId]}
           <div
             class="hover:bg-muted/50 group cursor-pointer rounded-lg border p-3 transition-colors"
             onclick={() => handleDraftSelect(draft)}
@@ -114,21 +119,38 @@
           >
             <div class="flex items-start justify-between">
               <div class="min-w-0 flex-1">
-                <p class="text-muted-foreground mb-2 text-sm">
+                <p class="text-muted-foreground mb-3 text-sm">
                   {truncateText(draft.content)}
                 </p>
-                <div class="text-muted-foreground flex items-center gap-4 text-xs">
+                <div
+                  class="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-2 text-xs"
+                >
+                  <div class="flex items-center gap-1.5">
+                    <Icon class="size-4" />
+                    <span class="font-medium">{modelDetails.displayName}</span>
+                  </div>
+
                   <div class="flex items-center gap-1">
                     <CalendarIcon class="h-3 w-3" />
                     {formatDateCompact(draft.updatedAt.toISOString())}
                   </div>
-                  <span class="capitalize">{draft.selectedModel}</span>
-                  {#if draft.webSearchEnabled}
-                    <span class="text-blue-600">Web Search</span>
-                  {/if}
-                  {#if draft.reasoningLevel !== "none"}
-                    <span class="text-purple-600 capitalize">{draft.reasoningLevel} Reasoning</span>
-                  {/if}
+                  <div class="flex items-center gap-2">
+                    {#if draft.webSearchEnabled}
+                      <Badge variant="outline" class="gap-1.5 py-0.5 text-xs font-normal">
+                        <GlobeIcon class="size-3" />
+                        Web Search
+                      </Badge>
+                    {/if}
+                    {#if draft.reasoningLevel !== "none"}
+                      <Badge
+                        variant="outline"
+                        class="gap-1.5 py-0.5 text-xs font-normal capitalize"
+                      >
+                        <BrainIcon class="size-3" />
+                        {draft.reasoningLevel} Reasoning
+                      </Badge>
+                    {/if}
+                  </div>
                 </div>
               </div>
               <Button
