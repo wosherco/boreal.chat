@@ -66,49 +66,17 @@
   };
 
   const cleanedSegments = $derived.by(() => {
-    const { segments: dbSegments, tokenStream: streamedSegments } = message;
+    const { segments: dbSegments } = message;
     let cleanedSegments: ChatSegment[] = [];
 
     if (dbSegments) {
-      let cacheSegment: ChatSegment | undefined;
-
       for (const segment of dbSegments) {
         switch (segment.kind) {
           case "reasoning":
           case "text":
-            {
-              if (cacheSegment) {
-                if (cacheSegment.kind === segment.kind) {
-                  if (!cacheSegment.content) {
-                    cacheSegment.content = "";
-                  }
-
-                  if (segment.content) {
-                    cacheSegment.content += segment.content;
-                  }
-                } else {
-                  cleanedSegments.push(cacheSegment);
-                  cacheSegment = {
-                    ...segment,
-                    streamed: false,
-                  };
-                }
-              } else {
-                cacheSegment = {
-                  ...segment,
-                  streamed: false,
-                };
-              }
-            }
-            continue;
           case "tool_call":
           case "tool_result":
             {
-              if (cacheSegment) {
-                cleanedSegments.push(cacheSegment);
-                cacheSegment = undefined;
-              }
-
               cleanedSegments.push({
                 ...segment,
                 streamed: false,
@@ -116,63 +84,6 @@
             }
             continue;
         }
-      }
-
-      if (cacheSegment) {
-        cleanedSegments.push(cacheSegment);
-      }
-    }
-
-    if (streamedSegments) {
-      let segmentCache: ChatSegment | undefined;
-
-      let i = 0;
-      for (const segment of streamedSegments) {
-        if (segment.kind === "tool_call" || segment.kind === "tool_result") {
-          // TODO: Add support for streaming tool calls and results
-          continue;
-        }
-
-        if (segmentCache) {
-          if (segmentCache.kind === segment.kind) {
-            if (!segmentCache.content) {
-              segmentCache.content = "";
-            }
-
-            if (segment.token) {
-              segmentCache.content += segment.token;
-            }
-          } else {
-            cleanedSegments.push(segmentCache);
-            segmentCache = {
-              kind: segment.kind,
-              content: segment.token ? segment.token : "",
-              ordinal: i,
-              toolCallId: null,
-              toolName: null,
-              toolArgs: null,
-              toolResult: null,
-              streamed: true,
-            };
-          }
-        } else {
-          segmentCache = {
-            kind: segment.kind,
-            content: segment.token ? segment.token : "",
-            ordinal: i,
-            toolCallId: null,
-            toolName: null,
-            toolArgs: null,
-            toolResult: null,
-            streamed: true,
-          };
-        }
-
-        i++;
-      }
-
-      if (segmentCache) {
-        cleanedSegments.push(segmentCache);
       }
     }
 

@@ -4,10 +4,9 @@ import {
   chatTable,
   messageSegmentsTable,
   messageTable,
-  messageTokensTable,
   threadTable,
 } from "../db/schema";
-import type { MessageChainRow, SegmentJson, TokenStreamJson } from "$lib/common/sharedTypes";
+import type { MessageChainRow, SegmentJson } from "$lib/common/sharedTypes";
 import { transformKeyToCamelCaseRecursive } from "$lib/client/hooks/utils";
 import type { ModelId } from "$lib/common/ai/models";
 import { addSeconds } from "date-fns";
@@ -432,8 +431,7 @@ chain AS (                               -- <<< walk the parent chain
 )
 SELECT
     c.*,                          -- all message columns
-    segs.segments,                -- aggregated segments (may be NULL)
-    toks.tokenStream             -- aggregated token stream (may be NULL)
+    segs.segments                 -- aggregated segments (may be NULL)
 FROM   chain c
 /* —— pull in message_segments as ONE row per message —— */
 LEFT  JOIN LATERAL (
@@ -448,16 +446,6 @@ LEFT  JOIN LATERAL (
         FROM   message_segments ms
         WHERE  ms.message_id = c.id
 ) segs ON TRUE
-/* —— pull in message_tokens (if the message is still streaming) —— */
-LEFT  JOIN LATERAL (
-        SELECT jsonb_agg(jsonb_build_object(
-                          'token', mt.tokens,
-                          'kind', mt.kind
-                       ) ORDER BY mt.created_at)
-               AS tokenStream
-        FROM   message_tokens mt
-        WHERE  mt.message_id = c.id
-) toks ON TRUE
 ORDER BY c.created_at DESC;        -- newest → oldest for chat view
 `);
 
@@ -467,7 +455,7 @@ ORDER BY c.created_at DESC;        -- newest → oldest for chat view
     .map((row) => ({
       ...(transformKeyToCamelCaseRecursive(row) as unknown as MessageChainRow),
       segments: row.segments ?? null,
-      tokenStream: row.tokenStream ?? null,
+      tokenStream: null,
     }))
     .toReversed();
 }
@@ -491,29 +479,15 @@ function createMessagesBaseQuery(db: TransactableDBType) {
     .where(eq(messageSegmentsTable.messageId, messageTable.id))
     .as("segments");
 
-  const tokenStreamSubquery = db
-    .select({
-      tokenStream: sql<TokenStreamJson[]>`jsonb_agg(jsonb_build_object(
-								'token', ${messageTokensTable.tokens},
-								'kind', ${messageTokensTable.kind}
-							) ORDER BY ${messageTokensTable.createdAt})`.as("tokenStream"),
-    })
-    .from(messageTokensTable)
-    .where(eq(messageTokensTable.messageId, messageTable.id))
-    .as("tokenStream");
-
   return {
     baseQuery: db
       .select({
         ...getTableColumns(messageTable),
         segments: segmentsSubquery.segments,
-        tokenStream: tokenStreamSubquery.tokenStream,
       })
       .from(messageTable)
-      .leftJoinLateral(segmentsSubquery, sql<boolean>`true`)
-      .leftJoinLateral(tokenStreamSubquery, sql<boolean>`true`),
+      .leftJoinLateral(segmentsSubquery, sql<boolean>`true`),
     segmentsSubquery,
-    tokenStreamSubquery,
   };
 }
 

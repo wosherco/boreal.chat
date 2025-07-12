@@ -23,7 +23,6 @@ const {
   threadTable,
   messageTable,
   messageSegmentsTable,
-  messageTokensTable,
   messageSegmentUsageTable,
 } = createChatTables(userTable, true);
 
@@ -32,6 +31,5 @@ export {
   threadTable,
   messageTable,
   messageSegmentsTable,
-  messageTokensTable,
   messageSegmentUsageTable,
 };
