@@ -11,6 +11,7 @@
     ChevronDownIcon,
     GlobeIcon,
     Loader2Icon,
+    MicIcon,
     SendIcon,
     StopCircleIcon,
   } from "@lucide/svelte";
@@ -34,6 +35,8 @@
   import DraftManager from "../drafts/DraftManager.svelte";
   import type { Draft } from "$lib/common/sharedTypes";
   import { FileTextIcon } from "@lucide/svelte";
+  import { VoiceMessageService } from "$lib/client/services/voiceMessageService.svelte";
+  import { env } from "$env/dynamic/public";
 
   interface Props {
     /**
@@ -100,7 +103,7 @@
         try {
           // Cancel any pending draft saves
           debouncedSaveDraft.cancel();
-          
+
           await orpc.v1.chat.sendMessage({
             chatId: currentChatState.chatId,
             model: actualSelectedModel,
@@ -124,7 +127,7 @@
         try {
           // Cancel any pending draft saves
           debouncedSaveDraft.cancel();
-          
+
           const chatDetails = await orpc.v1.chat.newChat({
             model: actualSelectedModel,
             message: value,
@@ -182,8 +185,6 @@
       loading = false;
     }
   }
-
-  $effect(() => {});
 
   afterNavigate(({ to }) => {
     if (!to) return;
@@ -264,7 +265,7 @@
     reasoningLevel = draft.reasoningLevel;
     webSearchEnabled = draft.webSearchEnabled;
     currentDraftId = draft.id;
-    
+
     // Update URL with draft ID
     const url = new URL(window.location.href);
     url.searchParams.set("draft", draft.id);
@@ -278,19 +279,59 @@
     window.history.replaceState({}, "", url.toString());
   }
 
-  // Save draft when typing
-  $effect(() => {
-    if (value.trim() && !getCurrentChatState()) {
-      debouncedSaveDraft.updateImmediately();
-    }
-  });
-
   // Load draft from URL on mount
   $effect(() => {
     if (browser) {
       loadDraftFromUrl();
     }
   });
+  // Mic stuff
+  const voiceMessageService = new VoiceMessageService();
+  const volumeLevels = $derived.by(() => {
+    const levels = voiceMessageService.volumeLevels.slice(-20);
+    const remaining = new Array(20 - levels.length).fill(0);
+    return [...remaining, ...levels];
+  });
+
+  async function startRecording() {
+    const valid = await voiceMessageService.startRecording();
+    if (!valid) {
+      toast.error("Failed to access microphone. Please, allow access in your browser settings.");
+      return;
+    }
+  }
+
+  async function pauseRecording() {
+    await voiceMessageService.pauseRecording();
+  }
+
+  async function resumeRecording() {
+    await voiceMessageService.resumeRecording();
+  }
+
+  async function stopRecording() {
+    const result = await voiceMessageService.stopRecording();
+
+    if (!result) {
+      voiceMessageService.reset();
+      toast.error("Failed to stop recording");
+      return;
+    }
+
+    try {
+      const { transcript } = await orpc.v1.voice.transcribe({
+        audioBlob: result.audioBlob,
+        duration: result.duration / 1000,
+      });
+
+      value += transcript;
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to transcribe voice message");
+    } finally {
+      voiceMessageService.reset();
+    }
+  }
 </script>
 
 <KeyboardShortcuts
@@ -330,91 +371,166 @@
     class="bg-muted/50 group pointer-events-auto z-50 flex w-full flex-col gap-3 rounded-lg rounded-b-none border border-b-0 shadow backdrop-blur transition-colors focus-within:border-white"
     style:padding-bottom="env(safe-area-inset-bottom)"
   >
-    <!-- svelte-ignore a11y_autofocus -->
-    <textarea
-      autocomplete="off"
-      autofocus={browser}
-      disabled={loading}
-      bind:this={textAreaElement}
-      bind:value
-      placeholder="Message Bot..."
-      style="height: {textareaHeight}; line-height: {lineHeight}px;"
-      class="placeholder:text-muted-foreground w-full resize-none overflow-y-auto border-none bg-transparent p-4 pb-2 transition-all duration-150 ease-out focus:ring-0 focus:outline-none"
-    ></textarea>
+    {#if voiceMessageService.state === "idle" || voiceMessageService.state === "error"}
+      <!-- svelte-ignore a11y_autofocus -->
+      <textarea
+        autocomplete="off"
+        autofocus={browser}
+        disabled={loading}
+        bind:this={textAreaElement}
+        bind:value
+        placeholder="Message Bot..."
+        style="height: {textareaHeight}; line-height: {lineHeight}px;"
+        class="placeholder:text-muted-foreground w-full resize-none overflow-y-auto border-none bg-transparent p-4 pb-2 transition-all duration-150 ease-out focus:ring-0 focus:outline-none"
+      ></textarea>
 
-    <div class="flex items-center justify-between p-2 pt-0">
-      <div class="flex items-center gap-2">
-        <ModelPickerPopover
-          selectedModel={actualSelectedModel}
-          onSelect={(newModel) => {
-            selectedModel = newModel;
-            setLastSelectedModel(newModel);
-          }}
-          bind:open={modelPickerOpen}
-        >
-          <Button variant="ghost">
-            {MODEL_DETAILS[actualSelectedModel].displayName}
-            <ChevronDownIcon class="h-4 w-4" />
-          </Button>
-        </ModelPickerPopover>
+      <div class="flex items-center justify-between p-2 pt-0">
+        <div class="flex items-center gap-2">
+          <DraftManager onDraftSelect={loadDraft}>
+            <Button variant="ghost" size="icon" disabled={loading || !browser}>
+              <FileTextIcon class="h-4 w-4" />
+            </Button>
+          </DraftManager>
 
-        <Toggle
-          pressed={actualWebSearchEnabled}
-          onPressedChange={(newWebSearchEnabled) => (webSearchEnabled = newWebSearchEnabled)}
-          class="text-sm"
-          variant="outline"
-        >
-          <GlobeIcon />
-          <span class="hidden text-xs md:block">Web Search</span>
-        </Toggle>
-
-        {#if MODEL_DETAILS[actualSelectedModel].reasoning}
-          <Select
-            type="single"
-            value={actualReasoningLevel}
-            onValueChange={(newValue) => (reasoningLevel = newValue as ReasoningLevel)}
+          <ModelPickerPopover
+            selectedModel={actualSelectedModel}
+            onSelect={(newModel) => {
+              selectedModel = newModel;
+              setLastSelectedModel(newModel);
+            }}
+            bind:open={modelPickerOpen}
           >
-            <SelectTrigger>
-              <BrainIcon />
-              <span class="hidden sm:block">
-                {actualReasoningLevel.charAt(0).toUpperCase() + actualReasoningLevel.slice(1)}
-              </span>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">None</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-            </SelectContent>
-          </Select>
-        {/if}
-      </div>
+            <Button variant="ghost">
+              {MODEL_DETAILS[actualSelectedModel].displayName}
+              <ChevronDownIcon class="h-4 w-4" />
+            </Button>
+          </ModelPickerPopover>
 
-      <div class="flex items-center gap-2">
-        <DraftManager onDraftSelect={loadDraft}>
-          <Button variant="ghost" size="icon" disabled={loading || !browser}>
-            <FileTextIcon class="h-4 w-4" />
-          </Button>
-        </DraftManager>
-        
-        <!-- TODO: Add whisper support -->
-        <!-- <Button variant="secondary" size="icon" disabled={loading || !browser}>
-          <MicIcon class="h-4 w-4" />
-        </Button> -->
-        <Button
-          disabled={(!value.trim() && isLastMessageFinished) || loading || !browser}
-          onclick={isLastMessageFinished ? onSendMessage : onCancelMessage}
-          size="icon"
-        >
-          {#if loading}
-            <Loader2Icon class="animate-spin" />
-          {:else if !isLastMessageFinished}
-            <StopCircleIcon />
-          {:else}
-            <SendIcon />
+          <Toggle
+            pressed={actualWebSearchEnabled}
+            onPressedChange={(newWebSearchEnabled) => (webSearchEnabled = newWebSearchEnabled)}
+            class="text-sm"
+            variant="outline"
+          >
+            <GlobeIcon />
+            <span class="hidden text-xs md:block">Web Search</span>
+          </Toggle>
+
+          {#if MODEL_DETAILS[actualSelectedModel].reasoning}
+            <Select
+              type="single"
+              value={actualReasoningLevel}
+              onValueChange={(newValue) => (reasoningLevel = newValue as ReasoningLevel)}
+            >
+              <SelectTrigger>
+                <BrainIcon />
+                <span class="hidden sm:block">
+                  {actualReasoningLevel.charAt(0).toUpperCase() + actualReasoningLevel.slice(1)}
+                </span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+              </SelectContent>
+            </Select>
           {/if}
-        </Button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          {#if env.PUBLIC_VOICE_INPUT_ENABLED}
+            <Button
+              variant="secondary"
+              size="icon"
+              disabled={loading || !browser || voiceMessageService.state === "error"}
+              onclick={startRecording}
+            >
+              <MicIcon class="h-4 w-4" />
+            </Button>
+          {/if}
+
+          <Button
+            disabled={(!value.trim() && isLastMessageFinished) || loading || !browser}
+            onclick={isLastMessageFinished ? onSendMessage : onCancelMessage}
+            size="icon"
+          >
+            {#if loading}
+              <Loader2Icon class="animate-spin" />
+            {:else if !isLastMessageFinished}
+              <StopCircleIcon />
+            {:else}
+              <SendIcon />
+            {/if}
+          </Button>
+        </div>
       </div>
-    </div>
+    {:else}
+      <div class="flex flex-col gap-3 p-4">
+        <!-- Controls row -->
+        <div class="flex items-center justify-between">
+          <!-- Cancel button on the left -->
+          <Button
+            variant="outline"
+            size="sm"
+            onclick={async () => {
+              voiceMessageService.cancelRecording();
+            }}
+            class="text-destructive hover:text-destructive"
+          >
+            Cancel
+          </Button>
+
+          <!-- Pause/Resume and Finish buttons on the right -->
+          <div class="flex items-center gap-2">
+            {#if voiceMessageService.state === "recording"}
+              <Button variant="outline" size="sm" onclick={pauseRecording}>Pause</Button>
+            {:else if voiceMessageService.state === "paused"}
+              <Button variant="outline" size="sm" onclick={resumeRecording}>Resume</Button>
+            {/if}
+
+            {#if voiceMessageService.state === "processing"}
+              <Loader2Icon class="animate-spin" />
+              Processing...
+            {:else}
+              <Button variant="default" size="sm" onclick={stopRecording}>Finish</Button>
+            {/if}
+          </div>
+        </div>
+
+        <!-- Volume visualization -->
+        <div class="flex flex-col items-center gap-2">
+          <!-- Animated vertical bars -->
+          <div class="flex h-12 items-end gap-1">
+            {#each volumeLevels as level, index (index)}
+              <div
+                class="bg-primary rounded-sm transition-all duration-75 ease-out"
+                style="width: 3px; height: {Math.max(2, level * 48)}px; opacity: {0.3 +
+                  level * 0.7};"
+              ></div>
+            {/each}
+          </div>
+
+          <!-- Duration display -->
+          <div class="text-muted-foreground font-mono text-sm">
+            {voiceMessageService.duration / 1000}
+          </div>
+
+          <!-- Recording state indicator -->
+          <div class="text-muted-foreground flex items-center gap-2 text-xs">
+            {#if voiceMessageService.state === "recording"}
+              <div class="h-2 w-2 animate-pulse rounded-full bg-red-500"></div>
+              Recording...
+            {:else if voiceMessageService.state === "paused"}
+              <div class="h-2 w-2 rounded-full bg-yellow-500"></div>
+              Paused
+            {:else if voiceMessageService.state === "processing"}
+              <div class="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
+              Processing...
+            {/if}
+          </div>
+        </div>
+      </div>
+    {/if}
   </div>
 </div>

@@ -1,15 +1,18 @@
-import type { SubscriptionStatus } from "..";
+import { isFuture } from "date-fns";
+import { type SubscriptionStatus } from "..";
 import { BILLING_ENABLED } from "../constants";
 import type { UserInfo } from "../sharedTypes";
 
 export function isSubscribed(user: UserInfo | null, bypassBillingDisabled = true) {
-  return (
-    (user?.subscribedUntil &&
-      user.subscriptionStatus &&
-      new Date(user.subscribedUntil) > new Date() &&
-      isActiveSubscriptionStatus(user.subscriptionStatus)) ||
-    (bypassBillingDisabled && !BILLING_ENABLED)
-  );
+  if (!BILLING_ENABLED && bypassBillingDisabled) {
+    return true;
+  }
+
+  if (!user?.subscribedUntil || !user.subscriptionStatus) {
+    return false;
+  }
+
+  return isFuture(user.subscribedUntil) && isActiveSubscriptionStatus(user.subscriptionStatus);
 }
 
 function isActiveSubscriptionStatus(status: SubscriptionStatus) {

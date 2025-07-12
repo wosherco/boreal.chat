@@ -6,7 +6,6 @@ services:
     environment:
       PUBLIC_ENVIRONMENT: production
       PUBLIC_URL: https://boreal.chat
-      PUBLIC_SENTRY_DSN: ""
       GOOGLE_AUTH_CLIENT_ID: ""
       GOOGLE_AUTH_CLIENT_SECRET: ""
       GOOGLE_AUTH_REDIRECT_URI: "https://boreal.chat/auth/google/callback"

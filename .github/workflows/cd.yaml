@@ -46,6 +46,9 @@ jobs:
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
+      - name: Copy example .env
+        run: cp .env.example .env
+
       - name: Build all images in parallel
         run: |
           docker compose -f docker-compose.build.yaml build --parallel

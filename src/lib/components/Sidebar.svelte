@@ -71,6 +71,8 @@
       logoutLoading = false;
     }
   }
+
+  const isUserSubscribed = $derived(isSubscribed(user?.data ?? null));
 </script>
 
 <ShortcutsCheatsheetDialog bind:open={shortcutsCheatsheetOpen} />
@@ -90,7 +92,7 @@
 
       <a href="/" class="flex w-full items-center justify-between p-4 pr-0">
         <div class="flex items-center gap-2">
-          <h1 class="text-lg font-semibold md:ml-12">boreal.chat</h1>
+          <h1 class="text-lg font-semibold md:ml-8">boreal.chat</h1>
         </div>
         <BetaBadge />
       </a>
@@ -177,8 +179,8 @@
                 <div class="flex min-w-0 flex-1 flex-col items-start">
                   <p class="w-full truncate text-sm font-medium">{user.data.name}</p>
                   <p class="text-muted-foreground text-xs">
-                    {#if isSubscribed(user.data)}
-                      Pro
+                    {#if isUserSubscribed}
+                      Unlimited
                     {:else}
                       Free
                     {/if}
@@ -222,13 +224,13 @@
               <KeyboardIcon class="mr-2 size-4" />
               <span>Shortcuts</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onclick={() => goto("/settings")}>
-              <SettingsIcon class="mr-2 size-4" />
-              <span>Settings</span>
-            </DropdownMenuItem>
             <DropdownMenuItem onclick={() => window.open("https://docs.boreal.chat", "_blank")}>
               <BookOpenIcon class="mr-2 size-4" />
               <span>Docs</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onclick={() => goto("/settings")}>
+              <SettingsIcon class="mr-2 size-4" />
+              <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onclick={onLogout} variant="destructive" disabled={logoutLoading}>

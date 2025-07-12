@@ -42,3 +42,7 @@ export const SUBSCRIPTION_STATUS = [
 ] as const satisfies Stripe.Subscription.Status[];
 
 export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUS)[number];
+
+export const UNLIMITED_PLAN_NAME = "unlimited";
+export const SUBSCRIPTION_PLANS = [UNLIMITED_PLAN_NAME] as const;
+export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number];

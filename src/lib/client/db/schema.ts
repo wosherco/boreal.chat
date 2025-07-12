@@ -1,5 +1,5 @@
 import { pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
-import { SUBSCRIPTION_STATUS, USER_ROLES } from "../../common";
+import { SUBSCRIPTION_PLANS, SUBSCRIPTION_STATUS, USER_ROLES } from "../../common";
 import { createChatTables } from "../../common/schema/chats";
 import { createDraftsTable } from "../../common/schema/drafts";
 
@@ -16,6 +16,7 @@ export const userTable = pgTable("user", {
     length: 255,
     enum: SUBSCRIPTION_STATUS,
   }),
+  subscriptionPlan: varchar({ length: 50, enum: SUBSCRIPTION_PLANS }),
 });
 
 const {

@@ -1,5 +1,5 @@
 {
-  "id": "19a13a8a-0e68-4085-817a-5378a4071686",
+  "id": "8c93f2c9-a218-4b1a-92a5-c4000cbbdffd",
   "prevId": "b838e809-00ac-4bef-9e56-a15c552f9dad",
   "version": "7",
   "dialect": "postgresql",
@@ -90,100 +90,6 @@
           "isUnique": false,
           "concurrently": false,
           "method": "gin",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.drafts": {
-      "name": "drafts",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "title": {
-          "name": "title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "content": {
-          "name": "content",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "selected_model": {
-          "name": "selected_model",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "reasoning_level": {
-          "name": "reasoning_level",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'none'"
-        },
-        "web_search_enabled": {
-          "name": "web_search_enabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "drafts_user_id_updated_at_index": {
-          "name": "drafts_user_id_updated_at_index",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "updated_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
           "with": {}
         }
       },
@@ -292,9 +198,7 @@
         "message_segment_usage_generationId_unique": {
           "name": "message_segment_usage_generationId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "generation_id"
-          ]
+          "columns": ["generation_id"]
         }
       },
       "policies": {},
@@ -731,6 +635,12 @@
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
+        },
+        "subscription_plan": {
+          "name": "subscription_plan",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -740,9 +650,7 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},

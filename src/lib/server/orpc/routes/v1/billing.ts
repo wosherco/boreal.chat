@@ -1,23 +1,31 @@
 import { osBase } from "../../context";
 import { authenticatedMiddleware } from "../../middlewares";
 import { createCheckoutSession, createCustomerSession } from "$lib/server/stripe";
+import { SUBSCRIPTION_PLANS, UNLIMITED_PLAN_NAME } from "$lib/common";
 import z from "zod";
 
 export const v1BillingRouter = osBase.router({
-  createCheckoutSession: osBase.use(authenticatedMiddleware).handler(async ({ context }) => {
-    const session = await createCheckoutSession(context.userCtx.user.id);
+  createCheckoutSession: osBase
+    .use(authenticatedMiddleware)
+    .input(
+      z.object({
+        plan: z.enum(SUBSCRIPTION_PLANS).optional().default(UNLIMITED_PLAN_NAME),
+      }),
+    )
+    .handler(async ({ context, input }) => {
+      const session = await createCheckoutSession(context.userCtx.user.id, input.plan);
 
-    if (!session) {
+      if (!session) {
+        return {
+          success: false,
+        };
+      }
+
       return {
-        success: false,
+        success: true,
+        url: session.url,
       };
-    }
-
-    return {
-      success: true,
-      url: session.url,
-    };
-  }),
+    }),
 
   createCustomerSession: osBase
     .use(authenticatedMiddleware)

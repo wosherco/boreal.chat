@@ -12,8 +12,13 @@
   import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools";
   import { onNavigate } from "$app/navigation";
   import TrackingConsentPrompt from "$lib/components/TrackingConsentPrompt.svelte";
+  import { setFlagsmithContext } from "$lib/common/featureFlags";
 
   let { children, data }: LayoutProps = $props();
+
+  if (data.flags.flagsmith) {
+    setFlagsmithContext(data.flags.flagsmith);
+  }
 
   function onCopy(event: ClipboardEvent) {
     event.preventDefault();

@@ -4,6 +4,7 @@ import { v1AuthRouter } from "./auth";
 import { v1ShareRouter } from "./share";
 import { v1BillingRouter } from "./billing";
 import { v1DraftRouter } from "./draft";
+import { v1VoiceRouter } from "./voice";
 
 export const v1Router = {
   chat: v1ChatRouter,
@@ -12,4 +13,5 @@ export const v1Router = {
   share: v1ShareRouter,
   billing: v1BillingRouter,
   draft: v1DraftRouter,
+  voice: v1VoiceRouter,
 };

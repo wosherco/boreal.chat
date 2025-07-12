@@ -1,4 +1,4 @@
-import type { MessageSegmentKind, SubscriptionStatus } from ".";
+import type { MessageSegmentKind, SubscriptionPlan, SubscriptionStatus } from ".";
 import type { ModelId, ReasoningLevel } from "./ai/models";
 import type { DBMessage } from "./schema/chats";
 
@@ -26,6 +26,7 @@ export type UserInfo = {
   profilePicture: string | null;
   subscribedUntil: Date | null;
   subscriptionStatus: SubscriptionStatus | null;
+  subscriptionPlan: SubscriptionPlan | null;
 };
 
 export interface Chat {

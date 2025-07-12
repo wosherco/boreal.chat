@@ -1,3 +1,34 @@
-import { createRatelimit, Ratelimit } from "./client";
+import { TokenBucketRateLimiter } from "./tokenBucket";
+import { env } from "$env/dynamic/private";
 
-export const deepgramRatelimiter = createRatelimit("deepgram", Ratelimit.slidingWindow(10, "10m"));
+const transcribeLimitSize = 10;
+
+export const transcribeRatelimiter = new TokenBucketRateLimiter(
+  env.REDIS_URL,
+  transcribeLimitSize,
+  1,
+  30,
+);
+
+const localLimitSize = 100000;
+const localRefillTime = 3 * 60 * 60; // 3h
+
+export const localCULimiter = new TokenBucketRateLimiter(
+  env.REDIS_URL,
+  localLimitSize,
+  localLimitSize,
+  localRefillTime,
+);
+
+const burstLimitSize = 200000;
+const burstRefillTime = 15 * 60; // 15m
+const QUARTERS_PER_HOUR = 60 / 15; // 4 fifteen-minute periods per hour
+const HOURS_PER_DAY = 24;
+// Refills the full burst limit over 24 hours, distributed across 15-minute intervals
+
+export const burstCULimiter = new TokenBucketRateLimiter(
+  env.REDIS_URL,
+  burstLimitSize,
+  burstLimitSize / (HOURS_PER_DAY * QUARTERS_PER_HOUR), // ~2083 tokens per 15 minutes
+  burstRefillTime,
+);
