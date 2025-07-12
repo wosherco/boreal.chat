@@ -16,11 +16,24 @@
   import Cookies from "js-cookie";
   import { SIDEBAR_COLLAPSED_COOKIE } from "$lib/common/cookies";
   import { Button } from "$lib/components/ui/button";
-  import { ArrowDownIcon, MenuIcon, SidebarCloseIcon, SidebarOpenIcon } from "@lucide/svelte";
+  import {
+    ArrowDownIcon,
+    MenuIcon,
+    SidebarCloseIcon,
+    SidebarOpenIcon,
+    ShareIcon,
+  } from "@lucide/svelte";
   import KeyboardShortcuts from "$lib/components/utils/KeyboardShortcuts.svelte";
   import { Sheet, SheetContent, SheetTrigger } from "$lib/components/ui/sheet";
+  import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+  } from "$lib/components/ui/tooltip";
   import { cn } from "$lib/utils";
   import ChatMessageInput from "$lib/components/chatInput/ChatMessageInput.svelte";
+  import ChatShareModal from "$lib/components/chatMessages/ChatShareModal.svelte";
   import { afterNavigate, goto } from "$app/navigation";
   import { useChats } from "$lib/client/hooks/useChats.svelte";
   import { fade } from "svelte/transition";
@@ -34,6 +47,17 @@
   const chats = useChats(data.lastChats ?? null);
 
   setSidebarCollapsed(data.sidebarCollapsed);
+
+  let chatShareModalOpen = $state(false);
+
+  // Extract chatId from the current route
+  const currentChatId = $derived(() => {
+    const pathname = page.url.pathname;
+    const chatMatch = pathname.match(/\/chat\/([a-f0-9-]+)/);
+    return chatMatch ? chatMatch[1] : null;
+  });
+
+  const isOnChatPage = $derived(() => !!currentChatId());
 
   onMount(() => {
     if (!browser) return;
@@ -158,7 +182,7 @@
 <!-- Floating buttons -->
 <div
   class={cn(
-    "bg-accent/40 fixed z-50 m-2 rounded-lg p-1 backdrop-blur-lg transition-colors",
+    "bg-accent/40 fixed z-50 m-2 flex gap-1 rounded-lg p-1 backdrop-blur-lg transition-colors",
     isSidebarCollapsed() ? "md:bg-accent/40" : "md:bg-transparent",
   )}
 >
@@ -174,6 +198,25 @@
       <SidebarCloseIcon />
     {/if}
   </Button>
+
+  <!-- Chat Share Button -->
+  {#if isOnChatPage()}
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger>
+          <Button
+            variant="ghost"
+            size="icon"
+            class="hidden md:flex"
+            onclick={() => (chatShareModalOpen = true)}
+          >
+            <ShareIcon />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Share Chat</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  {/if}
 
   <!-- Phone Sidebar -->
   <Sheet>
@@ -228,3 +271,12 @@
     </div>
   </div>
 </div>
+
+<!-- Chat Share Modal -->
+{#if currentChatId()}
+  <ChatShareModal
+    open={chatShareModalOpen}
+    chatId={currentChatId() || ""}
+    on:close={() => (chatShareModalOpen = false)}
+  />
+{/if}

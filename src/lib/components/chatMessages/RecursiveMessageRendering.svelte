@@ -13,9 +13,10 @@
     messages: MessageWithOptionalChainRow[];
     chatId: string;
     chat: ChatWithSettings | null;
+    isSharedView?: boolean;
   }
 
-  const { messages, chatId, chat }: Props = $props();
+  const { messages, chatId, chat, isSharedView }: Props = $props();
 
   let threadedChat = $state<MessageTreeNode[]>([]);
   let currentChatId = $state("");
@@ -78,5 +79,6 @@
     message={node.value}
     messageNode={node}
     onChangeThreadId={(threadId) => changeThreadId(threadId)}
+    {isSharedView}
   />
 {/each}

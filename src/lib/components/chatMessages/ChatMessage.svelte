@@ -10,6 +10,7 @@
     CopyIcon,
     EditIcon,
     RotateCcwIcon,
+    ShareIcon,
   } from "@lucide/svelte";
   import { Button } from "../ui/button";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
@@ -21,6 +22,7 @@
   import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
   import Markdown from "../markdown/Markdown.svelte";
   import ChatMessageInlineInput from "./ChatMessageInlineInput.svelte";
+  import MessageShareModal from "./MessageShareModal.svelte";
   import { isFinishedMessageStatus } from "$lib/common";
   import { messageTable } from "$lib/client/db/schema";
   import { waitForInsert } from "$lib/client/hooks/waitForInsert";
@@ -30,11 +32,13 @@
     message: MessageWithOptionalChainRow;
     messageNode?: MessageTreeNode;
     onChangeThreadId?: (newThreadId: string) => void;
+    isSharedView?: boolean;
   }
 
-  const { message, messageNode, onChangeThreadId }: Props = $props();
+  const { message, messageNode, onChangeThreadId, isSharedView }: Props = $props();
 
   let editingMessage = $state(false);
+  let messageShareModalOpen = $state(false);
 
   const isUser = $derived(message.role === "user");
 
@@ -228,7 +232,16 @@
             <TooltipContent>Copy</TooltipContent>
           </Tooltip>
 
-          {#if isUser}
+          <Tooltip>
+            <TooltipTrigger>
+              <Button variant="ghost" size="small-icon" onclick={() => (messageShareModalOpen = true)}>
+                <ShareIcon />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Share</TooltipContent>
+          </Tooltip>
+
+          {#if isUser && !isSharedView}
             <Tooltip>
               <TooltipTrigger>
                 <Button
@@ -244,7 +257,7 @@
             </Tooltip>
           {/if}
 
-          {#if !isUser}
+          {#if !isUser && !isSharedView}
             <Tooltip>
               <TooltipTrigger>
                 <ModelPickerPopover selectedModel={message.model} onSelect={regenerateMessage}>
@@ -284,3 +297,11 @@
     {/if}
   {/if}
 </div>
+
+<MessageShareModal
+  open={messageShareModalOpen}
+  messageId={message.id}
+  threadId={message.threadId}
+  lastMessageId={message.id}
+  on:close={() => (messageShareModalOpen = false)}
+/>

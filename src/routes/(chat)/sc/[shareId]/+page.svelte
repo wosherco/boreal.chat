@@ -22,5 +22,6 @@
     messages={data.share.messages}
     chatId={data.share.chatId}
     chat={null}
+    isSharedView={true}
   />
 </div>

@@ -19,6 +19,6 @@
   )}
 >
   {#each data.share.messages as message (message.id)}
-    <ChatMessage {message} />
+    <ChatMessage {message} isSharedView={true} />
   {/each}
 </div>
