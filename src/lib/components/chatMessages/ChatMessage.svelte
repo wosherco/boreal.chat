@@ -62,16 +62,12 @@
     }
   }
 
-  type ChatSegment = SegmentJson & {
-    streamed: boolean;
-  };
-
   const cleanedSegments = $derived.by(() => {
     const { segments: dbSegments } = message;
-    let cleanedSegments: ChatSegment[] = [];
+    let cleanedSegments: SegmentJson[] = [];
 
     if (dbSegments) {
-      let cacheSegment: ChatSegment | undefined;
+      let cacheSegment: SegmentJson | undefined;
 
       for (const segment of dbSegments) {
         switch (segment.kind) {
@@ -91,13 +87,11 @@
                   cleanedSegments.push(cacheSegment);
                   cacheSegment = {
                     ...segment,
-                    streamed: false,
                   };
                 }
               } else {
                 cacheSegment = {
                   ...segment,
-                  streamed: false,
                 };
               }
             }
@@ -112,7 +106,6 @@
 
               cleanedSegments.push({
                 ...segment,
-                streamed: false,
               });
             }
             continue;
@@ -196,7 +189,7 @@
             <Markdown content={segment.content ?? ""} />
           {/if}
         {:else if segment.kind === "reasoning"}
-          <ReasoningSegment reasoning={segment.content ?? ""} isReasoning={segment.streamed} />
+          <ReasoningSegment reasoning={segment.content ?? ""} isReasoning={segment.streaming} />
         {:else if segment.kind === "tool_call"}
           TODO: Tool call
         {:else if segment.kind === "tool_result"}
