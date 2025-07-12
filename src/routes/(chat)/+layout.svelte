@@ -205,7 +205,7 @@
   </div>
 
   <div class="relative flex-1 flex-grow">
-    <main class="h-full overflow-y-auto" bind:this={chatContainer} onscroll={handleScroll}>
+    <main class="relative h-full overflow-y-auto" bind:this={chatContainer} onscroll={handleScroll}>
       {@render children()}
     </main>
 

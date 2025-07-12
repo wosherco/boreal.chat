@@ -10,8 +10,8 @@ export const GPT_4O_MINI = "openai/gpt-4o-mini";
 export const GPT_O4_MINI = "openai/o4-mini";
 export const GPT_O4_MINI_HIGH = "openai/o4-mini-high";
 export const GPT_4_1 = "openai/gpt-4.1";
-export const GPT_4_1_NANO = "openai/gpt-4.1-nano";
 export const GPT_4_1_MINI = "openai/gpt-4.1-mini";
+export const GPT_4_1_NANO = "openai/gpt-4.1-nano";
 
 // From anthropic
 export const CLAUDE_OPUS_4 = "anthropic/claude-opus-4";

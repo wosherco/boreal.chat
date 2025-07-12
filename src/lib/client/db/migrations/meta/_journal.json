@@ -78,6 +78,13 @@
       "when": 1752332765696,
       "tag": "0010_curved_susan_delgado",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1752354555793,
+      "tag": "0011_free_spot",
+      "breakpoints": true
     }
   ]
 }
