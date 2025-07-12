@@ -4,6 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import PQueue from "p-queue";
 import type { MessageSegmentKind } from "$lib/common";
 import { useThrottle } from "runed";
+import * as Sentry from "@sentry/sveltekit";
 
 const THROTTLE_MS = 100;
 
@@ -93,6 +94,7 @@ class BufferedTokenInsert {
         kind,
         ordinal: this.segmentOrdinal,
         content: "",
+        streaming: true,
       })
       .returning({ id: messageSegmentsTable.id });
 
@@ -105,14 +107,26 @@ class BufferedTokenInsert {
     }
 
     const contentToAppend = this.buffer;
-    this.buffer = "";
 
-    await db
-      .update(messageSegmentsTable)
-      .set({
-        content: sql`${messageSegmentsTable.content} || ${contentToAppend}`,
-      })
-      .where(eq(messageSegmentsTable.id, this.currentSegment.id));
+    try {
+      await db
+        .update(messageSegmentsTable)
+        .set({
+          content: sql`${messageSegmentsTable.content} || ${contentToAppend}`,
+        })
+        .where(eq(messageSegmentsTable.id, this.currentSegment.id));
+      this.buffer = "";
+    } catch (e) {
+      Sentry.captureException(e, {
+        extra: {
+          messageId: this.messageId,
+          generationId: this.currentSegment.generationId,
+          segmentId: this.currentSegment.id,
+          kind: this.currentSegment.kind,
+          content: this.buffer,
+        },
+      });
+    }
   }
 
   /**

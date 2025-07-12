@@ -114,10 +114,10 @@
     "idx": 11,
     "when": 1752354555793,
     "tag": "0011_free_spot",
-    "hash": "d441b4cedd4779f94ca370b2b9feb897056ad246981a2e014105889dedc29b27",
+    "hash": "37dd354787d1c5b680125ee6441d1346de1573a07e1672e6b4127910c3f0dd37",
     "sql": [
       "DROP TABLE \"message_tokens\" CASCADE;",
-      "ALTER TABLE \"message_segments\" ADD COLUMN \"streaming\" boolean DEFAULT true NOT NULL;"
+      "ALTER TABLE \"message_segments\"ADD COLUMN \"streaming\" boolean DEFAULT false NOT NULL;"
     ]
   }
 ]

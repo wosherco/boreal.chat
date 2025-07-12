@@ -131,7 +131,7 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
       toolArgs: jsonb(),
       toolResult: jsonb(),
       createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-      streaming: boolean().notNull().default(true),
+      streaming: boolean().notNull().default(false),
     },
     (t) => [
       index().on(t.messageId, t.ordinal),
