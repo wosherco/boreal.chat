@@ -217,7 +217,10 @@
     {/if}
 
     {#if message.status === "processing"}
-      <ThreeDotsStreaming />
+      <div class="pt-4 pl-4">
+        <span class="sr-only">Generating...</span>
+        <ThreeDotsStreaming />
+      </div>
     {/if}
 
     {#if isFinishedMessageStatus(message.status)}

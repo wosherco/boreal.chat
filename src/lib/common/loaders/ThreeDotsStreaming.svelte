@@ -1,6 +1,18 @@
 <!-- Extracted from https://codepen.io/nzbin/pen/GGrXbp. Created by [nzbin](https://github.com/nzbin). MIT License. -->
+<script lang="ts">
+  import { cn } from "$lib/utils";
 
-<div class="dot-falling" style="--three-dots-streaming-color: var(--foreground)"></div>
+  interface Props {
+    class?: string;
+  }
+
+  const { class: className }: Props = $props();
+</script>
+
+<div
+  class={cn("dot-falling", className)}
+  style="--three-dots-streaming-color: var(--foreground)"
+></div>
 
 <style>
   /**
