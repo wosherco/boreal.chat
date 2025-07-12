@@ -426,7 +426,7 @@ chain AS (                               -- <<< walk the parent chain
 )
 SELECT
     c.*,                          -- all message columns
-    segs.segments,                -- aggregated segments (may be NULL)
+    segs.segments                -- aggregated segments (may be NULL)
 FROM   chain c
 /* —— pull in message_segments as ONE row per message —— */
 LEFT  JOIN LATERAL (
