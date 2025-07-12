@@ -1,7 +1,11 @@
-import type { MessageSegmentKind } from "$lib/common";
 import { db } from "$lib/server/db";
-import { messageTokensTable } from "$lib/server/db/schema";
+import { messageSegmentsTable } from "$lib/server/db/schema/chats";
+import { eq, sql } from "drizzle-orm";
 import PQueue from "p-queue";
+import type { MessageSegmentKind } from "$lib/common";
+import { useThrottle } from "runed";
+
+const THROTTLE_MS = 100;
 
 interface TokenData {
   generationId: string;
@@ -9,253 +13,124 @@ interface TokenData {
   content: string;
 }
 
-interface FlushData {
+interface CurrentSegment {
+  id: string;
   generationId: string;
   kind: MessageSegmentKind;
-  content: string;
-  timestamp: Date;
 }
 
 class BufferedTokenInsert {
   private userId: string;
   private messageId: string;
 
-  private currentKind: MessageSegmentKind | null = null;
-  private currentGenerationId: string | null = null;
   private queue: PQueue;
-  private lastInsert: number = 0;
   private buffer: string = "";
-  private flushTimer: NodeJS.Timeout | null = null;
-  // Flush sooner so streaming tokens reach the DB more quickly
-  private readonly FLUSH_TIMEOUT = 100; // 100ms
-  private readonly BUFFER_THRESHOLD = 20; // characters threshold
-  private readonly BATCH_FLUSH_DELAY = 10; // 10ms to collect batches
   private isDestroyed = false;
 
-  // Batching mechanism
-  private pendingFlushes: FlushData[] = [];
-  private batchTimer: NodeJS.Timeout | null = null;
+  private segmentOrdinal = 0;
+  private currentSegment: CurrentSegment | null = null;
+  private throttledUpdate: ReturnType<typeof useThrottle>;
 
-  constructor(userId: string, messageId: string) {
+  constructor(userId: string, messageId: string, initialOrdinal = 0) {
     this.userId = userId;
     this.messageId = messageId;
     this.queue = new PQueue({ concurrency: 1 });
+    this.throttledUpdate = useThrottle(this.flush.bind(this), THROTTLE_MS);
+    this.segmentOrdinal = initialOrdinal;
   }
 
-  /**
-   * Insert a token with the specified kind and content
-   */
   async insert(generationId: string, kind: MessageSegmentKind, content: string): Promise<void> {
     if (this.isDestroyed) {
       throw new Error("BufferedTokenInsert has been destroyed");
     }
 
-    return this.queue.add(async () => {
-      await this.processToken({ generationId, kind, content });
-    });
+    return this.queue.add(() => this.processToken({ generationId, kind, content }));
   }
 
   private async processToken(tokenData: TokenData): Promise<void> {
     const { generationId, kind, content } = tokenData;
-    const now = Date.now();
 
-    // Check if kind has changed and we need to flush
-    if (
-      (this.currentKind !== null && this.currentKind !== kind) ||
-      (this.currentGenerationId !== null && this.currentGenerationId !== generationId)
-    ) {
-      await this.scheduleFlush();
+    const isNewSegment =
+      this.currentSegment === null ||
+      this.currentSegment.kind !== kind ||
+      this.currentSegment.generationId !== generationId;
+
+    if (isNewSegment) {
+      await this.finalizeAndCreateNewSegment(generationId, kind);
     }
 
-    // Update current kind and add content to buffer
-    this.currentKind = kind;
-    this.currentGenerationId = generationId;
     this.buffer += content;
-    this.lastInsert = now;
-
-    // Clear existing timer
-    if (this.flushTimer) {
-      clearTimeout(this.flushTimer);
-    }
-
-    // Check if buffer threshold is reached
-    if (this.buffer.length >= this.BUFFER_THRESHOLD) {
-      await this.scheduleFlush();
-      return;
-    }
-
-    // Set up timer for 400ms flush
-    this.flushTimer = setTimeout(async () => {
-      if (this.buffer.length > 0) {
-        await this.queue.add(async () => {
-          await this.scheduleFlush();
-        });
-      }
-    }, this.FLUSH_TIMEOUT);
+    this.throttledUpdate();
   }
 
-  /**
-   * Manually trigger a flush of the current buffer
-   */
-  async flush(): Promise<void> {
-    if (this.isDestroyed) {
+  private async finalizeCurrentSegment(): Promise<void> {
+    if (!this.currentSegment) {
       return;
     }
 
-    return this.queue.add(async () => {
-      await this.scheduleFlush();
-    });
+    await this.flush();
+    await db
+      .update(messageSegmentsTable)
+      .set({ streaming: false })
+      .where(eq(messageSegmentsTable.id, this.currentSegment.id));
+    this.currentSegment = null;
   }
 
-  private async scheduleFlush(): Promise<void> {
-    if (this.buffer.length === 0) {
-      return;
-    }
+  private async finalizeAndCreateNewSegment(
+    generationId: string,
+    kind: MessageSegmentKind,
+  ): Promise<void> {
+    await this.finalizeCurrentSegment();
 
-    // Clear the timer since we're flushing
-    if (this.flushTimer) {
-      clearTimeout(this.flushTimer);
-      this.flushTimer = null;
-    }
+    this.segmentOrdinal++;
 
-    const flushData: FlushData = {
-      generationId: this.currentGenerationId!,
-      kind: this.currentKind!,
-      content: this.buffer,
-      timestamp: new Date(),
-    };
-
-    // Add to pending flushes
-    this.pendingFlushes.push(flushData);
-
-    // Reset buffer
-    this.buffer = "";
-
-    // If no batch timer is running, start one
-    if (!this.batchTimer) {
-      this.batchTimer = setTimeout(async () => {
-        await this.queue.add(async () => {
-          await this.processBatchedFlushes();
-        });
-      }, this.BATCH_FLUSH_DELAY);
-    }
-  }
-
-  private async processBatchedFlushes(): Promise<void> {
-    if (this.pendingFlushes.length === 0) {
-      return;
-    }
-
-    // Clear the batch timer
-    if (this.batchTimer) {
-      clearTimeout(this.batchTimer);
-      this.batchTimer = null;
-    }
-
-    // Get all pending flushes
-    const flushBatch = [...this.pendingFlushes];
-    this.pendingFlushes = [];
-
-    await db.insert(messageTokensTable).values(
-      flushBatch.map((flush) => ({
+    const [newSegment] = await db
+      .insert(messageSegmentsTable)
+      .values({
         userId: this.userId,
         messageId: this.messageId,
-        generationId: flush.generationId,
-        kind: flush.kind,
-        tokens: flush.content,
-        createdAt: flush.timestamp,
-      })),
-    );
+        generationId,
+        kind,
+        ordinal: this.segmentOrdinal,
+        content: "",
+      })
+      .returning({ id: messageSegmentsTable.id });
 
-    /*
-		if (flushBatch.length === 1) {
-			const { kind, content } = flushBatch[0];
-			console.log(`Flushing single buffer of kind ${kind}: "${content}"`);
-		} else {
-			console.log(`Flushing batch of ${flushBatch.length} buffers:`);
-			flushBatch.forEach((flush, index) => {
-				console.log(`  [${index}] ${flush.kind}: "${flush.content}"`);
-			});
-		}
-			*/
+    this.currentSegment = { id: newSegment.id, generationId, kind };
   }
 
-  /**
-   * Force immediate flush of any pending batches
-   */
-  async flushImmediate(): Promise<void> {
-    if (this.isDestroyed) {
+  async flush(): Promise<void> {
+    if (this.buffer.length === 0 || !this.currentSegment) {
       return;
     }
 
-    return this.queue.add(async () => {
-      // First flush current buffer if any
-      if (this.buffer.length > 0) {
-        await this.scheduleFlush();
-      }
+    const contentToAppend = this.buffer;
+    this.buffer = "";
 
-      // Then immediately process any pending batches
-      if (this.batchTimer) {
-        clearTimeout(this.batchTimer);
-        this.batchTimer = null;
-        await this.processBatchedFlushes();
-      }
-    });
+    await db
+      .update(messageSegmentsTable)
+      .set({
+        content: sql`${messageSegmentsTable.content} || ${contentToAppend}`,
+      })
+      .where(eq(messageSegmentsTable.id, this.currentSegment.id));
   }
 
   /**
-   * Destroy the buffer, flush remaining content, and clean up resources
+   * Makes sure that the current segment is finalized and the queue is empty, and destroys the instance.
+   *
+   * @returns
    */
   async destroy(): Promise<void> {
     if (this.isDestroyed) {
       return;
     }
-
     this.isDestroyed = true;
 
-    // Clear any pending timers
-    if (this.flushTimer) {
-      clearTimeout(this.flushTimer);
-      this.flushTimer = null;
-    }
+    this.throttledUpdate.cancel();
+    await this.queue.add(() => this.finalizeCurrentSegment());
 
-    if (this.batchTimer) {
-      clearTimeout(this.batchTimer);
-      this.batchTimer = null;
-    }
-
-    // Add final flush operations to queue
-    await this.queue.add(async () => {
-      // Flush current buffer if any
-      if (this.buffer.length > 0) {
-        await this.scheduleFlush();
-      }
-
-      // Process any remaining batched flushes
-      await this.processBatchedFlushes();
-    });
-
-    // Wait for queue to be empty
     await this.queue.onIdle();
-
-    // Clear the queue
     this.queue.clear();
-  }
-
-  /**
-   * Get current buffer status for debugging
-   */
-  getStatus() {
-    return {
-      currentKind: this.currentKind,
-      currentGenerationId: this.currentGenerationId,
-      bufferLength: this.buffer.length,
-      queueSize: this.queue.size,
-      queuePending: this.queue.pending,
-      pendingFlushes: this.pendingFlushes.length,
-      isDestroyed: this.isDestroyed,
-      lastInsert: this.lastInsert,
-    };
   }
 }
 

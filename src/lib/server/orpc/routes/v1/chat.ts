@@ -1,6 +1,6 @@
 import { osBase } from "../../context";
 import { z } from "zod";
-import { LLAMA_3_1_8B, LLAMA_3_3_8B_FREE, MODELS, REASONING_LEVELS } from "$lib/common/ai/models";
+import { GPT_4_1_NANO, LLAMA_3_3_8B_FREE, MODELS, REASONING_LEVELS } from "$lib/common/ai/models";
 import { db } from "$lib/server/db";
 import {
   authenticatedMiddleware,
@@ -108,7 +108,7 @@ export const v1ChatRouter = osBase.router({
           } satisfies GenerateChatTitleContext,
           input.message,
           context.inferenceContext.key,
-          input.model.endsWith(":free") ? LLAMA_3_3_8B_FREE : LLAMA_3_1_8B,
+          input.model.endsWith(":free") ? LLAMA_3_3_8B_FREE : GPT_4_1_NANO,
         )
           .then((title) => {
             if (title) {
@@ -168,6 +168,7 @@ export const v1ChatRouter = osBase.router({
                   toolName: null,
                   toolArgs: null,
                   toolResult: null,
+                  streaming: false,
                 },
               ],
             },

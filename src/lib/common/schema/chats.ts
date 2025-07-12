@@ -131,6 +131,7 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
       toolArgs: jsonb(),
       toolResult: jsonb(),
       createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+      streaming: boolean().notNull().default(true),
     },
     (t) => [
       index().on(t.messageId, t.ordinal),
@@ -182,43 +183,12 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
     ],
   );
 
-  /**
-   * THIS TABLE IS MEANT TO BE USED FOR TOKENS WHILE STREAMING. ONCE THE MESSAGE IS DONE, IT WILL BE MOVED TO message_segments.
-   */
-  const messageTokensTable = pgTable(
-    "message_tokens",
-    {
-      id: uuid().defaultRandom().primaryKey(),
-      generationId: varchar({ length: 50 }),
-      // We need this here because, for now, we're just filtering syncing by user id.
-      userId: uuid().notNull(),
-      messageId: uuid().notNull(),
-      kind: varchar({ length: 50, enum: MESSAGE_SEGMENT_KINDS }).notNull(),
-      tokens: text().notNull(),
-      // After 15 minutes we can consider this done.
-      createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    },
-    (t) => [
-      !isClient &&
-        foreignKey({
-          columns: [t.userId],
-          foreignColumns: [userTableFromSchema.id],
-        }).onDelete("cascade"),
-      !isClient &&
-        foreignKey({
-          columns: [t.messageId],
-          foreignColumns: [messageTable.id],
-        }).onDelete("cascade"),
-    ],
-  );
-
   return {
     chatTable,
     threadTable,
     messageTable,
     messageSegmentsTable,
     messageSegmentUsageTable,
-    messageTokensTable,
   };
 };
 
