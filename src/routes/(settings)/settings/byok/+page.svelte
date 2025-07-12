@@ -9,9 +9,11 @@
   import { page } from "$app/state";
   import SvelteSeo from "svelte-seo";
   import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "$lib/components/ui/card";
+  import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
 
   const { data }: PageProps = $props();
 
+  const user = useCurrentUser(data.auth.currentUserInfo);
   const openRouterAccount = $derived(data.byok.openrouter);
 
   let loadingMutation = $state(false);
@@ -35,14 +37,18 @@
 
 <SvelteSeo title="Bring Your Own Key | boreal.chat" />
 
-<div class="space-y-6">
-  <h1 class="text-2xl font-semibold">Bring Your Own Key</h1>
+<h1 class="text-2xl font-semibold">Bring Your Own Key</h1>
+<h2 class="text-muted-foreground">
+  Connect your own API key to use boreal.chat without any limits.
+</h2>
+
+<div class="space-y-6 pt-4">
   <Card>
     <CardHeader>
       <CardTitle>OpenRouter</CardTitle>
     </CardHeader>
     <CardContent>
-      {#if openRouterAccount === null}
+      {#if !$user.data?.authenticated}
         <p class="text-muted-foreground text-sm">
           Please log in to manage your OpenRouter connection.
         </p>
@@ -69,7 +75,7 @@
       {/if}
     </CardContent>
     <CardFooter class="justify-end">
-      {#if openRouterAccount === null}
+      {#if !$user.data?.authenticated}
         <Button href="/auth">Log In</Button>
       {:else}
         {#await openRouterAccount}

@@ -5,7 +5,12 @@ import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 
 const config = {
   preprocess: [vitePreprocess(), mdsvex()],
-  kit: { adapter: adapter() },
+  kit: {
+    adapter: adapter(),
+    csrf: {
+      checkOrigin: process.env.NODE_ENV === "development" ? false : true,
+    },
+  },
   extensions: [".svelte", ".svx"],
 };
 

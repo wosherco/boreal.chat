@@ -6,6 +6,7 @@ import { ORPCError } from "@orpc/client";
 import { getChatShare } from "$lib/server/services/shares";
 import { chatTable } from "$lib/server/db/schema";
 import { eq } from "drizzle-orm";
+import type { MessageWithOptionalChainRow } from "$lib/common/sharedTypes";
 
 export const load: PageServerLoad = async ({ params, locals, setHeaders }) => {
   const { shareId } = params;
@@ -42,8 +43,8 @@ export const load: PageServerLoad = async ({ params, locals, setHeaders }) => {
   return {
     share: {
       chatId,
-      messages: chatMessages,
       isSharedView: true,
+      messages: chatMessages satisfies MessageWithOptionalChainRow[],
     },
   };
 };

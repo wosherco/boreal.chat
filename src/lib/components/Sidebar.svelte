@@ -51,6 +51,7 @@
   import { browser } from "$app/environment";
   import ShortcutsCheatsheetDialog from "./ShortcutsCheatsheetDialog.svelte";
   import SheetClosableOnlyOnPhone from "./utils/SheetClosableOnlyOnPhone.svelte";
+  import { isSubscribed } from "$lib/common/utils/subscription";
 
   let shortcutsCheatsheetOpen = $state(false);
 
@@ -70,12 +71,14 @@
       logoutLoading = false;
     }
   }
+
+  const isUserSubscribed = $derived(isSubscribed(user?.data ?? null));
 </script>
 
 <ShortcutsCheatsheetDialog bind:open={shortcutsCheatsheetOpen} />
 
 <TooltipProvider>
-  <div class="bg-sidebar text-sidebar-foreground flex h-full w-80 flex-col overflow-hidden">
+  <div class="bg-sidebar text-sidebar-foreground flex h-full w-80 min-w-0 flex-col overflow-hidden">
     <div class="flex w-full items-center justify-start px-4">
       <!-- Header -->
       {#if isPhone}
@@ -89,7 +92,7 @@
 
       <a href="/" class="flex w-full items-center justify-between p-4 pr-0">
         <div class="flex items-center gap-2">
-          <h1 class="text-lg font-semibold md:ml-12">boreal.chat</h1>
+          <h1 class="text-lg font-semibold md:ml-8">boreal.chat</h1>
         </div>
         <BetaBadge />
       </a>
@@ -132,7 +135,7 @@
     </div>
 
     <!-- Chat List -->
-    <div class="flex-1 overflow-y-auto p-2">
+    <div class="min-w-0 flex-1 overflow-y-auto p-2">
       {#if chats.loading}
         <div class="flex flex-col items-center justify-center">
           <Loader2 class="size-4 animate-spin" />
@@ -155,7 +158,12 @@
         </div>
       {:else if !user.data || !user.authenticated}
         <!-- Login Button -->
-        <Button href="/auth" class="w-full" variant="default">Sign In</Button>
+        <div class="flex flex-row gap-2">
+          <Button href="/auth" class="w-full flex-1" variant="default">Sign In</Button>
+          <Button href="/settings" class="shrink-0" variant="outline" size="icon">
+            <SettingsIcon />
+          </Button>
+        </div>
       {:else}
         <!-- User Dropdown -->
         <DropdownMenu>
@@ -170,7 +178,13 @@
                 </Avatar>
                 <div class="flex min-w-0 flex-1 flex-col items-start">
                   <p class="w-full truncate text-sm font-medium">{user.data.name}</p>
-                  <p class="text-muted-foreground text-xs">Free</p>
+                  <p class="text-muted-foreground text-xs">
+                    {#if isUserSubscribed}
+                      Unlimited
+                    {:else}
+                      Free
+                    {/if}
+                  </p>
                 </div>
                 <ChevronsUpDownIcon class="size-4" />
               </div>
@@ -210,13 +224,13 @@
               <KeyboardIcon class="mr-2 size-4" />
               <span>Shortcuts</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onclick={() => goto("/settings")}>
-              <SettingsIcon class="mr-2 size-4" />
-              <span>Settings</span>
-            </DropdownMenuItem>
             <DropdownMenuItem onclick={() => window.open("https://docs.boreal.chat", "_blank")}>
               <BookOpenIcon class="mr-2 size-4" />
               <span>Docs</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onclick={() => goto("/settings")}>
+              <SettingsIcon class="mr-2 size-4" />
+              <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onclick={onLogout} variant="destructive" disabled={logoutLoading}>

@@ -7,8 +7,18 @@
   import posthog from "posthog-js";
   import SearchCommand from "$lib/components/SearchCommand.svelte";
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
+  import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
+  import { browser, dev } from "$app/environment";
+  import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools";
+  import { onNavigate } from "$app/navigation";
+  import TrackingConsentPrompt from "$lib/components/TrackingConsentPrompt.svelte";
+  import { setFlagsmithContext } from "$lib/common/featureFlags";
 
   let { children, data }: LayoutProps = $props();
+
+  if (data.flags.flagsmith) {
+    setFlagsmithContext(data.flags.flagsmith);
+  }
 
   function onCopy(event: ClipboardEvent) {
     event.preventDefault();
@@ -18,6 +28,31 @@
       event.clipboardData?.setData("text/plain", trimmed);
     }
   }
+
+  onNavigate((navigation) => {
+    if (!browser || !document.startViewTransition) {
+      return;
+    }
+
+    const fromPath = navigation.from?.url?.pathname;
+    const toPath = navigation.to?.url?.pathname;
+
+    if (fromPath && toPath) {
+      const fromSettings = fromPath.startsWith("/settings");
+      const toSettings = toPath.startsWith("/settings");
+
+      if (fromSettings && toSettings) {
+        return;
+      }
+    }
+
+    return new Promise((resolve) => {
+      document.startViewTransition(async () => {
+        resolve();
+        await navigation.complete;
+      });
+    });
+  });
 
   const currentUser = useCurrentUser(data.auth.currentUserInfo);
 
@@ -35,13 +70,28 @@
       posthog.reset();
     }
   });
+
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        enabled: browser,
+      },
+    },
+  });
 </script>
 
 <svelte:window on:copy={onCopy} />
 
-<ModeWatcher />
-<Toaster />
-<SearchCommand />
-<div class="relative h-full min-h-[100dvh] w-full">
-  {@render children()}
-</div>
+<QueryClientProvider client={queryClient}>
+  <TrackingConsentPrompt />
+  <ModeWatcher />
+  <Toaster />
+  <SearchCommand />
+  <div class="min-h-pwa relative w-full">
+    {@render children()}
+  </div>
+
+  {#if dev}
+    <SvelteQueryDevtools />
+  {/if}
+</QueryClientProvider>

@@ -5,7 +5,7 @@ import { db } from "$lib/server/db";
 import {
   authenticatedMiddleware,
   chatOwnerMiddleware,
-  openRouterMiddleware,
+  inferenceMiddleware,
 } from "../../middlewares";
 import {
   createChat,
@@ -25,10 +25,13 @@ import * as Sentry from "@sentry/sveltekit";
 import { posthog } from "$lib/server/posthog";
 import { executeAgentSafely } from "$lib/server/services/agent";
 import { sendCancelMessage } from "$lib/server/db/mq/messageCancellation";
+import { deleteChat, renameChat } from "$lib/server/services/chat";
+import { chatTitleSchema } from "$lib/common/validators/chat";
+import type { CUResult } from "$lib/server/ratelimit/cu";
 
 export const v1ChatRouter = osBase.router({
   newChat: osBase
-    .use(openRouterMiddleware)
+    .use(authenticatedMiddleware)
     .input(
       z.object({
         model: z.enum(MODELS),
@@ -37,6 +40,7 @@ export const v1ChatRouter = osBase.router({
         reasoningLevel: z.enum(REASONING_LEVELS).optional(),
       }),
     )
+    .use(inferenceMiddleware)
     .handler(async ({ context, input }) => {
       const defaultThinkingLevel = input.reasoningLevel ?? "none";
 
@@ -90,7 +94,7 @@ export const v1ChatRouter = osBase.router({
             userMessageId: result.userMessage.id,
           } satisfies GenerateChatTitleContext,
           input.message,
-          context.openRouterKey.apiKey,
+          context.inferenceContext.key,
           input.model.endsWith(":free") ? LLAMA_3_3_8B_FREE : LLAMA_3_1_8B,
         )
           .then((title) => {
@@ -161,9 +165,20 @@ export const v1ChatRouter = osBase.router({
         const agentPromise = executeAgentSafely(
           {
             model: input.model,
-            openRouterKey: context.openRouterKey.apiKey,
             reasoningLevel: defaultThinkingLevel,
             webSearchEnabled: input.webSearchEnabled ?? false,
+            openRouterKey: context.inferenceContext.key,
+            publicUsage: context.inferenceContext.publicUsage,
+            // TODO: IDK why the middleware is not picking the types correctly. Maybe updating orpc fixes this.
+            estimatedCUs:
+              "estimatedCUs" in context.inferenceContext
+                ? (context.inferenceContext.estimatedCUs as CUResult)
+                : undefined,
+            // TODO: IDK why the middleware is not picking the types correctly. Maybe updating orpc fixes this.
+            ratelimit:
+              "ratelimit" in context.inferenceContext
+                ? (context.inferenceContext.ratelimit as "local" | "burst")
+                : undefined,
           },
           chatContext,
         );
@@ -198,17 +213,18 @@ export const v1ChatRouter = osBase.router({
     }),
 
   sendMessage: osBase
-    .use(openRouterMiddleware)
+    .use(authenticatedMiddleware)
     .input(
       z.object({
         chatId: z.string().uuid(),
-        model: z.enum(MODELS).optional(),
+        model: z.enum(MODELS),
         parentMessageId: z.string().uuid().nullable(),
         message: z.string().min(1).max(10000),
         webSearchEnabled: z.boolean().optional(),
         reasoningLevel: z.enum(REASONING_LEVELS).optional(),
       }),
     )
+    .use(inferenceMiddleware)
     .use(chatOwnerMiddleware)
     .handler(async ({ context, input }) => {
       const actualReasoningLevel = input.reasoningLevel ?? context.chat.reasoningLevel;
@@ -301,9 +317,20 @@ export const v1ChatRouter = osBase.router({
         const agentPromise = executeAgentSafely(
           {
             model: actualModel,
-            openRouterKey: context.openRouterKey.apiKey,
             reasoningLevel: actualReasoningLevel,
             webSearchEnabled: actualWebSearchEnabled,
+            openRouterKey: context.inferenceContext.key,
+            publicUsage: context.inferenceContext.publicUsage,
+            // TODO: IDK why the middleware is not picking the types correctly. Maybe updating orpc fixes this.
+            estimatedCUs:
+              "estimatedCUs" in context.inferenceContext
+                ? (context.inferenceContext.estimatedCUs as CUResult)
+                : undefined,
+            // TODO: IDK why the middleware is not picking the types correctly. Maybe updating orpc fixes this.
+            ratelimit:
+              "ratelimit" in context.inferenceContext
+                ? (context.inferenceContext.ratelimit as "local" | "burst")
+                : undefined,
           },
           chatContext,
         );
@@ -339,13 +366,14 @@ export const v1ChatRouter = osBase.router({
     }),
 
   regenerateMessage: osBase
-    .use(openRouterMiddleware)
+    .use(authenticatedMiddleware)
     .input(
       z.object({
         model: z.enum(MODELS),
         messageId: z.string().uuid(),
       }),
     )
+    .use(inferenceMiddleware)
     .handler(async ({ context, input }) => {
       const result = await db.transaction(async (tx) => {
         const { message, parentMessage } = await regenerateMessage(tx, {
@@ -408,9 +436,20 @@ export const v1ChatRouter = osBase.router({
         const agentPromise = executeAgentSafely(
           {
             model: input.model,
-            openRouterKey: context.openRouterKey.apiKey,
             reasoningLevel: result.message.reasoningLevel,
             webSearchEnabled: result.message.webSearchEnabled,
+            openRouterKey: context.inferenceContext.key,
+            publicUsage: context.inferenceContext.publicUsage,
+            // TODO: IDK why the middleware is not picking the types correctly. Maybe updating orpc fixes this.
+            estimatedCUs:
+              "estimatedCUs" in context.inferenceContext
+                ? (context.inferenceContext.estimatedCUs as CUResult)
+                : undefined,
+            // TODO: IDK why the middleware is not picking the types correctly. Maybe updating orpc fixes this.
+            ratelimit:
+              "ratelimit" in context.inferenceContext
+                ? (context.inferenceContext.ratelimit as "local" | "burst")
+                : undefined,
           },
           chatContext,
         );
@@ -477,5 +516,46 @@ export const v1ChatRouter = osBase.router({
       }
 
       await sendCancelMessage(input.messageId);
+    }),
+
+  renameChat: osBase
+    .use(authenticatedMiddleware)
+    .input(z.object({ chatId: z.string().uuid(), newTitle: chatTitleSchema }))
+    .use(chatOwnerMiddleware)
+    .handler(async ({ input }) => {
+      await renameChat(db, input.chatId, input.newTitle);
+
+      return {
+        chatId: input.chatId,
+        newTitle: input.newTitle,
+      };
+    }),
+
+  deleteChat: osBase
+    .use(authenticatedMiddleware)
+    .input(z.object({ chatId: z.string().uuid() }))
+    .use(chatOwnerMiddleware)
+    .handler(async ({ input }) => {
+      await deleteChat(db, input.chatId);
+
+      return {
+        chatId: input.chatId,
+      };
+    }),
+
+  pinChat: osBase
+    .use(authenticatedMiddleware)
+    .input(z.object({ chatId: z.string().uuid(), pinned: z.boolean() }))
+    .use(chatOwnerMiddleware)
+    .handler(async ({ input }) => {
+      await db
+        .update(chatTable)
+        .set({ pinned: input.pinned, updatedAt: new Date() })
+        .where(eq(chatTable.id, input.chatId));
+
+      return {
+        chatId: input.chatId,
+        pinned: input.pinned,
+      };
     }),
 });

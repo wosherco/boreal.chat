@@ -9,8 +9,6 @@ import { env } from "$env/dynamic/public";
 import { browser } from "$app/environment";
 import { getTableColumnNames } from "./utils";
 import { orpc } from "../orpc";
-import { ORPCError } from "@orpc/client";
-import { getTableName, sql } from "drizzle-orm";
 import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
 import { getAllCacheValues } from "../hooks/localDbHook";
 
@@ -19,6 +17,7 @@ const initializeDbLock = new AsyncLock();
 export type PGliteType = NonNullable<Awaited<ReturnType<typeof initializeClientDb>>>;
 
 let dbClientReady = $state(false);
+let dbIsUpToDate = $state(false);
 let pgliteState = $state<PGliteType | null>(null);
 const createDrizzleClient = (db: PGliteType) =>
   // @ts-expect-error we're using the DB from a worker, which is not typed, but it's practically the same
@@ -27,6 +26,7 @@ const drizzleState = $derived(!pgliteState ? null : createDrizzleClient(pgliteSt
 export type ClientDBType = Exclude<typeof drizzleState, null>;
 
 export const isDbReady = () => dbClientReady;
+export const isDbUpToDate = () => dbIsUpToDate;
 export const pglite = () => {
   if (!browser) {
     throw new Error("PGlite is not available on the server");
@@ -144,13 +144,17 @@ async function startShapesSync() {
   console.log("Starting shapes sync");
 
   try {
-    await orpc.v1.auth.getUser();
-  } catch (err) {
-    if (err instanceof ORPCError && err.status === 401) {
+    const response = await orpc.v1.auth.getUser();
+
+    if (!response.authenticated) {
       console.log("We're not logged in, we're not syncing shapes");
       await clearLocalDb();
       return;
     }
+  } catch {
+    // Server might be down, we won't sync shapes.
+    // TODO: Back-off to try to keep in sync with the server.
+    return;
   }
 
   currentStreams = await pglite().electric.syncShapesToTables({
@@ -241,13 +245,44 @@ async function startShapesSync() {
       },
     },
     key: "boreal-chat-sync-v1",
-    onInitialSync: () => {
+    onInitialSync: async () => {
       console.log("Sync done. Refreshing all stores...");
       getAllCacheValues().forEach((store) => store.refreshQuery());
     },
   });
 
-  console.log("Shapes sync done");
+  return new Promise((resolve) => {
+    // This is nasty af, and an awful hack. Hopefully we can find a better way to do this with the elastic & pglite team.
+    const intervalCheck = setInterval(async () => {
+      if (currentStreams?.isUpToDate) {
+        clearInterval(intervalCheck);
+        await pglite().syncToFs();
+
+        let currentDBUser: typeof schema.userTable.$inferSelect | undefined = undefined;
+        for (let i = 0; i < 10; i++) {
+          const [queriedDBUser] = await clientDb().select().from(schema.userTable).limit(1);
+          if (queriedDBUser) {
+            currentDBUser = queriedDBUser;
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+
+        if (!currentDBUser) {
+          console.log("Something went wrong, clearing local db");
+          await clearLocalDb();
+
+          window.location.reload();
+        } else {
+          dbIsUpToDate = true;
+          resolve(true);
+          console.log("Shapes sync done");
+        }
+      } else {
+        console.log("Syncing still not done");
+      }
+    }, 50);
+  });
 }
 
 export async function clearLocalDb() {
@@ -258,16 +293,10 @@ export async function clearLocalDb() {
 
   console.log("Clearing local db...");
 
-  await Promise.all(
-    Object.values(schema).map(async (table) => {
-      await clientDb().execute(
-        sql`TRUNCATE TABLE ${sql.identifier(getTableName(table))}
-        RESTART IDENTITY   -- resets sequences to their start values
-        CASCADE;           -- also truncates any tables that have FKs pointing here
-       `,
-      );
-    }),
-  );
+  if (!pglite().closed) {
+    await pglite().close();
+  }
 
-  await pglite().syncToFs();
+  // Deleting the DB from indexedDB
+  indexedDB.deleteDatabase("/pglite/borealchat-syncdata");
 }

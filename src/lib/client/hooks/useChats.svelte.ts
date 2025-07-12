@@ -14,11 +14,12 @@ export const useChats = (serverData: ServerData<Chat[]>) =>
           .select({
             id: chatTable.id,
             title: chatTable.title,
+            pinned: chatTable.pinned,
             createdAt: chatTable.createdAt,
             updatedAt: chatTable.updatedAt,
           })
           .from(chatTable)
-          .orderBy(desc(chatTable.updatedAt))
+          .orderBy(desc(chatTable.pinned), desc(chatTable.updatedAt))
           .toSQL(),
       transform: (chatData) =>
         chatData.map(

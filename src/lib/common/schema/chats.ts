@@ -31,6 +31,7 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
         .notNull()
         .default(REASONING_NONE),
       webSearchEnabled: boolean().notNull().default(false),
+      pinned: boolean().notNull().default(false),
       createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
       updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     },
@@ -165,6 +166,12 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
       numMediaPrompt: integer(),
       numMediaCompletion: integer(),
       numSearchResults: integer(),
+
+      estimatedCUs: integer(),
+      actualCUs: integer(),
+
+      // Will be private when we pay for inference
+      private: boolean().notNull().default(false),
     },
     (t) => [
       !isClient &&

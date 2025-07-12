@@ -14,6 +14,7 @@ export const useChat = (chatId: string, serverData: ServerData<ChatWithSettings>
           .select({
             id: chatTable.id,
             title: chatTable.title,
+            pinned: chatTable.pinned,
             createdAt: chatTable.createdAt,
             updatedAt: chatTable.updatedAt,
             selectedModel: chatTable.selectedModel,

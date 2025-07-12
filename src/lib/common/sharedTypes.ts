@@ -1,4 +1,4 @@
-import type { MessageSegmentKind } from ".";
+import type { MessageSegmentKind, SubscriptionPlan, SubscriptionStatus } from ".";
 import type { ModelId, ReasoningLevel } from "./ai/models";
 import type { DBMessage } from "./schema/chats";
 
@@ -24,11 +24,15 @@ export type UserInfo = {
   name: string;
   email: string;
   profilePicture: string | null;
+  subscribedUntil: Date | null;
+  subscriptionStatus: SubscriptionStatus | null;
+  subscriptionPlan: SubscriptionPlan | null;
 };
 
 export interface Chat {
   id: string;
   title: string | null;
+  pinned: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -64,7 +68,7 @@ export type MessageWithSegments = DBMessage & {
 };
 
 export type MessageWithSegmentsAndTokenStream = MessageWithSegments & {
-  /** live token stream while the message is still “processing” */
+  /** live token stream while the message is still "processing" */
   tokenStream: TokenStreamJson[] | null;
 };
 

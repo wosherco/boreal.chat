@@ -7,4 +7,5 @@ export const osBase = os.$context<{
   ctx?: ExecutionContext;
   userCtx: UserContext;
   cookies?: Cookies;
+  setHeaders?: (headers: Record<string, string>) => void;
 }>();

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import RecursiveMessageRendering from "$lib/components/chatMessages/RecursiveMessageRendering.svelte";
   import type { PageProps } from "./$types";
   import { cn } from "$lib/utils";
   import { isSidebarCollapsed } from "../../+layout.svelte";

@@ -43,6 +43,34 @@
       "when": 1750798013998,
       "tag": "0005_neat_zodiak",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1751729562420,
+      "tag": "0006_dry_maelstrom",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1751757359361,
+      "tag": "0007_cold_azazel",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1751909175077,
+      "tag": "0008_broken_proudstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1752094419545,
+      "tag": "0009_brief_mongoose",
+      "breakpoints": true
     }
   ]
 }

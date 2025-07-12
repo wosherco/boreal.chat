@@ -46,44 +46,48 @@ function validateShareAccess(
 export async function createMessageShare(
   userId: string,
   params: {
+    chatId: string;
     existingShareId?: string;
     messageId: string;
     privacy: SharePrivacy;
     emails?: string[];
   },
 ) {
-  const { existingShareId, messageId, privacy, emails = [] } = params;
+  const { chatId, existingShareId, messageId, privacy, emails = [] } = params;
 
   const [msg] = await db
     .select({
       userId: messageTable.userId,
+      chatId: messageTable.chatId,
     })
     .from(messageTable)
     .where(eq(messageTable.id, messageId))
     .limit(1);
 
-  if (!msg || msg.userId !== userId) {
+  if (!msg || msg.userId !== userId || msg.chatId !== chatId) {
     throw new ORPCError("NOT_FOUND", {
       message: "Message not found",
     });
   }
 
-  const id = existingShareId ?? nanoid();
+  const id = existingShareId ?? nanoid(21);
   await db
     .insert(messageShareTable)
     .values({
       id,
       userId,
+      chatId,
       messageId,
       privacy,
       allowedEmails: emails.map(cleanEmail),
     })
     .onConflictDoUpdate({
-      target: [messageShareTable.id, messageShareTable.userId],
+      target: messageShareTable.id,
       set: {
         privacy,
         allowedEmails: emails.map(cleanEmail),
       },
+      where: eq(messageShareTable.userId, userId),
     });
   return { id };
 }
@@ -91,7 +95,6 @@ export async function createMessageShare(
 export async function getMessageShare(id: string, userEmail?: string) {
   const [share] = await db
     .select({
-      chatId: messageTable.chatId,
       privacy: messageShareTable.privacy,
       allowedEmails: messageShareTable.allowedEmails,
       messageId: messageShareTable.messageId,
@@ -109,7 +112,6 @@ export async function getMessageShare(id: string, userEmail?: string) {
   validateShareAccess(share, userEmail);
 
   return {
-    chatId: share.chatId,
     privacy: share.privacy,
     messageId: share.messageId,
   };
@@ -131,6 +133,7 @@ export async function deleteMessageShare(userId: string, id: string) {
 export async function createThreadShare(
   userId: string,
   params: {
+    chatId: string;
     existingShareId?: string;
     threadId: string;
     lastMessageId: string;
@@ -138,37 +141,40 @@ export async function createThreadShare(
     emails?: string[];
   },
 ) {
-  const { existingShareId, threadId, lastMessageId, privacy, emails = [] } = params;
+  const { chatId, existingShareId, threadId, lastMessageId, privacy, emails = [] } = params;
 
   const [thread] = await db
-    .select({ userId: threadTable.userId })
+    .select({ userId: threadTable.userId, chatId: threadTable.chatId })
     .from(threadTable)
-    .where(eq(threadTable.id, threadId))
+    .innerJoin(messageTable, eq(threadTable.id, messageTable.threadId))
+    .where(and(eq(threadTable.id, threadId), eq(messageTable.id, lastMessageId)))
     .limit(1);
 
-  if (!thread || thread.userId !== userId) {
+  if (!thread || thread.userId !== userId || thread.chatId !== chatId) {
     throw new ORPCError("NOT_FOUND", {
       message: "Thread not found",
     });
   }
 
-  const id = existingShareId ?? nanoid();
+  const id = existingShareId ?? nanoid(21);
   await db
     .insert(threadShareTable)
     .values({
       id,
       userId,
+      chatId,
       threadId,
       lastMessageId,
       privacy,
       allowedEmails: emails.map(cleanEmail),
     })
     .onConflictDoUpdate({
-      target: [threadShareTable.id, threadShareTable.userId],
+      target: threadShareTable.id,
       set: {
         privacy,
         allowedEmails: emails.map(cleanEmail),
       },
+      where: eq(threadShareTable.userId, userId),
     });
 
   return { id };
@@ -224,12 +230,12 @@ export async function upsertChatShare(
   const { chatId, privacy, emails = [] } = params;
 
   const [chat] = await db
-    .select({ userId: chatTable.userId })
+    .select({ userId: chatTable.userId, id: chatTable.id })
     .from(chatTable)
     .where(eq(chatTable.id, chatId))
     .limit(1);
 
-  if (!chat || chat.userId !== userId) {
+  if (!chat || chat.userId !== userId || chat.id !== chatId) {
     throw new ORPCError("NOT_FOUND", {
       message: "Chat not found",
     });
@@ -241,14 +247,15 @@ export async function upsertChatShare(
       chatId,
       userId,
       privacy,
-      allowedEmails: emails,
+      allowedEmails: emails.map(cleanEmail),
     })
     .onConflictDoUpdate({
-      target: [chatShareTable.chatId],
+      target: chatShareTable.chatId,
       set: {
         privacy,
-        allowedEmails: emails,
+        allowedEmails: emails.map(cleanEmail),
       },
+      where: eq(chatShareTable.userId, userId),
     });
 
   return { chatId };

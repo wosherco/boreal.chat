@@ -9,7 +9,7 @@
   const currentUser = useCurrentUser(data.auth.currentUserInfo);
 
   $effect(() => {
-    if (!$currentUser.loading && $currentUser.data) {
+    if (!$currentUser.loading && !!$currentUser.data?.authenticated) {
       goto("/");
     }
   });
@@ -21,6 +21,6 @@
       <Loader2Icon class="size-10 animate-spin" />
     </div>
   </div>
-{:else if !$currentUser.data}
+{:else}
   {@render children()}
 {/if}

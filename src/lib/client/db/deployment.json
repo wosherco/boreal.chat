@@ -32,9 +32,7 @@
     "when": 1749999276314,
     "tag": "0002_charming_union_jack",
     "hash": "00c91d9c42f42258ced12af5a83468aab56e3e5086b192d7ad395197aff18b73",
-    "sql": [
-      "ALTER TABLE \"messages\" ADD COLUMN \"error\" text;"
-    ]
+    "sql": ["ALTER TABLE \"messages\" ADD COLUMN \"error\" text;"]
   },
   {
     "idx": 3,
@@ -67,6 +65,38 @@
       "ALTER TABLE \"message_segment_usage\" ALTER COLUMN \"generation_id\" SET DATA TYPE varchar(50);",
       "ALTER TABLE \"message_segments\" ALTER COLUMN \"generation_id\" SET DATA TYPE varchar(50);",
       "ALTER TABLE \"message_tokens\" ALTER COLUMN \"generation_id\" SET DATA TYPE varchar(50);"
+    ]
+  },
+  {
+    "idx": 6,
+    "when": 1751729562420,
+    "tag": "0006_dry_maelstrom",
+    "hash": "4d3d4162e4f1ab4a41fc67833eeb95dcae93117e2f9f798aed2328d3807673a1",
+    "sql": ["ALTER TABLE \"user\" ADD COLUMN \"subscription_status\" varchar(255);"]
+  },
+  {
+    "idx": 7,
+    "when": 1751757359361,
+    "tag": "0007_cold_azazel",
+    "hash": "49995c3bf3dedf92e1c6822c0dc4844e873b08a6a6f0c1c8aa8f22af0cc0ef25",
+    "sql": ["ALTER TABLE \"chats\" ADD COLUMN \"pinned\" boolean DEFAULT false NOT NULL;"]
+  },
+  {
+    "idx": 8,
+    "when": 1751909175077,
+    "tag": "0008_broken_proudstar",
+    "hash": "79d44a61d56fc676d1d2dd716c26f529b7c839b9879f1d8a494b613d3c2f5a43",
+    "sql": ["ALTER TABLE \"user\" ADD COLUMN \"subscription_plan\" varchar(50);"]
+  },
+  {
+    "idx": 9,
+    "when": 1752094419545,
+    "tag": "0009_brief_mongoose",
+    "hash": "9f7fd66109fa11258f339845bba0c895f8df8afe229686397c76e78d131d4f92",
+    "sql": [
+      "ALTER TABLE \"message_segment_usage\" ADD COLUMN \"estimated_c_us\" integer;",
+      "ALTER TABLE \"message_segment_usage\" ADD COLUMN \"actual_c_us\" integer;",
+      "ALTER TABLE \"message_segment_usage\" ADD COLUMN \"private\" boolean DEFAULT false NOT NULL;"
     ]
   }
 ]
