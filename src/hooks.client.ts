@@ -2,10 +2,11 @@ import { handleErrorWithSentry, replayIntegration } from "@sentry/sveltekit";
 import * as Sentry from "@sentry/sveltekit";
 import type { ClientInit } from "@sveltejs/kit";
 import { initializeClientDbPromise } from "$lib/client/db/index.svelte";
+import { PUBLIC_SENTRY_DSN } from "$env/static/public";
 import { env } from "$env/dynamic/public";
 
 Sentry.init({
-  dsn: env.PUBLIC_SENTRY_DSN,
+  dsn: PUBLIC_SENTRY_DSN,
 
   tracesSampleRate: 1.0,
 

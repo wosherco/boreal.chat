@@ -4,6 +4,7 @@ import * as auth from "$lib/server/auth.js";
 import type { Handle } from "@sveltejs/kit";
 import { paraglideMiddleware } from "$lib/paraglide/server";
 import { env } from "$env/dynamic/private";
+import { PUBLIC_SENTRY_DSN } from "$env/static/public";
 import { posthog } from "$lib/server/posthog";
 import { POSTHOG_PROXY_PATH } from "$lib/common/constants";
 
@@ -18,7 +19,7 @@ process.on("SIGTERM", async () => {
 });
 
 Sentry.init({
-  dsn: env.PUBLIC_SENTRY_DSN,
+  dsn: PUBLIC_SENTRY_DSN,
   tracesSampleRate: 1,
   _experiments: {
     enableLogs: true,
