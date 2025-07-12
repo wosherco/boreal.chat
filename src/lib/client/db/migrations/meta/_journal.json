@@ -71,6 +71,13 @@
       "when": 1752094419545,
       "tag": "0009_brief_mongoose",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1752332765696,
+      "tag": "0010_curved_susan_delgado",
+      "breakpoints": true
     }
   ]
 }

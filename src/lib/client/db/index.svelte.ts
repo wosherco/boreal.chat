@@ -243,6 +243,20 @@ async function startShapesSync() {
         table: "message_tokens",
         primaryKey: ["id"],
       },
+      draft: {
+        shape: {
+          url: `${env.PUBLIC_URL}/api/v1/shape`,
+          params: {
+            table: "drafts",
+            columns: getTableColumnNames(schema.draftsTable),
+          },
+          headers: {
+            "cache-control": "no-cache",
+          },
+        },
+        table: "drafts",
+        primaryKey: ["id"],
+      },
     },
     key: "boreal-chat-sync-v1",
     onInitialSync: async () => {

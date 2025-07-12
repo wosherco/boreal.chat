@@ -19,7 +19,7 @@ import {
 import { initializeChatContext } from "$lib/server/ai/state";
 import { generateChatTitle, type GenerateChatTitleContext } from "$lib/server/ai/agents/title";
 import { and, eq } from "drizzle-orm";
-import { chatTable, messageTable } from "$lib/server/db/schema";
+import { chatTable, messageTable, draftsTable } from "$lib/server/db/schema";
 import { ORPCError } from "@orpc/client";
 import * as Sentry from "@sentry/sveltekit";
 import { posthog } from "$lib/server/posthog";
@@ -38,6 +38,7 @@ export const v1ChatRouter = osBase.router({
         message: z.string().min(1).max(10000),
         webSearchEnabled: z.boolean().optional(),
         reasoningLevel: z.enum(REASONING_LEVELS).optional(),
+        draftId: z.string().uuid().optional(),
       }),
     )
     .use(inferenceMiddleware)
@@ -61,6 +62,18 @@ export const v1ChatRouter = osBase.router({
             model: input.model,
           },
         );
+
+        // Delete draft if provided
+        if (input.draftId) {
+          await tx
+            .delete(draftsTable)
+            .where(
+              and(
+                eq(draftsTable.id, input.draftId),
+                eq(draftsTable.userId, context.userCtx.user.id),
+              ),
+            );
+        }
 
         return {
           chatId,
@@ -222,6 +235,7 @@ export const v1ChatRouter = osBase.router({
         message: z.string().min(1).max(10000),
         webSearchEnabled: z.boolean().optional(),
         reasoningLevel: z.enum(REASONING_LEVELS).optional(),
+        draftId: z.string().uuid().optional(),
       }),
     )
     .use(inferenceMiddleware)
@@ -248,6 +262,18 @@ export const v1ChatRouter = osBase.router({
             webSearchEnabled: actualWebSearchEnabled,
             reasoningLevel: actualReasoningLevel,
           });
+
+          // Delete draft if provided
+          if (input.draftId) {
+            await tx
+              .delete(draftsTable)
+              .where(
+                and(
+                  eq(draftsTable.id, input.draftId),
+                  eq(draftsTable.userId, context.userCtx.user.id),
+                ),
+              );
+          }
 
           return {
             userMessageId,

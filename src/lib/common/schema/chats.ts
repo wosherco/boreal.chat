@@ -93,7 +93,7 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
     },
     (t) => [
       index().on(t.threadId, t.createdAt),
-      uniqueIndex().on(t.parentMessageId, t.version),
+      !isClient && uniqueIndex().on(t.parentMessageId, t.version),
       !isClient &&
         foreignKey({
           columns: [t.userId],
