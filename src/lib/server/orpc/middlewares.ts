@@ -33,10 +33,10 @@ export const authenticatedMiddleware = osBase.middleware(async ({ context, next 
   });
 });
 
-export const subscribedMiddleware = authenticatedMiddleware.concat(async ({ context, next }) => {
+export const creditsMiddleware = authenticatedMiddleware.concat(async ({ context, next }) => {
   if (!isSubscribed(context.userCtx.user)) {
     throw new ORPCError("UNAUTHORIZED", {
-      message: "You need to be subscribed to Unlimited plan to use this feature.",
+      message: "You need to have credits to use this feature.",
     });
   }
 
@@ -90,7 +90,7 @@ export const inferenceMiddleware = authenticatedMiddleware.concat(
     if (!isSubscribed(context.userCtx.user)) {
       throw new ORPCError("UNAUTHORIZED", {
         message:
-          "You need to be subscribed to atleast Premium plan to use this feature, or bring your own OpenRouter key (in settings).",
+          "You need to have credits to use this feature, or bring your own OpenRouter key (in settings).",
       });
     }
 

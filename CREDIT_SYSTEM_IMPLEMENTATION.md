@@ -1,7 +1,7 @@
-# Credit System Implementation
+# Credit System Implementation - Complete Subscription Removal
 
 ## Overview
-Replaced the legacy Stripe subscription system with a modern credit-based payment system, allowing users to purchase credits for pay-as-you-go usage.
+**Completely removed** the legacy Stripe subscription system and replaced it with a modern credit-based payment system. All subscription-related code, database fields, and UI components have been eliminated.
 
 ## Database Schema Changes
 
@@ -45,10 +45,11 @@ Replaced the legacy Stripe subscription system with a modern credit-based paymen
   - `handleCreditPaymentIntent()` - Processes webhook events for credit purchases
 
 - **Removed Functions**:
-  - All subscription-related functions (`createCheckoutSession`, `createCustomerSession`, `createUpgradeSession`, `updateSubscriptionStatus`)
+  - `createCheckoutSession`, `createCustomerSession`, `createUpgradeSession`, `updateSubscriptionStatus`
+  - `getCurrentSubscription` and all subscription-related logic
 
 ### API Routes (`src/lib/server/orpc/routes/v1/billing.ts`)
-Clean credit-only billing router with endpoints:
+**Complete rewrite** with credit-only endpoints:
 - `addPaymentMethod` - Add payment method
 - `getPaymentMethods` - List user's payment methods  
 - `setDefaultPaymentMethod` - Set default payment method
@@ -58,12 +59,22 @@ Clean credit-only billing router with endpoints:
 - `getUserCredits` - Get current balance
 - `getCreditHistory` - Get transaction history
 
-**Removed**: All subscription-related endpoints
+**Completely removed**: All subscription endpoints (`createCheckoutSession`, `createCustomerSession`)
+
+### Middleware Updates (`src/lib/server/orpc/middlewares.ts`)
+- **Renamed**: `subscribedMiddleware` → `creditsMiddleware`
+- **Updated error messages**: From "subscription required" to "credits required"
+- **Logic updated**: Now checks credits instead of subscription status
+
+### Type System Updates
+- **Updated `UserInfo`**: Removed subscription fields, added `credits: string`
+- **Removed imports**: `SubscriptionPlan`, `SubscriptionStatus` types
+- **Updated auth responses**: Return credits instead of subscription data
 
 ## Frontend Implementation
 
 ### Components
-1. **`CreditPurchase.svelte`** - Main credit purchase component featuring:
+1. **`CreditPurchase.svelte`** - Complete credit purchase system:
    - Real-time fee calculation (8%)
    - Stripe Elements integration for card input
    - Payment method selection (new card vs saved methods)
@@ -73,15 +84,12 @@ Clean credit-only billing router with endpoints:
 
 2. **`Switch.svelte`** - Custom switch component for UI controls
 
-### Updated Billing Page
-- **`BillingPage.svelte`** simplified to focus only on credits:
-  - Removed subscription tabs and plans
-  - Clean credit-focused interface
-  - Integrated payment method management
-
-### Navigation Updates
-- Settings menu label changed from "Billing" to "Credits"
-- Page titles updated to reflect credit system
+### Updated Pages & Components
+- **`BillingPage.svelte`**: Completely rewritten, removed all subscription UI
+- **`Sidebar.svelte`**: Shows credit balance instead of subscription status
+- **Navigation**: "Billing" → "Credits" throughout the app
+- **Page titles**: Updated to reflect credit system
+- **Welcome page**: Updated messaging from "no subscription" to "credit-based"
 
 ## Key Features
 
@@ -100,6 +108,28 @@ Clean credit-only billing router with endpoints:
 - Default payment method selection
 - Secure deletion of payment methods
 
+## Complete Removal Summary
+
+### Files Removed
+- `src/lib/server/stripe/constants.ts` - Subscription plan constants
+- `src/routes/(settings)/settings/billing/success/` - Subscription success pages
+- `src/routes/(settings)/settings/billing/canceled/` - Subscription canceled pages
+
+### Constants Removed
+- `SUBSCRIPTION_STATUS`, `SUBSCRIPTION_PLANS`, `UNLIMITED_PLAN_NAME`
+- All subscription-related type definitions
+
+### Functions Removed
+- All Stripe subscription management functions
+- Subscription validation logic
+- Subscription webhook handlers
+
+### UI Removed
+- Subscription plan cards
+- Subscription status displays
+- Subscription management buttons
+- All subscription-related tabs and sections
+
 ## Technical Details
 
 ### Security
@@ -112,25 +142,24 @@ Clean credit-only billing router with endpoints:
 - Comprehensive error states in UI
 - Transaction status tracking in database
 - Failed payment handling via webhooks
-- User-friendly error messages
+- User-friendly error messages updated for credit system
 
 ### Database Integrity
 - Transactional credit updates
 - Foreign key constraints
 - Atomic operations for payment processing
 
-## Dependencies Added
+## Dependencies
 - `@stripe/stripe-js` - Frontend Stripe Elements integration
-
-## Files Removed
-- `src/lib/server/stripe/constants.ts` - Subscription plan constants no longer needed
+- No subscription-related dependencies remain
 
 ## Environment Variables Required
 - `PUBLIC_STRIPE_PUBLISHABLE_KEY` - Frontend Stripe key
 - Existing Stripe server variables remain unchanged
 
 ## Migration Notes
-- New database tables need to be generated (not run as requested)
-- **Breaking changes**: Subscription functionality completely removed
-- Users will need to transition to credit-based system
-- Existing `stripeCustomerId` preserved for payment method continuity
+- **Breaking changes**: Complete removal of subscription functionality
+- **New database tables**: Need to be generated (not run as requested)
+- **Legacy compatibility**: `isSubscribed()` function maintained but now checks credits
+- **User data**: Existing `stripeCustomerId` preserved for payment method continuity
+- **Zero subscription code**: Completely clean credit-only implementation

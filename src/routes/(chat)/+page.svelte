@@ -74,7 +74,7 @@
     <ul class="list-inside list-disc space-y-2 pt-4">
       <li>The upcoming best AI chat platform.</li>
       <li>Use any model you want, and add web search, and more!</li>
-      <li>Pay for what you use, no subscription required for simple chatting.</li>
+                      <li>Pay for what you use with credits, simple and transparent pricing.</li>
       <li>Completely open-source.</li>
     </ul>
     <div class="flex justify-center pt-4">

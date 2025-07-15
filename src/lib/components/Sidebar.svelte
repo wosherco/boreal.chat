@@ -72,7 +72,7 @@
     }
   }
 
-  const isUserSubscribed = $derived(isSubscribed(user?.data ?? null));
+  const userHasCredits = $derived(isSubscribed(user?.data ?? null));
 </script>
 
 <ShortcutsCheatsheetDialog bind:open={shortcutsCheatsheetOpen} />
@@ -178,13 +178,13 @@
                 </Avatar>
                 <div class="flex min-w-0 flex-1 flex-col items-start">
                   <p class="w-full truncate text-sm font-medium">{user.data.name}</p>
-                  <p class="text-muted-foreground text-xs">
-                    {#if isUserSubscribed}
-                      Unlimited
-                    {:else}
-                      Free
-                    {/if}
-                  </p>
+                                      <p class="text-muted-foreground text-xs">
+                      {#if userHasCredits}
+                        ${parseFloat(user.data.credits || '0').toFixed(2)} credits
+                      {:else}
+                        No credits
+                      {/if}
+                    </p>
                 </div>
                 <ChevronsUpDownIcon class="size-4" />
               </div>

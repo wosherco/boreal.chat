@@ -30,19 +30,4 @@ export type ShareType = (typeof SHARE_TYPES)[number];
 export const SHARE_PRIVACY_OPTIONS = ["private", "emails", "public"] as const;
 export type SharePrivacy = (typeof SHARE_PRIVACY_OPTIONS)[number];
 
-export const SUBSCRIPTION_STATUS = [
-  "active",
-  "canceled",
-  "incomplete",
-  "incomplete_expired",
-  "past_due",
-  "paused",
-  "trialing",
-  "unpaid",
-] as const satisfies Stripe.Subscription.Status[];
 
-export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUS)[number];
-
-export const UNLIMITED_PLAN_NAME = "unlimited";
-export const SUBSCRIPTION_PLANS = [UNLIMITED_PLAN_NAME] as const;
-export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number];

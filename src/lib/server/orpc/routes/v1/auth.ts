@@ -19,9 +19,7 @@ export const v1AuthRouter = osBase.router({
         name: user.name,
         email: user.email,
         profilePicture: user.profilePicture,
-        subscribedUntil: user.subscribedUntil,
-        subscriptionStatus: user.subscriptionStatus,
-        subscriptionPlan: user.subscriptionPlan,
+        credits: user.credits,
       },
     } satisfies CurrentUserInfo;
   }),
