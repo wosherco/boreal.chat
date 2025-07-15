@@ -1,5 +1,5 @@
 import { SUBSCRIPTION_STATUS, SUBSCRIPTION_PLANS, USER_ROLES } from "../../../common";
-import { pgTable, serial, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, uuid, varchar, decimal } from "drizzle-orm/pg-core";
 
 export const userTable = pgTable("user", {
   id: uuid().defaultRandom().primaryKey(),
@@ -17,6 +17,9 @@ export const userTable = pgTable("user", {
     length: 255,
     enum: SUBSCRIPTION_STATUS,
   }),
+  
+  // Credits
+  credits: decimal({ precision: 10, scale: 2 }).default("0.00"),
 });
 
 export const sessionTable = pgTable("session", {
