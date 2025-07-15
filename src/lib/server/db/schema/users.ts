@@ -1,4 +1,4 @@
-import { SUBSCRIPTION_STATUS, SUBSCRIPTION_PLANS, USER_ROLES } from "../../../common";
+import { USER_ROLES } from "../../../common";
 import { pgTable, serial, text, timestamp, uuid, varchar, decimal } from "drizzle-orm/pg-core";
 
 export const userTable = pgTable("user", {
@@ -10,13 +10,6 @@ export const userTable = pgTable("user", {
 
   // Payment stuff
   stripeCustomerId: text().unique(),
-  subscriptionId: text().unique(),
-  subscriptionPlan: varchar({ length: 50, enum: SUBSCRIPTION_PLANS }),
-  subscribedUntil: timestamp({ withTimezone: true }),
-  subscriptionStatus: varchar({
-    length: 255,
-    enum: SUBSCRIPTION_STATUS,
-  }),
   
   // Credits
   credits: decimal({ precision: 10, scale: 2 }).default("0.00"),

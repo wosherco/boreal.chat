@@ -1,8 +1,6 @@
 import { osBase } from "../../context";
 import { authenticatedMiddleware } from "../../middlewares";
 import { 
-  createCheckoutSession, 
-  createCustomerSession,
   createPaymentMethod,
   getUserPaymentMethods,
   setDefaultPaymentMethod,
@@ -12,56 +10,10 @@ import {
   getUserCredits,
   getUserCreditHistory
 } from "$lib/server/stripe";
-import { SUBSCRIPTION_PLANS, UNLIMITED_PLAN_NAME } from "$lib/common";
 import z from "zod";
 
 export const v1BillingRouter = osBase.router({
-  // Existing subscription routes
-  createCheckoutSession: osBase
-    .use(authenticatedMiddleware)
-    .input(
-      z.object({
-        plan: z.enum(SUBSCRIPTION_PLANS).optional().default(UNLIMITED_PLAN_NAME),
-      }),
-    )
-    .handler(async ({ context, input }) => {
-      const session = await createCheckoutSession(context.userCtx.user.id, input.plan);
-
-      if (!session) {
-        return {
-          success: false,
-        };
-      }
-
-      return {
-        success: true,
-        url: session.url,
-      };
-    }),
-
-  createCustomerSession: osBase
-    .use(authenticatedMiddleware)
-    .input(
-      z.object({
-        toCancel: z.boolean().optional(),
-      }),
-    )
-    .handler(async ({ context, input }) => {
-      const session = await createCustomerSession(context.userCtx.user.id, input.toCancel);
-
-      if (!session) {
-        return {
-          success: false,
-        };
-      }
-
-      return {
-        success: true,
-        url: session.url,
-      };
-    }),
-
-  // New credit-related routes
+  // Credit-related routes
   addPaymentMethod: osBase
     .use(authenticatedMiddleware)
     .input(

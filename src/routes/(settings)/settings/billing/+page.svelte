@@ -14,10 +14,10 @@
   const user = useCurrentUser(data.auth.currentUserInfo);
 </script>
 
-<SvelteSeo title="Pricing & Billing | boreal.chat" />
+<SvelteSeo title="Credits & Billing | boreal.chat" />
 
-<h1 class="text-2xl font-semibold">Pricing & Billing</h1>
-<h2 class="text-muted-foreground">Manage your subscription and billing details.</h2>
+<h1 class="text-2xl font-semibold">Credits & Billing</h1>
+<h2 class="text-muted-foreground">Manage your credits and payment methods.</h2>
 
 <div class="flex flex-col gap-2 pt-4">
   {#if $user.loading}
@@ -25,7 +25,7 @@
       <Loader2Icon class="size-4 animate-spin" />
     </div>
   {:else if !isBillingPageEnabled}
-    <p>Billing page is not enabled</p>
+    <p>Credits page is not enabled</p>
   {:else}
     <BillingPage />
   {/if}

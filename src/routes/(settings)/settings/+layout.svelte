@@ -48,7 +48,7 @@
       icon: PaintbrushIcon,
     },
     BILLING_ENABLED && {
-      label: "Billing",
+      label: "Credits",
       href: "/settings/billing",
       icon: CreditCardIcon,
     },

@@ -1,7 +1,7 @@
 # Credit System Implementation
 
 ## Overview
-Added a comprehensive credit-based payment system to the existing Stripe subscription billing, allowing users to purchase credits for pay-as-you-go usage while maintaining the existing subscription management functionality.
+Replaced the legacy Stripe subscription system with a modern credit-based payment system, allowing users to purchase credits for pay-as-you-go usage.
 
 ## Database Schema Changes
 
@@ -21,7 +21,9 @@ Added a comprehensive credit-based payment system to the existing Stripe subscri
    - Status tracking (pending, completed, failed, refunded)
 
 ### User Table Updates
-- Added `credits` field (decimal) to track current balance
+- **Added**: `credits` field (decimal) to track current balance
+- **Removed**: All subscription-related fields (`subscriptionId`, `subscriptionPlan`, `subscribedUntil`, `subscriptionStatus`)
+- **Kept**: `stripeCustomerId` for payment method management
 
 ## Backend Implementation
 
@@ -39,11 +41,14 @@ Added a comprehensive credit-based payment system to the existing Stripe subscri
   - `getUserCreditHistory()` - Get credit transaction history
 
 - **Webhook Handling**:
-  - Added `payment_intent.succeeded` and `payment_intent.payment_failed` events
+  - Simplified to only handle `payment_intent.succeeded` and `payment_intent.payment_failed` events
   - `handleCreditPaymentIntent()` - Processes webhook events for credit purchases
 
+- **Removed Functions**:
+  - All subscription-related functions (`createCheckoutSession`, `createCustomerSession`, `createUpgradeSession`, `updateSubscriptionStatus`)
+
 ### API Routes (`src/lib/server/orpc/routes/v1/billing.ts`)
-Extended existing billing router with new credit endpoints:
+Clean credit-only billing router with endpoints:
 - `addPaymentMethod` - Add payment method
 - `getPaymentMethods` - List user's payment methods  
 - `setDefaultPaymentMethod` - Set default payment method
@@ -52,6 +57,8 @@ Extended existing billing router with new credit endpoints:
 - `confirmCreditPurchase` - Confirm payment
 - `getUserCredits` - Get current balance
 - `getCreditHistory` - Get transaction history
+
+**Removed**: All subscription-related endpoints
 
 ## Frontend Implementation
 
@@ -67,9 +74,14 @@ Extended existing billing router with new credit endpoints:
 2. **`Switch.svelte`** - Custom switch component for UI controls
 
 ### Updated Billing Page
-- **`BillingPage.svelte`** restructured with tabs:
-  - **Subscriptions Tab**: Original subscription management (kept intact)
-  - **Credits Tab**: New credit purchase system
+- **`BillingPage.svelte`** simplified to focus only on credits:
+  - Removed subscription tabs and plans
+  - Clean credit-focused interface
+  - Integrated payment method management
+
+### Navigation Updates
+- Settings menu label changed from "Billing" to "Credits"
+- Page titles updated to reflect credit system
 
 ## Key Features
 
@@ -87,11 +99,6 @@ Extended existing billing router with new credit endpoints:
 - Multiple payment methods support
 - Default payment method selection
 - Secure deletion of payment methods
-
-### Billing Integration
-- **Kept existing functionality**: All subscription management features preserved
-- **Manage billing action**: Existing `createCustomerSession` maintained for Stripe portal access
-- **Dual payment system**: Users can have both subscriptions and credits
 
 ## Technical Details
 
@@ -115,11 +122,15 @@ Extended existing billing router with new credit endpoints:
 ## Dependencies Added
 - `@stripe/stripe-js` - Frontend Stripe Elements integration
 
+## Files Removed
+- `src/lib/server/stripe/constants.ts` - Subscription plan constants no longer needed
+
 ## Environment Variables Required
 - `PUBLIC_STRIPE_PUBLISHABLE_KEY` - Frontend Stripe key
 - Existing Stripe server variables remain unchanged
 
 ## Migration Notes
 - New database tables need to be generated (not run as requested)
-- No breaking changes to existing subscription functionality
-- Backward compatible with existing user accounts
+- **Breaking changes**: Subscription functionality completely removed
+- Users will need to transition to credit-based system
+- Existing `stripeCustomerId` preserved for payment method continuity
