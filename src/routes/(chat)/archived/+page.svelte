@@ -1,0 +1,282 @@
+<script lang="ts">
+  import type { PageData } from "./$types";
+  import { Button } from "$lib/components/ui/button";
+  import { Badge } from "$lib/components/ui/badge";
+  import { 
+    ArchiveRestoreIcon, 
+    TrashIcon, 
+    MessageSquareIcon,
+    ArrowLeftIcon
+  } from "@lucide/svelte";
+  import { orpcQuery } from "$lib/client/orpc";
+  import { createMutation } from "@tanstack/svelte-query";
+  import { toast } from "svelte-sonner";
+  import { goto } from "$app/navigation";
+  import { cn } from "$lib/utils";
+  import { groupByDate, currentDate } from "$lib/utils/dates.svelte";
+
+  const { data }: { data: PageData } = $props();
+
+  const archivedChats = $derived(data.archivedChats || []);
+  const sortedChats = $derived(groupByDate(archivedChats, currentDate()));
+
+  const unarchiveMutation = createMutation(
+    orpcQuery.v1.chat.unarchiveChat.mutationOptions({
+      onSuccess: () => {
+        toast.success("Chat unarchived");
+        location.reload(); // Simple refresh to update the list
+      },
+      onError: () => {
+        toast.error("Failed to unarchive chat");
+      },
+    }),
+  );
+
+  const deleteMutation = createMutation(
+    orpcQuery.v1.chat.deleteChat.mutationOptions({
+      onSuccess: () => {
+        toast.success("Chat moved to deleted");
+        location.reload(); // Simple refresh to update the list
+      },
+      onError: () => {
+        toast.error("Failed to delete chat");
+      },
+    }),
+  );
+
+  function handleUnarchive(chatId: string) {
+    $unarchiveMutation.mutate({ chatId });
+  }
+
+  function handleDelete(chatId: string) {
+    if (confirm("Are you sure you want to delete this chat? It will be moved to the deleted folder.")) {
+      $deleteMutation.mutate({ chatId });
+    }
+  }
+</script>
+
+<svelte:head>
+  <title>Archived Chats | boreal.chat</title>
+</svelte:head>
+
+<div class="h-full overflow-y-auto p-6">
+  <div class="mx-auto max-w-4xl">
+    <!-- Header -->
+    <div class="mb-6 flex items-center gap-4">
+      <Button variant="ghost" size="icon" onclick={() => goto("/")}>
+        <ArrowLeftIcon class="size-4" />
+      </Button>
+      <div>
+        <h1 class="text-2xl font-bold">Archived Chats</h1>
+        <p class="text-muted-foreground text-sm">
+          {archivedChats.length} archived {archivedChats.length === 1 ? "chat" : "chats"}
+        </p>
+      </div>
+    </div>
+
+    <!-- Content -->
+    {#if archivedChats.length === 0}
+      <div class="text-muted-foreground flex flex-col items-center justify-center py-16 text-center">
+        <MessageSquareIcon class="mb-4 h-12 w-12" />
+        <h3 class="mb-2 text-lg font-medium">No archived chats</h3>
+        <p class="text-sm">
+          When you archive chats, they'll appear here. You can unarchive them anytime.
+        </p>
+      </div>
+    {:else}
+      <div class="space-y-6">
+        {#if sortedChats.today.length > 0}
+          <div>
+            <h2 class="text-muted-foreground mb-3 text-sm font-medium">Today</h2>
+            <div class="grid gap-3">
+              {#each sortedChats.today as chat (chat.id)}
+                <div class="bg-card hover:bg-accent/50 rounded-lg border p-4 transition-colors">
+                  <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0 flex-1">
+                      <h3 class="font-medium truncate">
+                        {chat.title || "Untitled Chat"}
+                      </h3>
+                      <div class="mt-1 flex items-center gap-2">
+                        <Badge variant="secondary" class="text-xs">
+                          Archived
+                        </Badge>
+                        <span class="text-muted-foreground text-xs">
+                          {chat.updatedAt.toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onclick={() => handleUnarchive(chat.id)}
+                        disabled={$unarchiveMutation.isPending}
+                      >
+                        <ArchiveRestoreIcon class="mr-2 size-4" />
+                        Unarchive
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onclick={() => handleDelete(chat.id)}
+                        disabled={$deleteMutation.isPending}
+                        class="text-destructive hover:text-destructive"
+                      >
+                        <TrashIcon class="mr-2 size-4" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        {#if sortedChats.yesterday.length > 0}
+          <div>
+            <h2 class="text-muted-foreground mb-3 text-sm font-medium">Yesterday</h2>
+            <div class="grid gap-3">
+              {#each sortedChats.yesterday as chat (chat.id)}
+                <div class="bg-card hover:bg-accent/50 rounded-lg border p-4 transition-colors">
+                  <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0 flex-1">
+                      <h3 class="font-medium truncate">
+                        {chat.title || "Untitled Chat"}
+                      </h3>
+                      <div class="mt-1 flex items-center gap-2">
+                        <Badge variant="secondary" class="text-xs">
+                          Archived
+                        </Badge>
+                        <span class="text-muted-foreground text-xs">
+                          {chat.updatedAt.toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onclick={() => handleUnarchive(chat.id)}
+                        disabled={$unarchiveMutation.isPending}
+                      >
+                        <ArchiveRestoreIcon class="mr-2 size-4" />
+                        Unarchive
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onclick={() => handleDelete(chat.id)}
+                        disabled={$deleteMutation.isPending}
+                        class="text-destructive hover:text-destructive"
+                      >
+                        <TrashIcon class="mr-2 size-4" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        {#if sortedChats.thisWeek.length > 0}
+          <div>
+            <h2 class="text-muted-foreground mb-3 text-sm font-medium">This Week</h2>
+            <div class="grid gap-3">
+              {#each sortedChats.thisWeek as chat (chat.id)}
+                <div class="bg-card hover:bg-accent/50 rounded-lg border p-4 transition-colors">
+                  <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0 flex-1">
+                      <h3 class="font-medium truncate">
+                        {chat.title || "Untitled Chat"}
+                      </h3>
+                      <div class="mt-1 flex items-center gap-2">
+                        <Badge variant="secondary" class="text-xs">
+                          Archived
+                        </Badge>
+                        <span class="text-muted-foreground text-xs">
+                          {chat.updatedAt.toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onclick={() => handleUnarchive(chat.id)}
+                        disabled={$unarchiveMutation.isPending}
+                      >
+                        <ArchiveRestoreIcon class="mr-2 size-4" />
+                        Unarchive
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onclick={() => handleDelete(chat.id)}
+                        disabled={$deleteMutation.isPending}
+                        class="text-destructive hover:text-destructive"
+                      >
+                        <TrashIcon class="mr-2 size-4" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        {#if sortedChats.others.length > 0}
+          <div>
+            <h2 class="text-muted-foreground mb-3 text-sm font-medium">Older</h2>
+            <div class="grid gap-3">
+              {#each sortedChats.others as chat (chat.id)}
+                <div class="bg-card hover:bg-accent/50 rounded-lg border p-4 transition-colors">
+                  <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0 flex-1">
+                      <h3 class="font-medium truncate">
+                        {chat.title || "Untitled Chat"}
+                      </h3>
+                      <div class="mt-1 flex items-center gap-2">
+                        <Badge variant="secondary" class="text-xs">
+                          Archived
+                        </Badge>
+                        <span class="text-muted-foreground text-xs">
+                          {chat.updatedAt.toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onclick={() => handleUnarchive(chat.id)}
+                        disabled={$unarchiveMutation.isPending}
+                      >
+                        <ArchiveRestoreIcon class="mr-2 size-4" />
+                        Unarchive
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onclick={() => handleDelete(chat.id)}
+                        disabled={$deleteMutation.isPending}
+                        class="text-destructive hover:text-destructive"
+                      >
+                        <TrashIcon class="mr-2 size-4" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </div>
+    {/if}
+  </div>
+</div>

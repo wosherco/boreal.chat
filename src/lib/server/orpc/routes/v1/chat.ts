@@ -25,7 +25,7 @@ import * as Sentry from "@sentry/sveltekit";
 import { posthog } from "$lib/server/posthog";
 import { executeAgentSafely } from "$lib/server/services/agent";
 import { sendCancelMessage } from "$lib/server/db/mq/messageCancellation";
-import { deleteChat, renameChat } from "$lib/server/services/chat";
+import { deleteChat, renameChat, archiveChat, unarchiveChat, restoreChat } from "$lib/server/services/chat";
 import { chatTitleSchema } from "$lib/common/validators/chat";
 import type { CUResult } from "$lib/server/ratelimit/cu";
 
@@ -564,6 +564,44 @@ export const v1ChatRouter = osBase.router({
     .use(chatOwnerMiddleware)
     .handler(async ({ input }) => {
       await deleteChat(db, input.chatId);
+
+      return {
+        chatId: input.chatId,
+      };
+    }),
+
+  archiveChat: osBase
+    .use(authenticatedMiddleware)
+    .input(z.object({ chatId: z.string().uuid() }))
+    .use(chatOwnerMiddleware)
+    .handler(async ({ input }) => {
+      await archiveChat(db, input.chatId);
+
+      return {
+        chatId: input.chatId,
+        archived: true,
+      };
+    }),
+
+  unarchiveChat: osBase
+    .use(authenticatedMiddleware)
+    .input(z.object({ chatId: z.string().uuid() }))
+    .use(chatOwnerMiddleware)
+    .handler(async ({ input }) => {
+      await unarchiveChat(db, input.chatId);
+
+      return {
+        chatId: input.chatId,
+        archived: false,
+      };
+    }),
+
+  restoreChat: osBase
+    .use(authenticatedMiddleware)
+    .input(z.object({ chatId: z.string().uuid() }))
+    .use(chatOwnerMiddleware)
+    .handler(async ({ input }) => {
+      await restoreChat(db, input.chatId);
 
       return {
         chatId: input.chatId,

@@ -24,6 +24,8 @@
     XIcon,
     KeyboardIcon,
     BookOpenIcon,
+    ArchiveIcon,
+    TrashIcon,
   } from "@lucide/svelte";
   import { goto } from "$app/navigation";
   import { orpc } from "$lib/client/orpc";
@@ -132,6 +134,36 @@
           {/if}
         </Button>
       </SheetClosableOnlyOnPhone>
+    </div>
+
+    <!-- Navigation Links -->
+    <div class="px-3 py-2">
+      <div class="flex flex-col gap-1">
+        <SheetClosableOnlyOnPhone {isPhone}>
+          <Button
+            variant="ghost"
+            class="h-auto justify-start p-2 text-start"
+            onclick={() => goto("/archived")}
+          >
+            <div class="flex w-full items-center gap-2">
+              <ArchiveIcon class="size-4" />
+              <span class="text-sm">Archived</span>
+            </div>
+          </Button>
+        </SheetClosableOnlyOnPhone>
+        <SheetClosableOnlyOnPhone {isPhone}>
+          <Button
+            variant="ghost"
+            class="h-auto justify-start p-2 text-start"
+            onclick={() => goto("/deleted")}
+          >
+            <div class="flex w-full items-center gap-2">
+              <TrashIcon class="size-4" />
+              <span class="text-sm">Deleted</span>
+            </div>
+          </Button>
+        </SheetClosableOnlyOnPhone>
+      </div>
     </div>
 
     <!-- Chat List -->
