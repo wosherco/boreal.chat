@@ -137,6 +137,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create and push tag from package.json version
+        id: package_version
         if: steps.changesets.outputs.hasChangesets == 'false'
         run: |
           # Version key/value should be on his own line
@@ -148,6 +149,7 @@ jobs:
             | tr -d '[:space:]')
 
           echo "Package version: $PACKAGE_VERSION"
+          echo "version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
           git tag -a "v$PACKAGE_VERSION" -m "Release v$PACKAGE_VERSION"
           git push origin "v$PACKAGE_VERSION"
         env:
@@ -166,7 +168,12 @@ jobs:
         run: |
           SERVICES=$(grep -E "^  [a-zA-Z0-9_.-]+:" docker-compose.build.yaml | sed 's/://g' | awk '{print $1}')
           SHA_TAG=$(echo ${{ github.sha }} | cut -c1-7)
-          VERSION=$(echo ${{ steps.changesets.outputs.newVersion }} | sed 's/^v//')
+          VERSION="${{ steps.package_version.outputs.version }}"
+
+          if [ -z "$VERSION" ]; then
+            echo "Error: VERSION is empty. Package version was not properly set."
+            exit 1
+          fi
 
           for SERVICE in $SERVICES; do
             [ -z "$SERVICE" ] && continue
