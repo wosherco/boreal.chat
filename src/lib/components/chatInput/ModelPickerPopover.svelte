@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import { MODELS, type ModelId } from "$lib/common/ai/models";
+  import { MODELS, HIGHLIGHTED_MODELS, type ModelId } from "$lib/common/ai/models";
   import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
   import * as Command from "../ui/command";
   import ModelPickerModelEntry from "./ModelPickerModelEntry.svelte";
@@ -24,6 +24,10 @@
     onSelect,
     open = $bindable(false),
   }: Props = $props();
+
+  // Split models into highlighted and experimental groups
+  const highlightedModels = MODELS.filter((model) => HIGHLIGHTED_MODELS.includes(model as any));
+  const experimentalModels = MODELS.filter((model) => !HIGHLIGHTED_MODELS.includes(model as any));
 </script>
 
 <Popover bind:open>
@@ -35,8 +39,26 @@
       <Command.Input placeholder="Search model..." />
       <Command.List>
         <Command.Empty>No framework found.</Command.Empty>
-        <Command.Group>
-          {#each MODELS as model (model)}
+
+        <!-- Highlighted Models Group -->
+        <Command.Group heading="Recommended">
+          {#each highlightedModels as model (model)}
+            <Command.Item
+              value={model}
+              onSelect={() => {
+                selectedModel = model;
+                onSelect?.(model);
+                open = false;
+              }}
+            >
+              <ModelPickerModelEntry {model} />
+            </Command.Item>
+          {/each}
+        </Command.Group>
+
+        <!-- Experimental Models Group -->
+        <Command.Group heading="Experimental">
+          {#each experimentalModels as model (model)}
             <Command.Item
               value={model}
               onSelect={() => {
