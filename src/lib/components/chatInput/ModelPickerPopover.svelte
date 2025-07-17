@@ -26,7 +26,9 @@
   }: Props = $props();
 
   // Split models into highlighted and experimental groups
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const highlightedModels = MODELS.filter((model) => HIGHLIGHTED_MODELS.includes(model as any));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const experimentalModels = MODELS.filter((model) => !HIGHLIGHTED_MODELS.includes(model as any));
 </script>
 

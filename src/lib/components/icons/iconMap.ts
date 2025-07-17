@@ -28,6 +28,9 @@ import {
   QWEN_3_30B_A3B,
   GROK_3_BETA,
   GROK_3_MINI_BETA,
+  GROK_4,
+  KIMI_K2,
+  KIMI_K2_FREE,
 } from "$lib/common/ai/models";
 import OpenAiIcon from "./OpenAIIcon.svelte";
 import AnthropicIcon from "./AnthropicIcon.svelte";
@@ -35,6 +38,7 @@ import DeepseekIcon from "./DeepseekIcon.svelte";
 import MetaIcon from "./MetaIcon.svelte";
 import QwenIcon from "./QwenIcon.svelte";
 import GrokIcon from "./GrokIcon.svelte";
+import KimiAiIcon from "./KimiAIIcon.svelte";
 
 export const ICON_MAP: Record<ModelId, Component> = {
   // From google
@@ -76,4 +80,9 @@ export const ICON_MAP: Record<ModelId, Component> = {
   // From xAi
   [GROK_3_BETA]: GrokIcon,
   [GROK_3_MINI_BETA]: GrokIcon,
+  [GROK_4]: GrokIcon,
+
+  // From moonshot
+  [KIMI_K2]: KimiAiIcon,
+  [KIMI_K2_FREE]: KimiAiIcon,
 };
