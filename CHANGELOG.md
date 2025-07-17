@@ -1,5 +1,11 @@
 # boreal.chat
 
+## 0.1.2
+
+### Patch Changes
+
+- 60047ac: unlimited draft
+
 ## 0.1.1
 
 ### Patch Changes
