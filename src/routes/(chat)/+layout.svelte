@@ -27,6 +27,7 @@
   import { page } from "$app/state";
   import { getDraftIdFromUrl } from "$lib/utils/drafts";
   import { useDraft } from "$lib/client/hooks/useDraft.svelte";
+  import { isSubscribed } from "$lib/common/utils/subscription";
 
   const { data, children }: LayoutProps = $props();
 
@@ -224,6 +225,7 @@
       <ChatMessageInput
         bind:textAreaElement={chatMessageInputElement}
         draft={currentDraft ? ($currentDraft?.data ?? null) : null}
+        isUserSubscribed={isSubscribed($currentUser.data?.data ?? null)}
       />
     </div>
   </div>

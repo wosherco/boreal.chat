@@ -41,8 +41,6 @@
   import { gotoWithSeachParams } from "$lib/utils/navigate";
   import { untrack } from "svelte";
   import { PremiumWrapper } from "../ui/premium-badge";
-  import { isSubscribed } from "$lib/common/utils/subscription";
-  import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
 
   interface Props {
     /**
@@ -50,13 +48,10 @@
      */
     textAreaElement?: HTMLTextAreaElement;
     draft: Draft | null;
+    isUserSubscribed: boolean;
   }
 
-  let { textAreaElement = $bindable(), draft }: Props = $props();
-
-  // Get current user to check subscription status
-  const currentUser = useCurrentUser(null);
-  const isUserSubscribed = $derived(isSubscribed($currentUser.data?.data ?? null));
+  let { textAreaElement = $bindable(), draft, isUserSubscribed }: Props = $props();
 
   let value = $state(page.url.searchParams.get("prompt") ?? "");
   let loading = $state(false);
