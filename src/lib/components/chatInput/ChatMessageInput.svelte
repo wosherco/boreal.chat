@@ -210,7 +210,11 @@
   const upsertDraftMutation = createMutation(
     orpcQuery.v1.draft.upsert.mutationOptions({
       onSuccess: (draft) => {
+        // We set this so the user can keep typing without the draft update losing focus
+        prevDraftId = draft.id;
         gotoWithSeachParams(page.url, {
+          keepFocus: true,
+          noScroll: true,
           searchParams: {
             draft: draft.id,
           },
@@ -226,6 +230,8 @@
     orpcQuery.v1.draft.delete.mutationOptions({
       onSuccess: () => {
         gotoWithSeachParams(page.url, {
+          keepFocus: true,
+          noScroll: true,
           searchParams: {
             draft: undefined,
           },
