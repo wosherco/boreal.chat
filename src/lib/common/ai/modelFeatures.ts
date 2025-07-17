@@ -3,7 +3,7 @@
 
 import type { ModelId } from "./models";
 
-export const GENERATED_AT = "2025-07-08T20:37:21.653Z";
+export const GENERATED_AT = "2025-07-17T17:56:19.638Z";
 
 export type ModelFeatures = {
   contextLength: number;
@@ -18,6 +18,39 @@ export type ModelFeatures = {
 };
 
 export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
+  "moonshotai/kimi-k2:free": {
+    contextLength: 65536,
+    pricing: {
+      prompt: 0,
+      completion: 0,
+      image: 0,
+      web_search: 0,
+      request: 0,
+    },
+    inputModalities: ["text"],
+  },
+  "x-ai/grok-4": {
+    contextLength: 256000,
+    pricing: {
+      prompt: 0.000003,
+      completion: 0.000015,
+      image: 0,
+      web_search: 0,
+      request: 0,
+    },
+    inputModalities: ["image", "text"],
+  },
+  "google/gemini-2.5-flash": {
+    contextLength: 1048576,
+    pricing: {
+      prompt: 3e-7,
+      completion: 0.0000025,
+      image: 0.001238,
+      web_search: 0,
+      request: 0,
+    },
+    inputModalities: ["file", "image", "text"],
+  },
   "google/gemini-2.5-pro-preview": {
     contextLength: 1048576,
     pricing: {
@@ -41,10 +74,10 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
     inputModalities: ["text"],
   },
   "deepseek/deepseek-r1-0528": {
-    contextLength: 128000,
+    contextLength: 163840,
     pricing: {
-      prompt: 5e-7,
-      completion: 0.00000215,
+      prompt: 2.72e-7,
+      completion: 2.72e-7,
       image: 0,
       web_search: 0,
       request: 0,
@@ -72,17 +105,6 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
       request: 0,
     },
     inputModalities: ["image", "text"],
-  },
-  "google/gemini-2.5-flash-preview-05-20": {
-    contextLength: 1048576,
-    pricing: {
-      prompt: 1.5e-7,
-      completion: 6e-7,
-      image: 0.0006192,
-      web_search: 0,
-      request: 0,
-    },
-    inputModalities: ["image", "text", "file"],
   },
   "qwen/qwen3-30b-a3b": {
     contextLength: 40960,
@@ -172,34 +194,12 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
     },
     inputModalities: ["text"],
   },
-  "meta-llama/llama-4-maverick:free": {
-    contextLength: 128000,
-    pricing: {
-      prompt: 0,
-      completion: 0,
-      image: 0,
-      web_search: 0,
-      request: 0,
-    },
-    inputModalities: ["text", "image"],
-  },
   "meta-llama/llama-4-maverick": {
     contextLength: 1048576,
     pricing: {
       prompt: 1.5e-7,
       completion: 6e-7,
       image: 0.0006684,
-      web_search: 0,
-      request: 0,
-    },
-    inputModalities: ["text", "image"],
-  },
-  "meta-llama/llama-4-scout:free": {
-    contextLength: 64000,
-    pricing: {
-      prompt: 0,
-      completion: 0,
-      image: 0,
       web_search: 0,
       request: 0,
     },
@@ -217,7 +217,7 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
     inputModalities: ["text", "image"],
   },
   "deepseek/deepseek-chat-v3-0324:free": {
-    contextLength: 16384,
+    contextLength: 32768,
     pricing: {
       prompt: 0,
       completion: 0,
@@ -230,8 +230,8 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
   "deepseek/deepseek-chat-v3-0324": {
     contextLength: 163840,
     pricing: {
-      prompt: 2.8e-7,
-      completion: 8.8e-7,
+      prompt: 2.5e-7,
+      completion: 8.5e-7,
       image: 0,
       web_search: 0,
       request: 0,
