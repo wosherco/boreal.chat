@@ -155,6 +155,38 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Create GitHub Release
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.package_version.outputs.version }}
+        run: |
+          # Get the changelog entry for this version
+          CHANGELOG=""
+          if [ -f CHANGELOG.md ]; then
+            # Extract content between the current version header and the next version header
+            CHANGELOG=$(awk -v ver="## $VERSION" '
+              BEGIN { found=0; content="" }
+              $0 ~ "^## " {
+                if (found) { exit }
+                if ($0 ~ ver) { found=1; next }
+              }
+              found { content = content $0 "\n" }
+              END { printf "%s", content }
+            ' CHANGELOG.md | sed '/^$/N;/^\n$/D')
+          fi
+
+          # If no changelog entry found, use a default message
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="Release version $VERSION"
+          fi
+
+          # Create the release
+          gh release create "v$VERSION" \
+            --title "v$VERSION" \
+            --notes "$CHANGELOG" \
+            --target ${{ github.sha }}
+
       - name: Log in to the Container registry
         if: steps.changesets.outputs.hasChangesets == 'false'
         uses: docker/login-action@v3
