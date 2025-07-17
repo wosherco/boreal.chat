@@ -7,8 +7,9 @@ Successfully implemented a generic premium badge system for the chat input voice
 ## Features
 
 ### ✅ Generic Premium Badge System
+
 - **Reusable Components**: Created `PremiumBadge` and `PremiumWrapper` components that can be used anywhere in the application
-- **Two Variants**: 
+- **Two Variants**:
   - `icon-only`: Small crown icon only
   - `with-text`: Crown icon + "UNLIMITED" text
 - **Boreal Gradient**: Beautiful blue-to-teal-to-green gradient resembling aurora borealis
@@ -16,6 +17,7 @@ Successfully implemented a generic premium badge system for the chat input voice
 - **Animation**: Subtle pulse animation to draw attention
 
 ### ✅ Voice Input Button Integration
+
 - **Subscription Check**: Integrated with existing `isSubscribed()` utility function
 - **Conditional Display**: Badge only shows when user is not subscribed
 - **Button Disabling**: Voice input button is disabled for non-subscribed users
@@ -37,10 +39,12 @@ src/lib/components/ui/premium-badge/
 **Location**: `src/lib/components/ui/premium-badge/PremiumBadge.svelte`
 
 **Props**:
+
 - `variant?: "icon-only" | "with-text"` - Badge variant (default: "icon-only")
 - `class?: string` - Additional CSS classes
 
 **Features**:
+
 - Absolute positioning for top-right corner placement
 - Boreal gradient background: `from-blue-500 via-teal-500 to-green-500`
 - Crown icon from Lucide icons
@@ -52,12 +56,14 @@ src/lib/components/ui/premium-badge/
 **Location**: `src/lib/components/ui/premium-badge/PremiumWrapper.svelte`
 
 **Props**:
+
 - `children: Snippet` - Content to wrap
 - `showBadge?: boolean` - Whether to show the badge (default: false)
 - `badgeVariant?: "icon-only" | "with-text"` - Badge variant (default: "icon-only")
 - `class?: string` - Additional CSS classes
 
 **Features**:
+
 - Wraps any content with relative positioning
 - Conditionally renders premium badge
 - Maintains original component functionality
@@ -96,15 +102,12 @@ src/lib/components/ui/premium-badge/
   import { PremiumWrapper } from "../ui/premium-badge";
   import { isSubscribed } from "$lib/common/utils/subscription";
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
-  
+
   const currentUser = useCurrentUser(null);
   const isUserSubscribed = $derived(isSubscribed($currentUser.data?.data ?? null));
 </script>
 
-<PremiumWrapper 
-  showBadge={!isUserSubscribed}
-  badgeVariant="icon-only"
->
+<PremiumWrapper showBadge={!isUserSubscribed} badgeVariant="icon-only">
   <Button
     variant="secondary"
     size="icon"
@@ -119,17 +122,20 @@ src/lib/components/ui/premium-badge/
 ## Technical Implementation
 
 ### Subscription Detection
+
 - Uses existing `isSubscribed()` utility from `$lib/common/utils/subscription`
 - Integrates with `useCurrentUser()` hook for real-time subscription status
 - Reactive updates when subscription status changes
 
 ### Styling
+
 - **Gradient**: `bg-gradient-to-br from-blue-500 via-teal-500 to-green-500`
 - **Animation**: `animate-pulse` for attention-grabbing effect
 - **Positioning**: `absolute -top-1 -right-1 z-10`
 - **Size**: Dynamic based on variant (16px for icon-only, 20px for with-text)
 
 ### Accessibility
+
 - Proper color contrast with white text on gradient background
 - Semantic HTML structure
 - Maintains button focus states and keyboard navigation
@@ -137,6 +143,7 @@ src/lib/components/ui/premium-badge/
 ## Integration Details
 
 ### Voice Input Button Changes
+
 1. **Added imports**: Premium badge components and subscription utilities
 2. **Added user context**: `useCurrentUser()` hook for subscription checking
 3. **Wrapped button**: Voice input button now wrapped in `PremiumWrapper`
@@ -144,6 +151,7 @@ src/lib/components/ui/premium-badge/
 5. **Conditional badge**: Badge only shows when user is not subscribed
 
 ### Subscription Logic
+
 - Badge shows when `!isUserSubscribed` (user is not subscribed)
 - Button disabled when `!isUserSubscribed` (in addition to existing conditions)
 - Real-time updates when subscription status changes
@@ -171,6 +179,7 @@ Potential improvements for the premium badge system:
 ## Testing
 
 The implementation has been tested with:
+
 - Different subscription states (subscribed/unsubscribed)
 - Both badge variants (icon-only and with-text)
 - Voice input button functionality

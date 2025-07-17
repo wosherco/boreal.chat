@@ -421,14 +421,14 @@
 
         <div class="flex items-center gap-2">
           {#if env.PUBLIC_VOICE_INPUT_ENABLED}
-            <PremiumWrapper 
-              showBadge={!isUserSubscribed}
-              badgeVariant="icon-only"
-            >
+            <PremiumWrapper showBadge={!isUserSubscribed} badgeVariant="icon-only">
               <Button
                 variant="secondary"
                 size="icon"
-                disabled={loading || !browser || voiceMessageService.state === "error" || !isUserSubscribed}
+                disabled={loading ||
+                  !browser ||
+                  voiceMessageService.state === "error" ||
+                  !isUserSubscribed}
                 onclick={startRecording}
               >
                 <MicIcon class="h-4 w-4" />
