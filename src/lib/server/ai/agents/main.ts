@@ -248,118 +248,140 @@ export async function invokeAgent(
   const stream = await agent.streamEvents(context, { version: "v2" });
   const bufferedTokenInsert = new BufferedTokenInsert(context.userId, context.currentMessageId);
 
-  for await (const eventData of stream) {
-    const { name, data } = eventData as unknown as StreamEvent;
+  try {
+    for await (const eventData of stream) {
+      const { name, data } = eventData as unknown as StreamEvent;
 
-    switch (name) {
-      case STREAMED_REASONING_TOKEN:
-        bufferedTokenInsert.insert(data.generationId, "reasoning", data.reasoning);
-        break;
-      case STREAMED_TOKEN:
-        bufferedTokenInsert.insert(data.generationId, "text", data.content);
-        break;
-      case STREAMED_TOOL_CALL_CHUNK:
-        // TODO: Add support for tool calls.
-        break;
-      case MESSAGE_FINISHED:
-        {
-          await bufferedTokenInsert.destroy();
+      switch (name) {
+        case STREAMED_REASONING_TOKEN:
+          bufferedTokenInsert.insert(data.generationId, "reasoning", data.reasoning);
+          break;
+        case STREAMED_TOKEN:
+          bufferedTokenInsert.insert(data.generationId, "text", data.content);
+          break;
+        case STREAMED_TOOL_CALL_CHUNK:
+          // TODO: Add support for tool calls.
+          break;
+        case MESSAGE_FINISHED:
+          {
+            await bufferedTokenInsert.destroy();
 
-          if (data.message.role !== "assistant") {
-            throw new Error("Message is not an assistant message");
-          }
-
-          await db
-            .update(messageTable)
-            .set({
-              status: data.cancelled ? "cancelled" : "finished",
-            })
-            .where(eq(messageTable.id, context.currentMessageId))
-            .execute();
-
-          // Getting usage and saving it to DB
-          let generationUsage: Awaited<ReturnType<typeof getUsageData>>;
-          try {
-            generationUsage = await getUsageData(openRouterKey, data.generationId);
-          } catch (e) {
-            console.error("Failed to get usage data", e);
-            Sentry.captureException(e, {
-              user: { id: context.userId },
-              extra: {
-                chatId: context.chatId,
-                threadId: context.threadId,
-              },
-            });
-
-            // We're refunding the estimated CUs.
-            if (params.ratelimit && params.estimatedCUs) {
-              const ratelimiter = params.ratelimit === "burst" ? burstCULimiter : localCULimiter;
-              await ratelimiter.addTokens(context.userId, params.estimatedCUs.total);
+            if (data.message.role !== "assistant") {
+              throw new Error("Message is not an assistant message");
             }
 
-            // We will keep the estimated CUs, since it's fair most of the times.
-            return;
-          }
+            await db
+              .update(messageTable)
+              .set({
+                status: data.cancelled ? "cancelled" : "finished",
+              })
+              .where(eq(messageTable.id, context.currentMessageId))
+              .execute();
 
-          // We'll try adding the usage. If it doesn't work out, we'll just log the error.
-          try {
-            let actualOutputCUs: number | undefined;
+            // Getting usage and saving it to DB
+            let generationUsage: Awaited<ReturnType<typeof getUsageData>>;
+            try {
+              generationUsage = await getUsageData(openRouterKey, data.generationId);
+            } catch (e) {
+              console.error("Failed to get usage data", e);
+              Sentry.captureException(e, {
+                user: { id: context.userId },
+                extra: {
+                  chatId: context.chatId,
+                  threadId: context.threadId,
+                },
+              });
 
-            if (params.ratelimit && params.estimatedCUs) {
-              const actualCUs = calculateCUs(
-                // The input we'll keep the estimated for now. We're not charging on previous messages for now.
-                0,
-                generationUsage.tokens_completion,
-                params.model,
-              );
-              actualOutputCUs = actualCUs.outputCUs;
-
-              // We'll compare the estimated CUs with the actual CUs for output, and apply it to the ratelimit.
-
-              /**
-               * Positive means we used more CUs than estimated. We're going to remove them from the ratelimit.
-               * Negative means we used less CUs than estimated. We're going to add them to the ratelimit.
-               */
-              const diffOutput = actualCUs.outputCUs - params.estimatedCUs.outputCUs;
-
-              const ratelimiter = params.ratelimit === "burst" ? burstCULimiter : localCULimiter;
-              if (diffOutput > 0) {
-                await ratelimiter.removeTokens(context.userId, diffOutput);
-              } else {
-                await ratelimiter.addTokens(context.userId, Math.abs(diffOutput));
+              // We're refunding the estimated CUs.
+              if (params.ratelimit && params.estimatedCUs) {
+                const ratelimiter = params.ratelimit === "burst" ? burstCULimiter : localCULimiter;
+                await ratelimiter.addTokens(context.userId, params.estimatedCUs.total);
               }
+
+              // We will keep the estimated CUs, since it's fair most of the times.
+              return;
             }
 
-            await db.insert(messageSegmentUsageTable).values({
-              userId: context.userId,
-              generationId: data.generationId,
-              private: !params.publicUsage,
+            // We'll try adding the usage. If it doesn't work out, we'll just log the error.
+            try {
+              let actualOutputCUs: number | undefined;
 
-              estimatedCUs: params.estimatedCUs?.total
-                ? Math.round(params.estimatedCUs.total)
-                : undefined,
-              actualCUs: actualOutputCUs ? Math.round(actualOutputCUs) : undefined,
+              if (params.ratelimit && params.estimatedCUs) {
+                const actualCUs = calculateCUs(
+                  // The input we'll keep the estimated for now. We're not charging on previous messages for now.
+                  0,
+                  generationUsage.tokens_completion,
+                  params.model,
+                );
+                actualOutputCUs = actualCUs.outputCUs;
 
-              isByok: generationUsage.is_byok,
-              model: generationUsage.model,
-              origin: generationUsage.origin,
-              providerName: generationUsage.provider_name,
-              usage: generationUsage.usage,
-              cacheDiscount: generationUsage.cache_discount,
-              tokensPrompt: generationUsage.tokens_prompt,
-              tokensCompletion: generationUsage.tokens_completion,
-              numMediaPrompt: generationUsage.num_media_prompt,
-              numMediaCompletion: generationUsage.num_media_completion,
-              numSearchResults: generationUsage.num_search_results,
-            });
-          } catch (e) {
-            console.error("Failed to insert message segment usage", e);
-            Sentry.captureException(e, {
-              user: { id: context.userId },
-            });
+                // We'll compare the estimated CUs with the actual CUs for output, and apply it to the ratelimit.
+
+                /**
+                 * Positive means we used more CUs than estimated. We're going to remove them from the ratelimit.
+                 * Negative means we used less CUs than estimated. We're going to add them to the ratelimit.
+                 */
+                const diffOutput = actualCUs.outputCUs - params.estimatedCUs.outputCUs;
+
+                const ratelimiter = params.ratelimit === "burst" ? burstCULimiter : localCULimiter;
+                if (diffOutput > 0) {
+                  await ratelimiter.removeTokens(context.userId, diffOutput);
+                } else {
+                  await ratelimiter.addTokens(context.userId, Math.abs(diffOutput));
+                }
+              }
+
+              await db.insert(messageSegmentUsageTable).values({
+                userId: context.userId,
+                generationId: data.generationId,
+                private: !params.publicUsage,
+
+                estimatedCUs: params.estimatedCUs?.total
+                  ? Math.round(params.estimatedCUs.total)
+                  : undefined,
+                actualCUs: actualOutputCUs ? Math.round(actualOutputCUs) : undefined,
+
+                isByok: generationUsage.is_byok,
+                model: generationUsage.model,
+                origin: generationUsage.origin,
+                providerName: generationUsage.provider_name,
+                usage: generationUsage.usage,
+                cacheDiscount: generationUsage.cache_discount,
+                tokensPrompt: generationUsage.tokens_prompt,
+                tokensCompletion: generationUsage.tokens_completion,
+                numMediaPrompt: generationUsage.num_media_prompt,
+                numMediaCompletion: generationUsage.num_media_completion,
+                numSearchResults: generationUsage.num_search_results,
+              });
+            } catch (e) {
+              console.error("Failed to insert message segment usage", e);
+              Sentry.captureException(e, {
+                user: { id: context.userId },
+              });
+            }
           }
-        }
-        break;
+          break;
+      }
     }
+  } catch (e) {
+    console.error("Error streaming message", e);
+    Sentry.captureException(e, {
+      user: { id: context.userId },
+      extra: {
+        chatId: context.chatId,
+        currentMessageId: context.currentMessageId,
+      },
+    });
+
+    await db
+      .update(messageTable)
+      .set({
+        // Ideally "error", but we'll use "cancelled" for now.
+        status: "error",
+        error: "Token streaming cut off for unknown reason",
+      })
+      .where(eq(messageTable.id, context.currentMessageId));
+  } finally {
+    await bufferedTokenInsert.destroy();
   }
 }
