@@ -3,10 +3,10 @@ import { sequence } from "@sveltejs/kit/hooks";
 import * as auth from "$lib/server/auth.js";
 import type { Handle } from "@sveltejs/kit";
 import { paraglideMiddleware } from "$lib/paraglide/server";
-import { env } from "$env/dynamic/private";
-import { PUBLIC_SENTRY_DSN } from "$env/static/public";
+import { env } from "$env/dynamic/public";
 import { posthog } from "$lib/server/posthog";
 import { POSTHOG_PROXY_PATH } from "$lib/common/constants";
+import { dev } from "$app/environment";
 
 process.on("SIGINT", async () => {
   await posthog?.shutdown();
@@ -19,14 +19,15 @@ process.on("SIGTERM", async () => {
 });
 
 Sentry.init({
-  dsn: PUBLIC_SENTRY_DSN,
+  dsn: env.PUBLIC_SENTRY_DSN,
   tracesSampleRate: 1,
   _experiments: {
     enableLogs: true,
   },
+  integrations: [Sentry.consoleLoggingIntegration({ levels: ["log", "error", "warn"] })],
 });
 
-if (env.PUBLIC_ENVIRONMENT === "development") {
+if (dev) {
   // Not initializing Sentry in development to avoid sending events to Sentry
   Sentry.init({});
 }
