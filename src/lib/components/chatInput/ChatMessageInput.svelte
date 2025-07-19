@@ -40,6 +40,7 @@
   import { createMutation } from "@tanstack/svelte-query";
   import { gotoWithSeachParams } from "$lib/utils/navigate";
   import { untrack } from "svelte";
+  import { PremiumWrapper } from "../ui/premium-badge";
 
   interface Props {
     /**
@@ -47,9 +48,10 @@
      */
     textAreaElement?: HTMLTextAreaElement;
     draft: Draft | null;
+    isUserSubscribed: boolean;
   }
 
-  let { textAreaElement = $bindable(), draft }: Props = $props();
+  let { textAreaElement = $bindable(), draft, isUserSubscribed }: Props = $props();
 
   let value = $state(page.url.searchParams.get("prompt") ?? "");
   let loading = $state(false);
@@ -208,7 +210,11 @@
   const upsertDraftMutation = createMutation(
     orpcQuery.v1.draft.upsert.mutationOptions({
       onSuccess: (draft) => {
+        // We set this so the user can keep typing without the draft update losing focus
+        prevDraftId = draft.id;
         gotoWithSeachParams(page.url, {
+          keepFocus: true,
+          noScroll: true,
           searchParams: {
             draft: draft.id,
           },
@@ -224,6 +230,8 @@
     orpcQuery.v1.draft.delete.mutationOptions({
       onSuccess: () => {
         gotoWithSeachParams(page.url, {
+          keepFocus: true,
+          noScroll: true,
           searchParams: {
             draft: undefined,
           },
@@ -414,14 +422,19 @@
 
         <div class="flex items-center gap-2">
           {#if env.PUBLIC_VOICE_INPUT_ENABLED}
-            <Button
-              variant="secondary"
-              size="icon"
-              disabled={loading || !browser || voiceMessageService.state === "error"}
-              onclick={startRecording}
-            >
-              <MicIcon class="h-4 w-4" />
-            </Button>
+            <PremiumWrapper showBadge={!isUserSubscribed} variant="icon-only">
+              <Button
+                variant="secondary"
+                size="icon"
+                disabled={loading ||
+                  !browser ||
+                  voiceMessageService.state === "error" ||
+                  !isUserSubscribed}
+                onclick={startRecording}
+              >
+                <MicIcon class="h-4 w-4" />
+              </Button>
+            </PremiumWrapper>
           {/if}
 
           <Button

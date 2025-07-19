@@ -137,6 +137,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create and push tag from package.json version
+        id: package_version
         if: steps.changesets.outputs.hasChangesets == 'false'
         run: |
           # Version key/value should be on his own line
@@ -148,10 +149,43 @@ jobs:
             | tr -d '[:space:]')
 
           echo "Package version: $PACKAGE_VERSION"
+          echo "version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
           git tag -a "v$PACKAGE_VERSION" -m "Release v$PACKAGE_VERSION"
           git push origin "v$PACKAGE_VERSION"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.package_version.outputs.version }}
+        run: |
+          # Get the changelog entry for this version
+          CHANGELOG=""
+          if [ -f CHANGELOG.md ]; then
+            # Extract content between the current version header and the next version header
+            CHANGELOG=$(awk -v ver="## $VERSION" '
+              BEGIN { found=0; content="" }
+              $0 ~ "^## " {
+                if (found) { exit }
+                if ($0 ~ ver) { found=1; next }
+              }
+              found { content = content $0 "\n" }
+              END { printf "%s", content }
+            ' CHANGELOG.md | sed '/^$/N;/^\n$/D')
+          fi
+
+          # If no changelog entry found, use a default message
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="Release version $VERSION"
+          fi
+
+          # Create the release
+          gh release create "v$VERSION" \
+            --title "v$VERSION" \
+            --notes "$CHANGELOG" \
+            --target ${{ github.sha }}
 
       - name: Log in to the Container registry
         if: steps.changesets.outputs.hasChangesets == 'false'
@@ -166,7 +200,12 @@ jobs:
         run: |
           SERVICES=$(grep -E "^  [a-zA-Z0-9_.-]+:" docker-compose.build.yaml | sed 's/://g' | awk '{print $1}')
           SHA_TAG=$(echo ${{ github.sha }} | cut -c1-7)
-          VERSION=$(echo ${{ steps.changesets.outputs.newVersion }} | sed 's/^v//')
+          VERSION="${{ steps.package_version.outputs.version }}"
+
+          if [ -z "$VERSION" ]; then
+            echo "Error: VERSION is empty. Package version was not properly set."
+            exit 1
+          fi
 
           for SERVICE in $SERVICES; do
             [ -z "$SERVICE" ] && continue

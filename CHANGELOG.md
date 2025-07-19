@@ -1,5 +1,17 @@
 # boreal.chat
 
+## 0.1.3
+
+### Patch Changes
+
+- 5904bad: Logging why stream is cutting
+
+## 0.1.2
+
+### Patch Changes
+
+- 60047ac: unlimited draft
+
 ## 0.1.1
 
 ### Patch Changes
