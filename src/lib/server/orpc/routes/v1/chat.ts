@@ -25,7 +25,13 @@ import * as Sentry from "@sentry/sveltekit";
 import { posthog } from "$lib/server/posthog";
 import { executeAgentSafely } from "$lib/server/services/agent";
 import { sendCancelMessage } from "$lib/server/db/mq/messageCancellation";
-import { deleteChat, renameChat, archiveChat, unarchiveChat, restoreChat } from "$lib/server/services/chat";
+import {
+  deleteChat,
+  renameChat,
+  archiveChat,
+  unarchiveChat,
+  restoreChat,
+} from "$lib/server/services/chat";
 import { chatTitleSchema } from "$lib/common/validators/chat";
 import type { CUResult } from "$lib/server/ratelimit/cu";
 

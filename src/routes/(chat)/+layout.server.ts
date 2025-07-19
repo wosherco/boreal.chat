@@ -47,11 +47,13 @@ export const load: LayoutServerLoad = async ({ cookies, locals, url }) => {
           updatedAt: chatTable.updatedAt,
         })
         .from(chatTable)
-        .where(and(
-          eq(chatTable.userId, userId),
-          eq(chatTable.archived, false),
-          isNull(chatTable.deletedAt)
-        ))
+        .where(
+          and(
+            eq(chatTable.userId, userId),
+            eq(chatTable.archived, false),
+            isNull(chatTable.deletedAt),
+          ),
+        )
         .orderBy(desc(chatTable.pinned), desc(chatTable.updatedAt))
         .limit(40)
         .execute()

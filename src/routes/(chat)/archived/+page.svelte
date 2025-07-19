@@ -2,12 +2,7 @@
   import type { PageData } from "./$types";
   import { Button } from "$lib/components/ui/button";
   import { Badge } from "$lib/components/ui/badge";
-  import { 
-    ArchiveRestoreIcon, 
-    TrashIcon, 
-    MessageSquareIcon,
-    ArrowLeftIcon
-  } from "@lucide/svelte";
+  import { ArchiveRestoreIcon, TrashIcon, MessageSquareIcon, ArrowLeftIcon } from "@lucide/svelte";
   import { orpcQuery } from "$lib/client/orpc";
   import { createMutation } from "@tanstack/svelte-query";
   import { toast } from "svelte-sonner";
@@ -49,7 +44,9 @@
   }
 
   function handleDelete(chatId: string) {
-    if (confirm("Are you sure you want to delete this chat? It will be moved to the deleted folder.")) {
+    if (
+      confirm("Are you sure you want to delete this chat? It will be moved to the deleted folder.")
+    ) {
       $deleteMutation.mutate({ chatId });
     }
   }
@@ -76,7 +73,9 @@
 
     <!-- Content -->
     {#if archivedChats.length === 0}
-      <div class="text-muted-foreground flex flex-col items-center justify-center py-16 text-center">
+      <div
+        class="text-muted-foreground flex flex-col items-center justify-center py-16 text-center"
+      >
         <MessageSquareIcon class="mb-4 h-12 w-12" />
         <h3 class="mb-2 text-lg font-medium">No archived chats</h3>
         <p class="text-sm">
@@ -93,13 +92,11 @@
                 <div class="bg-card hover:bg-accent/50 rounded-lg border p-4 transition-colors">
                   <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0 flex-1">
-                      <h3 class="font-medium truncate">
+                      <h3 class="truncate font-medium">
                         {chat.title || "Untitled Chat"}
                       </h3>
                       <div class="mt-1 flex items-center gap-2">
-                        <Badge variant="secondary" class="text-xs">
-                          Archived
-                        </Badge>
+                        <Badge variant="secondary" class="text-xs">Archived</Badge>
                         <span class="text-muted-foreground text-xs">
                           {chat.updatedAt.toLocaleDateString()}
                         </span>
@@ -141,13 +138,11 @@
                 <div class="bg-card hover:bg-accent/50 rounded-lg border p-4 transition-colors">
                   <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0 flex-1">
-                      <h3 class="font-medium truncate">
+                      <h3 class="truncate font-medium">
                         {chat.title || "Untitled Chat"}
                       </h3>
                       <div class="mt-1 flex items-center gap-2">
-                        <Badge variant="secondary" class="text-xs">
-                          Archived
-                        </Badge>
+                        <Badge variant="secondary" class="text-xs">Archived</Badge>
                         <span class="text-muted-foreground text-xs">
                           {chat.updatedAt.toLocaleDateString()}
                         </span>
@@ -189,13 +184,11 @@
                 <div class="bg-card hover:bg-accent/50 rounded-lg border p-4 transition-colors">
                   <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0 flex-1">
-                      <h3 class="font-medium truncate">
+                      <h3 class="truncate font-medium">
                         {chat.title || "Untitled Chat"}
                       </h3>
                       <div class="mt-1 flex items-center gap-2">
-                        <Badge variant="secondary" class="text-xs">
-                          Archived
-                        </Badge>
+                        <Badge variant="secondary" class="text-xs">Archived</Badge>
                         <span class="text-muted-foreground text-xs">
                           {chat.updatedAt.toLocaleDateString()}
                         </span>
@@ -237,13 +230,11 @@
                 <div class="bg-card hover:bg-accent/50 rounded-lg border p-4 transition-colors">
                   <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0 flex-1">
-                      <h3 class="font-medium truncate">
+                      <h3 class="truncate font-medium">
                         {chat.title || "Untitled Chat"}
                       </h3>
                       <div class="mt-1 flex items-center gap-2">
-                        <Badge variant="secondary" class="text-xs">
-                          Archived
-                        </Badge>
+                        <Badge variant="secondary" class="text-xs">Archived</Badge>
                         <span class="text-muted-foreground text-xs">
                           {chat.updatedAt.toLocaleDateString()}
                         </span>

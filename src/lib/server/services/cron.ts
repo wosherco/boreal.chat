@@ -9,18 +9,42 @@ export class CronService {
   }
 
   private startCleanupJob() {
-    // Run cleanup every 6 hours (21600000 ms = 6 * 60 * 60 * 1000)
-    const cleanupInterval = setInterval(async () => {
-      try {
-        console.log("[CRON] Starting cleanup of expired deleted chats...");
-        await permanentlyDeleteExpiredChats(db);
-        console.log("[CRON] Cleanup completed successfully");
-      } catch (error) {
-        console.error("[CRON] Error during cleanup:", error);
-      }
-    }, 21600000); // 6 hours
+    // Run cleanup every 30 minutes using cron-like scheduling
+    const scheduleNextRun = () => {
+      const now = new Date();
+      const nextRun = new Date(now);
 
-    this.intervals.push(cleanupInterval);
+      // Set to the next 30-minute mark (0 or 30)
+      const currentMinutes = now.getMinutes();
+      const nextMinutes = currentMinutes < 30 ? 30 : 0;
+
+      if (nextMinutes === 0) {
+        // If we're past 30, go to the next hour
+        nextRun.setHours(now.getHours() + 1, 0, 0, 0);
+      } else {
+        nextRun.setMinutes(30, 0, 0);
+      }
+
+      const delay = nextRun.getTime() - now.getTime();
+
+      const timeout = setTimeout(async () => {
+        try {
+          console.log("[CRON] Starting cleanup of expired deleted chats...");
+          await permanentlyDeleteExpiredChats(db);
+          console.log("[CRON] Cleanup completed successfully");
+        } catch (error) {
+          console.error("[CRON] Error during cleanup:", error);
+        }
+
+        // Schedule the next run
+        scheduleNextRun();
+      }, delay);
+
+      this.intervals.push(timeout);
+    };
+
+    // Start the cron-like scheduling
+    scheduleNextRun();
 
     // Also run immediately on startup
     setTimeout(async () => {
@@ -35,7 +59,7 @@ export class CronService {
   }
 
   stop() {
-    this.intervals.forEach(clearInterval);
+    this.intervals.forEach(clearTimeout);
     this.intervals = [];
     console.log("[CRON] All cron jobs stopped");
   }

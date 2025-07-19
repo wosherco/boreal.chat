@@ -7,6 +7,7 @@
     TrashIcon,
     PinIcon,
     ArchiveIcon,
+    PinOffIcon,
   } from "@lucide/svelte";
   import { Button } from "../ui/button";
   import SheetClosableOnlyOnPhone from "../utils/SheetClosableOnlyOnPhone.svelte";
@@ -106,8 +107,13 @@
             })}
           disabled={$pinToggleMutation.isPending}
         >
-          <PinIcon />
-          {chat.pinned ? "Unpin" : "Pin"}
+          {#if chat.pinned}
+            <PinOffIcon />
+            Unpin
+          {:else}
+            <PinIcon />
+            Pin
+          {/if}
         </DropdownMenuItem>
         <DropdownMenuItem onclick={() => (editChatTitleDialogOpen = true)}>
           <PencilIcon />

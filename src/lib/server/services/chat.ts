@@ -32,10 +32,6 @@ export async function permanentlyDeleteExpiredChats(tx: TransactableDBType) {
   // Delete chats that have been soft-deleted for more than 14 days
   const fourteenDaysAgo = new Date();
   fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-  
-  await tx.delete(chatTable).where(
-    and(
-      lt(chatTable.deletedAt, fourteenDaysAgo)
-    )
-  );
+
+  await tx.delete(chatTable).where(and(lt(chatTable.deletedAt, fourteenDaysAgo)));
 }

@@ -25,11 +25,13 @@ export const load: PageServerLoad = async ({ locals }) => {
           updatedAt: chatTable.updatedAt,
         })
         .from(chatTable)
-        .where(and(
-          eq(chatTable.userId, userId),
-          eq(chatTable.archived, true),
-          isNull(chatTable.deletedAt)
-        ))
+        .where(
+          and(
+            eq(chatTable.userId, userId),
+            eq(chatTable.archived, true),
+            isNull(chatTable.deletedAt),
+          ),
+        )
         .orderBy(desc(chatTable.updatedAt))
         .execute()
         .then((rows) =>

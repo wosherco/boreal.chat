@@ -21,10 +21,7 @@ export const useChats = (serverData: ServerData<Chat[]>) =>
             updatedAt: chatTable.updatedAt,
           })
           .from(chatTable)
-          .where(and(
-            eq(chatTable.archived, false),
-            isNull(chatTable.deletedAt)
-          ))
+          .where(and(eq(chatTable.archived, false), isNull(chatTable.deletedAt)))
           .orderBy(desc(chatTable.pinned), desc(chatTable.updatedAt))
           .toSQL(),
       transform: (chatData) =>

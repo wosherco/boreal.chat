@@ -101,30 +101,39 @@
     </div>
 
     <!-- New Chat and Search Row -->
-    <div class="flex items-center gap-2 p-3">
+    <div class="flex w-full flex-col items-center gap-2 p-3">
       <!-- New Chat Button -->
-      <SheetClosableOnlyOnPhone {isPhone}>
-        <Tooltip>
-          <TooltipTrigger>
-            <Button variant="default" size="icon" onclick={onNewChat} class="flex-shrink-0">
-              <PlusIcon class="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>New chat ({controlKeyName}+Shift+O)</p>
-          </TooltipContent>
-        </Tooltip>
+      <SheetClosableOnlyOnPhone {isPhone} class="w-full text-start">
+        <Button
+          variant="secondary"
+          href="/"
+          onclick={(e) => {
+            e.preventDefault();
+            onNewChat?.();
+          }}
+          class="w-full shrink-0"
+        >
+          <PlusIcon />
+          <p class="flex-1">New chat</p>
+          {#if browser}
+            <div
+              class="bg-muted/80 border-border text-muted-foreground rounded border px-1.5 py-0.5 font-mono text-xs"
+            >
+              {controlKeyName}+Shift+O
+            </div>
+          {/if}
+        </Button>
       </SheetClosableOnlyOnPhone>
 
       <!-- Search Button -->
-      <SheetClosableOnlyOnPhone {isPhone} class="flex-1">
+      <SheetClosableOnlyOnPhone {isPhone} class="w-full">
         <Button
           variant="secondary"
           onclick={openSearchCommand}
           class="bg-input/50 border-input hover:bg-input/70 text-foreground/70 hover:text-foreground w-full flex-1 justify-between border"
         >
           <div class="flex items-center gap-2">
-            <SearchIcon class="size-4" />
+            <SearchIcon />
             <span>Search...</span>
           </div>
           {#if browser}
@@ -134,36 +143,6 @@
           {/if}
         </Button>
       </SheetClosableOnlyOnPhone>
-    </div>
-
-    <!-- Navigation Links -->
-    <div class="px-3 py-2">
-      <div class="flex flex-col gap-1">
-        <SheetClosableOnlyOnPhone {isPhone}>
-          <Button
-            variant="ghost"
-            class="h-auto justify-start p-2 text-start"
-            onclick={() => goto("/archived")}
-          >
-            <div class="flex w-full items-center gap-2">
-              <ArchiveIcon class="size-4" />
-              <span class="text-sm">Archived</span>
-            </div>
-          </Button>
-        </SheetClosableOnlyOnPhone>
-        <SheetClosableOnlyOnPhone {isPhone}>
-          <Button
-            variant="ghost"
-            class="h-auto justify-start p-2 text-start"
-            onclick={() => goto("/deleted")}
-          >
-            <div class="flex w-full items-center gap-2">
-              <TrashIcon class="size-4" />
-              <span class="text-sm">Deleted</span>
-            </div>
-          </Button>
-        </SheetClosableOnlyOnPhone>
-      </div>
     </div>
 
     <!-- Chat List -->
@@ -251,6 +230,15 @@
                 </Tabs>
               </div>
             </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onclick={() => goto("/archived")}>
+              <ArchiveIcon class="mr-2 size-4" />
+              <span>Archived</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onclick={() => goto("/deleted")}>
+              <TrashIcon class="mr-2 size-4" />
+              <span>Deleted</span>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onclick={() => (shortcutsCheatsheetOpen = true)}>
               <KeyboardIcon class="mr-2 size-4" />

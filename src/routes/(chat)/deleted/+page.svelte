@@ -2,12 +2,12 @@
   import type { PageData } from "./$types";
   import { Button } from "$lib/components/ui/button";
   import { Badge } from "$lib/components/ui/badge";
-  import { 
-    ArchiveRestoreIcon, 
-    TrashIcon, 
+  import {
+    ArchiveRestoreIcon,
+    TrashIcon,
     MessageSquareIcon,
     ArrowLeftIcon,
-    AlertTriangleIcon
+    AlertTriangleIcon,
   } from "@lucide/svelte";
   import { orpcQuery } from "$lib/client/orpc";
   import { createMutation } from "@tanstack/svelte-query";
@@ -36,16 +36,22 @@
   }
 
   function handlePermanentDelete(chatId: string) {
-    if (confirm("Are you sure you want to permanently delete this chat? This action cannot be undone.")) {
+    if (
+      confirm(
+        "Are you sure you want to permanently delete this chat? This action cannot be undone.",
+      )
+    ) {
       // For now, we'll just show a message since permanent deletion will be handled by the cron job
-      toast.info("Chat marked for permanent deletion. It will be removed automatically after 14 days.");
+      toast.info(
+        "Chat marked for permanent deletion. It will be removed automatically after 14 days.",
+      );
     }
   }
 
   function getDaysUntilDeletion(deletedAt: Date): number {
     const now = new Date();
     const deletedDate = new Date(deletedAt);
-    const fourteenDaysLater = new Date(deletedDate.getTime() + (14 * 24 * 60 * 60 * 1000));
+    const fourteenDaysLater = new Date(deletedDate.getTime() + 14 * 24 * 60 * 60 * 1000);
     const msUntilDeletion = fourteenDaysLater.getTime() - now.getTime();
     return Math.ceil(msUntilDeletion / (24 * 60 * 60 * 1000));
   }
@@ -78,7 +84,8 @@
           <div>
             <h3 class="text-destructive font-medium">Automatic Deletion</h3>
             <p class="text-destructive/80 text-sm">
-              Deleted chats will be permanently removed after 14 days. You can restore them anytime before then.
+              Deleted chats will be permanently removed after 14 days. You can restore them anytime
+              before then.
             </p>
           </div>
         </div>
@@ -87,7 +94,9 @@
 
     <!-- Content -->
     {#if deletedChats.length === 0}
-      <div class="text-muted-foreground flex flex-col items-center justify-center py-16 text-center">
+      <div
+        class="text-muted-foreground flex flex-col items-center justify-center py-16 text-center"
+      >
         <MessageSquareIcon class="mb-4 h-12 w-12" />
         <h3 class="mb-2 text-lg font-medium">No deleted chats</h3>
         <p class="text-sm">
@@ -101,19 +110,19 @@
           <div class="bg-card hover:bg-accent/50 rounded-lg border p-4 transition-colors">
             <div class="flex items-start justify-between gap-4">
               <div class="min-w-0 flex-1">
-                <h3 class="font-medium truncate">
+                <h3 class="truncate font-medium">
                   {chat.title || "Untitled Chat"}
                 </h3>
                 <div class="mt-1 flex items-center gap-2">
-                  <Badge variant="destructive" class="text-xs">
-                    Deleted
-                  </Badge>
+                  <Badge variant="destructive" class="text-xs">Deleted</Badge>
                   {#if chat.deletedAt}
                     <span class="text-muted-foreground text-xs">
                       Deleted {chat.deletedAt.toLocaleDateString()}
                     </span>
                     <span class="text-destructive text-xs font-medium">
-                      • {daysLeft > 0 ? `${daysLeft} days until permanent deletion` : 'Will be deleted soon'}
+                      • {daysLeft > 0
+                        ? `${daysLeft} days until permanent deletion`
+                        : "Will be deleted soon"}
                     </span>
                   {/if}
                 </div>
