@@ -19,7 +19,7 @@
   import type { Snippet } from "svelte";
   import { gotoWithSeachParams } from "$lib/utils/navigate";
   import { page } from "$app/state";
-  import { MODEL_DETAILS, type ModelId } from "$lib/common/ai/models";
+  import { DEFAULT_MODEL, MODEL_DETAILS, type ModelId } from "$lib/common/ai/models";
   import { ICON_MAP } from "../icons/iconMap";
   import { Badge } from "../ui/badge";
 
@@ -103,8 +103,9 @@
         </div>
       {:else}
         {#each drafts as draft (draft.id)}
-          {@const modelDetails = MODEL_DETAILS[draft.selectedModel as ModelId]}
-          {@const Icon = ICON_MAP[draft.selectedModel as ModelId]}
+          {@const modelDetails =
+            MODEL_DETAILS[draft.selectedModel as ModelId] ?? MODEL_DETAILS[DEFAULT_MODEL]}
+          {@const Icon = ICON_MAP[draft.selectedModel as ModelId] ?? ICON_MAP[DEFAULT_MODEL]}
           <div
             class="hover:bg-muted/50 group cursor-pointer rounded-lg border p-3 transition-colors"
             onclick={() => handleDraftSelect(draft)}
