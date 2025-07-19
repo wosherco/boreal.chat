@@ -83,7 +83,7 @@
   });
 
   async function onSendMessage() {
-    if (loading) return;
+    if (loading || !isLastMessageFinished) return;
     loading = true;
 
     try {
