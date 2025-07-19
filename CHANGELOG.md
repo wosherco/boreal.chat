@@ -1,5 +1,11 @@
 # boreal.chat
 
+## 0.1.4
+
+### Patch Changes
+
+- 0e008cc: Fixed sending messages without last one finishing, and drafts crashing when model is not available
+
 ## 0.1.3
 
 ### Patch Changes
