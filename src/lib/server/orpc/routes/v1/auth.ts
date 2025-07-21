@@ -68,6 +68,7 @@ export const v1AuthRouter = osBase.router({
         name: user.name,
         email: user.email,
         profilePicture: user.profilePicture,
+        emailVerified: user.emailVerified,
         subscribedUntil: user.subscribedUntil,
         subscriptionStatus: user.subscriptionStatus,
         subscriptionPlan: user.subscriptionPlan,

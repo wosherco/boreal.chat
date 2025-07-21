@@ -15,6 +15,7 @@ export const useCurrentUser = (serverData: ServerData<CurrentUserInfo>) =>
             name: userTable.name,
             email: userTable.email,
             profilePicture: userTable.profilePicture,
+            emailVerified: userTable.emailVerified,
             subscribedUntil: userTable.subscribedUntil,
             subscriptionStatus: userTable.subscriptionStatus,
             subscriptionPlan: userTable.subscriptionPlan,

@@ -25,16 +25,20 @@
   const { data }: PageProps = $props();
 
   onMount(() => {
+    if (data.justSentEmail) {
+      toast.success("Email verification request sent. Please check your email.");
+    }
+
     const codeInput = document.querySelector("input[name='code']") as HTMLInputElement;
     codeInput?.focus();
   });
 
-  const verifyEmailForPasswordResetSessionMutation = createMutation(
-    orpcQuery.v1.auth.passwordResetVerifyEmail.mutationOptions({
+  const verifyEmailMutation = createMutation(
+    orpcQuery.v1.auth.verifyEmail.mutationOptions({
       onSuccess: async (res) => {
         if (res.success) {
-          await goto(res.redirect ?? "/auth/reset-password");
-          toast.success("Email verified.");
+          await goto(res.redirect);
+          toast.success("Email verified! 🎉");
         }
       },
       onError: (error) => {
@@ -51,7 +55,7 @@
       SPA: true,
       async onUpdate(event) {
         if (event.form.valid) {
-          return $verifyEmailForPasswordResetSessionMutation.mutateAsync(event.form.data);
+          return $verifyEmailMutation.mutateAsync(event.form.data);
         }
       },
     },
@@ -88,8 +92,8 @@
     <Form.FieldErrors />
   </Form.Field>
 
-  <Form.Button disabled={$verifyEmailForPasswordResetSessionMutation.isPending} class="mt-2 w-full">
-    {#if $verifyEmailForPasswordResetSessionMutation.isPending}
+  <Form.Button disabled={$verifyEmailMutation.isPending} class="mt-2 w-full">
+    {#if $verifyEmailMutation.isPending}
       <Loader2Icon class="size-4 animate-spin" />
     {:else}
       Submit
