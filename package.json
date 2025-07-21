@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node build",
-    "dev": "bunx concurrently \"vite dev --host\" \"pnpm email dev --port 3005\"",
+    "dev": "vite dev --host",
     "dev:caddy": "caddy run --config infra/development/Caddyfile",
     "dev:stripe": "stripe listen --forward-to localhost:5173/api/webhook/stripe",
     "prebuild": "pnpm db:client:compile && pnpm script:fetchModels",

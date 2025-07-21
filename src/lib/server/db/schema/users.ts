@@ -42,7 +42,7 @@ export const sessionTable = pgTable("session", {
 });
 
 export const emailVerificationRequestTable = pgTable("email_verification_request", {
-  id: uuid().defaultRandom().primaryKey(),
+  id: text().primaryKey(),
   userId: uuid()
     .notNull()
     .references(() => userTable.id),
@@ -52,7 +52,7 @@ export const emailVerificationRequestTable = pgTable("email_verification_request
 });
 
 export const passwordResetSessionTable = pgTable("password_reset_session", {
-  id: uuid().defaultRandom().primaryKey(),
+  id: text().primaryKey(),
   userId: uuid()
     .notNull()
     .references(() => userTable.id),

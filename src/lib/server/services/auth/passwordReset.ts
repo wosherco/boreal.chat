@@ -12,7 +12,7 @@ import {
   passwordResetSessionTable,
   securityKeyCredentialTable,
 } from "$lib/server/db/schema";
-import { eq, exists, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { isPast } from "date-fns";
 
 export async function createPasswordResetSession(
@@ -58,10 +58,10 @@ export async function validatePasswordResetSessionToken(
         name: userTable.name,
         passwordHash: userTable.passwordHash,
         emailVerified: userTable.emailVerified,
-        registeredTOTP: sql<boolean>`${exists(totpCredentialTable)}`,
-        registeredPasskey: sql<boolean>`${exists(passkeyCredentialTable)}`,
-        registeredSecurityKey: sql<boolean>`${exists(securityKeyCredentialTable)}`,
-        registered2FA: sql<boolean>`${exists(totpCredentialTable)} OR ${exists(passkeyCredentialTable)} OR ${exists(securityKeyCredentialTable)}`,
+        registeredTOTP: sql<boolean>`${totpCredentialTable} IS NOT NULL`,
+        registeredPasskey: sql<boolean>`${passkeyCredentialTable} IS NOT NULL`,
+        registeredSecurityKey: sql<boolean>`${securityKeyCredentialTable} IS NOT NULL`,
+        registered2FA: sql<boolean>`${totpCredentialTable} IS NOT NULL OR ${passkeyCredentialTable} IS NOT NULL OR ${securityKeyCredentialTable} IS NOT NULL`,
       },
     })
     .from(passwordResetSessionTable)

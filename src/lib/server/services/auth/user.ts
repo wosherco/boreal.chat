@@ -156,6 +156,7 @@ async function getUser(where: SQL<unknown>): Promise<BackendUser | null> {
       totpCredential: sql<boolean>`${totpCredentialTable.id} IS NOT NULL`,
       passkeyCredential: sql<boolean>`${passkeyCredentialTable.id} IS NOT NULL`,
       securityKeyCredential: sql<boolean>`${securityKeyCredentialTable.id} IS NOT NULL`,
+      registered2FA: sql<boolean>`${totpCredentialTable.id} IS NOT NULL OR ${passkeyCredentialTable.id} IS NOT NULL OR ${securityKeyCredentialTable.id} IS NOT NULL`,
     })
     .from(userTable)
     .leftJoin(totpCredentialTable, eq(userTable.id, totpCredentialTable.userId))
@@ -167,8 +168,6 @@ async function getUser(where: SQL<unknown>): Promise<BackendUser | null> {
     return null;
   }
 
-  const registered2FA = user.totpCredential || user.passkeyCredential || user.securityKeyCredential;
-
   return {
     id: user.id,
     email: user.email,
@@ -177,7 +176,7 @@ async function getUser(where: SQL<unknown>): Promise<BackendUser | null> {
     registeredTOTP: user.totpCredential,
     registeredPasskey: user.passkeyCredential,
     registeredSecurityKey: user.securityKeyCredential,
-    registered2FA,
+    registered2FA: user.registered2FA,
   };
 }
 

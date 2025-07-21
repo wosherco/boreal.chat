@@ -2,42 +2,38 @@
   import { z } from "zod";
 
   const formSchema = z.object({
-    email: z.string().email(),
-    password: z.string().min(8).max(255),
+    password: passwordSchema,
   });
 </script>
 
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button";
   import Input from "$lib/components/ui/input/input.svelte";
   import { onMount } from "svelte";
   import { zod } from "sveltekit-superforms/adapters";
   import { defaults, superForm } from "sveltekit-superforms";
   import { goto } from "$app/navigation";
-  import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
   import logo from "$lib/assets/logo.png";
   import * as Form from "$lib/components/ui/form";
-  import { ArrowLeftIcon, Loader2Icon } from "@lucide/svelte";
-  import SignUpLink from "$lib/components/auth/SignUpLink.svelte";
+  import { Loader2Icon } from "@lucide/svelte";
   import { page } from "$app/state";
   import { createMutation } from "@tanstack/svelte-query";
   import { orpcQuery } from "$lib/client/orpc";
   import { toast } from "svelte-sonner";
   import AuthBackArrow from "$lib/components/auth/AuthBackArrow.svelte";
+  import { passwordSchema } from "$lib/common/validators/chat";
 
   onMount(() => {
     const passwordInput = document.querySelector("input[name='password']") as HTMLInputElement;
     passwordInput?.focus();
   });
 
-  const loginMutation = createMutation(
-    orpcQuery.v1.auth.login.mutationOptions({
+  const requestPasswordResetMutation = createMutation(
+    orpcQuery.v1.auth.passwordReset.mutationOptions({
       onSuccess: async (res) => {
         if (res.success) {
           await goto(res.redirect);
 
           if (res.done) {
-            // Refreshing to pglite boots up
             window.location.reload();
           }
         }
@@ -49,18 +45,15 @@
     }),
   );
 
-  const form = superForm(
-    defaults({ email: page.url.searchParams.get("email") ?? "", password: "" }, zod(formSchema)),
-    {
-      validators: zod(formSchema),
-      SPA: true,
-      async onUpdate(event) {
-        if (event.form.valid) {
-          return $loginMutation.mutateAsync(event.form.data);
-        }
-      },
+  const form = superForm(defaults({ password: "" }, zod(formSchema)), {
+    validators: zod(formSchema),
+    SPA: true,
+    async onUpdate(event) {
+      if (event.form.valid) {
+        return $requestPasswordResetMutation.mutateAsync(event.form.data);
+      }
     },
-  );
+  });
 
   const { form: formData, enhance, delayed } = form;
 </script>
@@ -77,43 +70,24 @@
   </div>
 </div>
 <!-- Title -->
-<h2 class="mb-2 text-center text-2xl font-semibold">Sign in to boreal.chat</h2>
+<h2 class="mb-2 text-center text-2xl font-semibold">Verify your email</h2>
 <!-- Email Form -->
 <form class="w-full space-y-6" use:enhance>
-  <Form.Field {form} name="email">
-    <Form.Control>
-      {#snippet children({ props })}
-        <Form.Label>Email</Form.Label>
-        <Input {...props} bind:value={$formData.email} />
-      {/snippet}
-    </Form.Control>
-    <Form.FieldErrors />
-  </Form.Field>
-
   <Form.Field {form} name="password">
     <Form.Control>
       {#snippet children({ props })}
-        <Form.Label>Password</Form.Label>
+        <Form.Label>New Password</Form.Label>
         <Input {...props} bind:value={$formData.password} type="password" />
-        <Form.Description>
-          Forgot your password? <a
-            href="/auth/forgot-password?email={encodeURIComponent($formData.email)}"
-            class="underline">Reset it</a
-          >
-        </Form.Description>
       {/snippet}
     </Form.Control>
     <Form.FieldErrors />
   </Form.Field>
 
-  <Form.Button disabled={$loginMutation.isPending} class="mt-2 w-full">
-    {#if $loginMutation.isPending}
+  <Form.Button disabled={$requestPasswordResetMutation.isPending} class="mt-2 w-full">
+    {#if $requestPasswordResetMutation.isPending}
       <Loader2Icon class="size-4 animate-spin" />
     {:else}
-      Sign in
+      Change Password
     {/if}
   </Form.Button>
 </form>
-
-<!-- Sign up link -->
-<SignUpLink email={$formData.email} />

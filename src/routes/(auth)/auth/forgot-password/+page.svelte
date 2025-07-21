@@ -1,11 +1,8 @@
 <script lang="ts" module>
   import { z } from "zod";
-  import { passwordSchema } from "$lib/common/validators/chat";
 
   const formSchema = z.object({
-    name: z.string().min(1).max(255),
     email: z.string().email(),
-    password: passwordSchema,
   });
 </script>
 
@@ -18,30 +15,27 @@
   import logo from "$lib/assets/logo.png";
   import * as Form from "$lib/components/ui/form";
   import { Loader2Icon } from "@lucide/svelte";
+  import SignUpLink from "$lib/components/auth/SignUpLink.svelte";
   import { page } from "$app/state";
   import { createMutation } from "@tanstack/svelte-query";
   import { orpcQuery } from "$lib/client/orpc";
   import { toast } from "svelte-sonner";
   import AuthBackArrow from "$lib/components/auth/AuthBackArrow.svelte";
-  import { TURNSTILE_SITE_KEY } from "$lib/common/turnstile";
   import TurnstileCaptcha from "$lib/components/TurnstileCaptcha.svelte";
 
   let turnstileToken = $state<string | undefined>(undefined);
 
   onMount(() => {
-    const passwordInput = document.querySelector("input[name='name']") as HTMLInputElement;
-    passwordInput?.focus();
+    const emailInput = document.querySelector("input[name='email']") as HTMLInputElement;
+    emailInput?.focus();
   });
 
-  const signupMutation = createMutation(
-    orpcQuery.v1.auth.register.mutationOptions({
+  const requestPasswordResetMutation = createMutation(
+    orpcQuery.v1.auth.requestPasswordReset.mutationOptions({
       onSuccess: async (res) => {
         if (res.success) {
-          await goto(res.redirect);
-
-          if (res.done) {
-            window.location.reload();
-          }
+          await goto("/auth/reset-password/verify-email");
+          toast.success("Password reset email sent. Check your inbox for the reset code.");
         }
       },
       onError: (error) => {
@@ -52,20 +46,13 @@
   );
 
   const form = superForm(
-    defaults(
-      {
-        name: "",
-        email: page.url.searchParams.get("email") ?? "",
-        password: "",
-      },
-      zod(formSchema),
-    ),
+    defaults({ email: page.url.searchParams.get("email") ?? "" }, zod(formSchema)),
     {
       validators: zod(formSchema),
       SPA: true,
       async onUpdate(event) {
         if (event.form.valid) {
-          return $signupMutation.mutateAsync({
+          return $requestPasswordResetMutation.mutateAsync({
             ...event.form.data,
             turnstileToken,
           });
@@ -74,7 +61,7 @@
     },
   );
 
-  const { form: formData, enhance } = form;
+  const { form: formData, enhance, delayed } = form;
 </script>
 
 <AuthBackArrow />
@@ -89,19 +76,9 @@
   </div>
 </div>
 <!-- Title -->
-<h2 class="mb-2 text-center text-2xl font-semibold">Sign in to boreal.chat</h2>
+<h2 class="mb-2 text-center text-2xl font-semibold">Reset your password</h2>
 <!-- Email Form -->
 <form class="w-full space-y-6" use:enhance>
-  <Form.Field {form} name="name">
-    <Form.Control>
-      {#snippet children({ props })}
-        <Form.Label>Name</Form.Label>
-        <Input {...props} bind:value={$formData.name} />
-      {/snippet}
-    </Form.Control>
-    <Form.FieldErrors />
-  </Form.Field>
-
   <Form.Field {form} name="email">
     <Form.Control>
       {#snippet children({ props })}
@@ -112,33 +89,16 @@
     <Form.FieldErrors />
   </Form.Field>
 
-  <Form.Field {form} name="password">
-    <Form.Control>
-      {#snippet children({ props })}
-        <Form.Label>Password</Form.Label>
-        <Input {...props} bind:value={$formData.password} type="password" />
-      {/snippet}
-    </Form.Control>
-    <Form.FieldErrors />
-  </Form.Field>
-
   <TurnstileCaptcha class="mx-auto w-fit" bind:turnstileToken />
 
-  <Form.Button disabled={$signupMutation.isPending} class="mt-2 w-full">
-    {#if $signupMutation.isPending}
+  <Form.Button disabled={$requestPasswordResetMutation.isPending} class="mt-2 w-full">
+    {#if $requestPasswordResetMutation.isPending}
       <Loader2Icon class="size-4 animate-spin" />
     {:else}
-      Sign up
+      Request password reset
     {/if}
   </Form.Button>
 </form>
 
-<!-- Sign in link -->
-<div class="mt-4 w-full text-center">
-  <p class="text-muted-foreground text-sm">
-    Already have an account? <a
-      href={`/auth/signin?email=${$formData.email ?? ""}`}
-      class="underline">Sign in</a
-    >
-  </p>
-</div>
+<!-- Sign up link -->
+<SignUpLink email={$formData.email} />

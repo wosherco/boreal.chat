@@ -321,14 +321,20 @@ export const v1AuthRouter = osBase.router({
 
       await invalidateUserPasswordResetSessions(user.id);
 
-      const sessionToken = generateSessionToken();
-      const session = await createPasswordResetSession(sessionToken, user.id, user.email);
-      await sendPasswordResetEmail(
-        user.email,
-        `${env.PUBLIC_URL}/auth/reset-password?code=${session.code}`,
-        session.code,
-      );
-      setPasswordResetSessionTokenCookie(cookies, sessionToken, session.expiresAt);
+      try {
+        const sessionToken = generateSessionToken();
+        const session = await createPasswordResetSession(sessionToken, user.id, user.email);
+        await sendPasswordResetEmail(
+          user.email,
+          `${env.PUBLIC_URL}/auth/reset-password/verify-email?code=${session.code}`,
+          session.code,
+        );
+        setPasswordResetSessionTokenCookie(cookies, sessionToken, session.expiresAt);
+      } catch (e) {
+        Sentry.captureException(e);
+        console.error("Failed to send password reset email", e);
+        throw e;
+      }
 
       return {
         success: true,
@@ -339,7 +345,7 @@ export const v1AuthRouter = osBase.router({
   passwordResetVerifyEmail: osBase
     .input(
       z.object({
-        code: z.string().min(1),
+        code: z.string().min(8).max(8),
       }),
     )
     .handler(async ({ context, input }) => {
@@ -442,6 +448,7 @@ export const v1AuthRouter = osBase.router({
       return {
         success: true,
         redirect: "/",
+        done: true,
       };
     }),
 

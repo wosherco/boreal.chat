@@ -1,5 +1,5 @@
 CREATE TABLE "email_verification_request" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" text PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
 	"email" text NOT NULL,
 	"code" text NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE "passkey_credential" (
 );
 --> statement-breakpoint
 CREATE TABLE "password_reset_session" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" text PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
 	"email" text NOT NULL,
 	"code" text NOT NULL,
