@@ -1,15 +1,15 @@
-import type { transcribeRatelimiter } from "./limiters";
-import type { ConsumeResult } from "./tokenBucket";
-
 export * from "./limiters";
 
-export function getRatelimitConsumeHeaders(
-  ratelimit: typeof transcribeRatelimiter,
-  result: ConsumeResult,
-) {
-  return {
-    "X-RateLimit-Limit": ratelimit.getCapacity().toString(),
-    "X-RateLimit-Remaining": result.remainingTokens.toString(),
-    "X-RateLimit-Reset": result.nextRefillAt.toString(),
-  };
+export function getRatelimitConsumeHeaders(remainingTokens?: number, nextRefillAt?: number) {
+  const headers: Record<string, string> = {};
+
+  if (remainingTokens) {
+    headers["X-RateLimit-Remaining"] = remainingTokens.toString();
+  }
+
+  if (nextRefillAt) {
+    headers["X-RateLimit-Reset"] = nextRefillAt.toString();
+  }
+
+  return headers;
 }

@@ -10,6 +10,8 @@ import { db } from "$lib/server/db";
 import { accountTable, userTable } from "$lib/server/db/schema";
 import { and, eq } from "drizzle-orm";
 import { posthog } from "$lib/server/posthog";
+import { getUserById } from "$lib/server/services/auth/user";
+import { get2FARedirect } from "$lib/server/services/auth/2fa";
 
 export const GET: RequestHandler = async (event) => {
   const code = event.url.searchParams.get("code");
@@ -61,8 +63,19 @@ export const GET: RequestHandler = async (event) => {
   // Existing User
   if (existingAccount !== undefined) {
     const sessionToken = generateSessionToken();
-    const session = await createSession(sessionToken, existingAccount.userId);
-    setSessionTokenCookie(event, sessionToken, session.expiresAt);
+    const session = await createSession(sessionToken, existingAccount.userId, false);
+    setSessionTokenCookie(event.cookies, sessionToken, session.expiresAt);
+
+    const existingBackendUser = await getUserById(existingAccount.userId);
+
+    if (existingBackendUser?.registered2FA) {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: get2FARedirect(existingBackendUser) ?? "/",
+        },
+      });
+    }
 
     return new Response(null, {
       status: 302,
@@ -108,8 +121,8 @@ export const GET: RequestHandler = async (event) => {
   });
 
   const sessionToken = generateSessionToken();
-  const session = await createSession(sessionToken, user.id);
-  setSessionTokenCookie(event, sessionToken, session.expiresAt);
+  const session = await createSession(sessionToken, user.id, false);
+  setSessionTokenCookie(event.cookies, sessionToken, session.expiresAt);
 
   return new Response(null, {
     status: 302,

@@ -1,5 +1,5 @@
 import { osBase } from "../../context";
-import { subscribedMiddleware, ratelimitMiddleware } from "../../middlewares";
+import { subscribedMiddleware } from "../../middlewares";
 import { transcribeRatelimiter } from "$lib/server/ratelimit";
 import z from "zod";
 import * as Sentry from "@sentry/sveltekit";
@@ -23,7 +23,6 @@ export const v1VoiceRouter = osBase.router({
       return next();
     })
     .use(subscribedMiddleware)
-    .use(ratelimitMiddleware(transcribeRatelimiter))
     .input(
       z.object({
         audioBlob: z.instanceof(Blob),
@@ -31,6 +30,14 @@ export const v1VoiceRouter = osBase.router({
       }),
     )
     .handler(async ({ input, context }) => {
+      const limiterResult = await transcribeRatelimiter.consume(context.userCtx.user.id);
+
+      if (!limiterResult.success) {
+        throw new ORPCError("RATE_LIMIT_EXCEEDED", {
+          message: "You have reached the rate limit. Please, try again later.",
+        });
+      }
+
       let duration = input.duration;
 
       const media = await parseMedia({
