@@ -11,6 +11,7 @@ import { env } from "$env/dynamic/private";
 import { approximateTokens, calculateCUs, type CUResult } from "../ratelimit/cu";
 import type { TokenBucketRateLimiter } from "pv-ratelimit";
 import { z } from "zod/v4";
+import { dev } from "$app/environment";
 
 export const authenticatedMiddleware = osBase.middleware(async ({ context, next }) => {
   if (!context.userCtx.user || !context.userCtx.session) {
@@ -194,9 +195,11 @@ const basicTurnstileSchema = z.object({
   success: z.boolean(),
 });
 
+const TURNSTILE_SECRET_KEY = dev ? "1x0000000000000000000000000000000AA" : env.TURNSTILE_SECRET_KEY;
+
 export const turnstileMiddleware = ipMiddleware.concat(
   async ({ context, next }, input: { turnstileToken?: string }) => {
-    if (env.TURNSTILE_SECRET_KEY && !input.turnstileToken) {
+    if (TURNSTILE_SECRET_KEY && !input.turnstileToken) {
       throw new ORPCError("BAD_REQUEST", {
         message: "Turnstile token is required",
       });
@@ -205,7 +208,7 @@ export const turnstileMiddleware = ipMiddleware.concat(
     const url = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
     const result = await fetch(url, {
       body: JSON.stringify({
-        secret: env.TURNSTILE_SECRET_KEY,
+        secret: TURNSTILE_SECRET_KEY,
         response: input.turnstileToken,
         remoteip: context.clientIp,
       }),

@@ -62,7 +62,11 @@
     logoutLoading = true;
     try {
       await orpc.v1.auth.logout();
-      await clearLocalDb();
+      try {
+        await clearLocalDb();
+      } catch {
+        console.warn("Failed to clear local db. Ignoring...");
+      }
       window.location.reload();
     } catch (e) {
       console.error(e);

@@ -29,7 +29,7 @@ import {
   UserAlreadyExistsError,
   type BackendUser,
 } from "$lib/server/services/auth/user";
-import { verifyPasswordHash, verifyPasswordStrength } from "$lib/server/services/auth/password";
+import { verifyPasswordHash } from "$lib/server/services/auth/password";
 import { get2FARedirect, getPasswordReset2FARedirect } from "$lib/server/services/auth/2fa";
 import {
   createEmailVerificationRequest,
@@ -49,6 +49,8 @@ import {
   setPasswordResetSessionTokenCookie,
   validatePasswordResetSessionRequest,
 } from "$lib/server/services/auth/passwordReset";
+import { passwordSchema } from "$lib/common/validators/chat";
+import * as Sentry from "@sentry/sveltekit";
 
 export const v1AuthRouter = osBase.router({
   getUser: osBase.handler(async ({ context }) => {
@@ -96,6 +98,7 @@ export const v1AuthRouter = osBase.router({
     .input(
       z.object({
         email: z.string().email(),
+        // This is more light because it's login
         password: z.string().min(8).max(255),
       }),
     )
@@ -151,9 +154,12 @@ export const v1AuthRouter = osBase.router({
 
       setSessionTokenCookie(context.cookies, sessionToken, session.expiresAt);
 
+      const redirectTo = get2FARedirect(user);
+
       return {
         success: true,
-        redirect: get2FARedirect(user) ?? "/",
+        redirect: redirectTo ?? "/",
+        done: redirectTo ? false : true,
       };
     }),
 
@@ -163,7 +169,7 @@ export const v1AuthRouter = osBase.router({
       z.object({
         email: z.string().email(),
         name: z.string().min(1).max(255),
-        password: z.string().min(8).max(255),
+        password: passwordSchema,
         turnstileToken: z.string().optional(),
       }),
     )
@@ -183,13 +189,13 @@ export const v1AuthRouter = osBase.router({
         });
       }
 
-      const strongPassword = await verifyPasswordStrength(input.password);
+      // const strongPassword = await verifyPasswordStrength(input.password);
 
-      if (!strongPassword) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "Password is not strong enough. Please, try again.",
-        });
-      }
+      // if (!strongPassword) {
+      //   throw new ORPCError("BAD_REQUEST", {
+      //     message: "Password is not strong enough. Please, try again.",
+      //   });
+      // }
 
       let user: BackendUser;
 
@@ -212,13 +218,18 @@ export const v1AuthRouter = osBase.router({
       }
 
       // Sending email verification email
-      const emailVerificationRequest = await createEmailVerificationRequest(user.id, user.email);
-      await sendEmailVerificationEmail(
-        user.email,
-        `${env.PUBLIC_URL}/auth/verify-email?code=${emailVerificationRequest.code}`,
-        emailVerificationRequest.code,
-      );
-      setEmailVerificationRequestCookie(context.cookies, emailVerificationRequest);
+      try {
+        const emailVerificationRequest = await createEmailVerificationRequest(user.id, user.email);
+        await sendEmailVerificationEmail(
+          user.email,
+          `${env.PUBLIC_URL}/auth/verify-email?code=${emailVerificationRequest.code}`,
+          emailVerificationRequest.code,
+        );
+        setEmailVerificationRequestCookie(context.cookies, emailVerificationRequest);
+      } catch (e) {
+        Sentry.captureException(e);
+        console.error("Failed to send email verification email", e);
+      }
 
       // Creating session
       const sessionToken = generateSessionToken();
@@ -228,6 +239,7 @@ export const v1AuthRouter = osBase.router({
       return {
         success: true,
         redirect: "/",
+        done: true,
       };
     }),
 
@@ -384,7 +396,7 @@ export const v1AuthRouter = osBase.router({
   passwordReset: osBase
     .input(
       z.object({
-        password: z.string().min(8).max(255),
+        password: passwordSchema,
       }),
     )
     .handler(async ({ context, input }) => {
@@ -408,13 +420,13 @@ export const v1AuthRouter = osBase.router({
         });
       }
 
-      const strongPassword = await verifyPasswordStrength(input.password);
+      // const strongPassword = await verifyPasswordStrength(input.password);
 
-      if (!strongPassword) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "Password is not strong enough. Please, try again.",
-        });
-      }
+      // if (!strongPassword) {
+      //   throw new ORPCError("BAD_REQUEST", {
+      //     message: "Password is not strong enough. Please, try again.",
+      //   });
+      // }
 
       await Promise.all([
         invalidateUserPasswordResetSessions(user.id),
