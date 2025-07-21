@@ -23,7 +23,6 @@
   import { orpcQuery } from "$lib/client/orpc";
   import { toast } from "svelte-sonner";
   import AuthBackArrow from "$lib/components/auth/AuthBackArrow.svelte";
-  import { TURNSTILE_SITE_KEY } from "$lib/common/turnstile";
   import TurnstileCaptcha from "$lib/components/TurnstileCaptcha.svelte";
 
   let turnstileToken = $state<string | undefined>(undefined);

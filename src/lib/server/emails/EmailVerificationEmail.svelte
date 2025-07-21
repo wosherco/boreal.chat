@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Hr, Html, Text, Container, Section, Head, Preview } from "svelty-email";
+  import { Button, Html, Text, Container, Section, Head, Preview } from "svelty-email";
 
   interface EmailVerificationEmailProps {
     verificationUrl: string;

@@ -61,7 +61,7 @@
     },
   );
 
-  const { form: formData, enhance, delayed } = form;
+  const { form: formData, enhance } = form;
 </script>
 
 <AuthBackArrow />

@@ -8,16 +8,14 @@
 </script>
 
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button";
   import Input from "$lib/components/ui/input/input.svelte";
   import { onMount } from "svelte";
   import { zod } from "sveltekit-superforms/adapters";
   import { defaults, superForm } from "sveltekit-superforms";
   import { goto } from "$app/navigation";
-  import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
   import logo from "$lib/assets/logo.png";
   import * as Form from "$lib/components/ui/form";
-  import { ArrowLeftIcon, Loader2Icon } from "@lucide/svelte";
+  import { Loader2Icon } from "@lucide/svelte";
   import SignUpLink from "$lib/components/auth/SignUpLink.svelte";
   import { page } from "$app/state";
   import { createMutation } from "@tanstack/svelte-query";
@@ -62,7 +60,7 @@
     },
   );
 
-  const { form: formData, enhance, delayed } = form;
+  const { form: formData, enhance } = form;
 </script>
 
 <AuthBackArrow />

@@ -15,7 +15,6 @@
   import logo from "$lib/assets/logo.png";
   import * as Form from "$lib/components/ui/form";
   import { Loader2Icon } from "@lucide/svelte";
-  import { page } from "$app/state";
   import { createMutation } from "@tanstack/svelte-query";
   import { orpcQuery } from "$lib/client/orpc";
   import { toast } from "svelte-sonner";
@@ -55,7 +54,7 @@
     },
   });
 
-  const { form: formData, enhance, delayed } = form;
+  const { form: formData, enhance } = form;
 </script>
 
 <AuthBackArrow />

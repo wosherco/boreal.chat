@@ -28,7 +28,7 @@
 
     try {
       renderCaptcha();
-    } catch (e) {
+    } catch {
       // @ts-expect-error - Turnstile callback is not typed
       window.onloadTurnstileCallback = () => {
         console.log("RENDERING");
