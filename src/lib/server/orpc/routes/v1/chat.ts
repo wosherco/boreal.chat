@@ -39,6 +39,7 @@ export const v1ChatRouter = osBase.router({
         webSearchEnabled: z.boolean().optional(),
         reasoningLevel: z.enum(REASONING_LEVELS).optional(),
         draftId: z.string().uuid().optional(),
+        mcpServerId: z.string().uuid().optional(),
       }),
     )
     .use(inferenceMiddleware)
@@ -237,6 +238,7 @@ export const v1ChatRouter = osBase.router({
         webSearchEnabled: z.boolean().optional(),
         reasoningLevel: z.enum(REASONING_LEVELS).optional(),
         draftId: z.string().uuid().optional(),
+        mcpServerId: z.string().uuid().optional(),
       }),
     )
     .use(inferenceMiddleware)

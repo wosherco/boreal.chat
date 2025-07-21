@@ -20,7 +20,7 @@ export type MessageStatus = (typeof MESSAGE_STATUS)[number];
 export const isFinishedMessageStatus = (status: MessageStatus) =>
   status === "finished" || status === "cancelled" || status === "error";
 
-export const MESSAGE_SEGMENT_KINDS = ["reasoning", "text", "tool_call", "tool_result"] as const;
+export const MESSAGE_SEGMENT_KINDS = ["reasoning", "text", "tool_call", "tool_result", "mcp_tool_call", "mcp_tool_result"] as const;
 
 export type MessageSegmentKind = (typeof MESSAGE_SEGMENT_KINDS)[number];
 

@@ -10,6 +10,7 @@
     MailIcon,
     MenuIcon,
     PaintbrushIcon,
+    ServerIcon,
   } from "@lucide/svelte";
   import type { LayoutProps } from "./$types";
   import SheetClose from "$lib/components/ui/sheet/sheet-close.svelte";
@@ -56,6 +57,11 @@
       label: "BYOK (Bring Your Own Key)",
       href: "/settings/byok",
       icon: KeyIcon,
+    },
+    {
+      label: "MCP Servers",
+      href: "/settings/mcp",
+      icon: ServerIcon,
     },
     {
       label: "Contact Us",

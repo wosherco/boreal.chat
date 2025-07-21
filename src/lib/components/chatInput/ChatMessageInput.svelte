@@ -13,6 +13,7 @@
     Loader2Icon,
     MicIcon,
     SendIcon,
+    ServerIcon,
     StopCircleIcon,
   } from "@lucide/svelte";
   import { Button } from "../ui/button";
@@ -37,7 +38,7 @@
   import { FileTextIcon } from "@lucide/svelte";
   import { VoiceMessageService } from "$lib/client/services/voiceMessageService.svelte";
   import { env } from "$env/dynamic/public";
-  import { createMutation } from "@tanstack/svelte-query";
+  import { createMutation, createQuery } from "@tanstack/svelte-query";
   import { gotoWithSeachParams } from "$lib/utils/navigate";
   import { untrack } from "svelte";
   import { PremiumWrapper } from "../ui/premium-badge";
@@ -64,6 +65,7 @@
   let selectedModel = $state<ModelId | undefined>(undefined);
   let webSearchEnabled = $state<boolean | undefined>(undefined);
   let reasoningLevel = $state<ReasoningLevel | undefined>(undefined);
+  let selectedMCPServer = $state<string | undefined>(undefined);
 
   const actualSelectedModel = $derived(
     selectedModel ?? getCurrentChatState()?.model ?? defaultSelectedModel,
@@ -74,6 +76,11 @@
   const actualReasoningLevel = $derived(
     reasoningLevel ?? getCurrentChatState()?.reasoningLevel ?? defaultReasoningLevel,
   );
+
+  // MCP servers query
+  const mcpServersQuery = createQuery(
+    orpcQuery.v1.mcp.list.queryOptions()
+  ) as { data?: any[]; isPending: boolean; error?: any };
 
   // Reactive statement to adjust textarea height
   new TextareaAutosize({
@@ -102,6 +109,7 @@
             reasoningLevel: actualReasoningLevel,
             webSearchEnabled: actualWebSearchEnabled,
             draftId: draft?.id,
+            mcpServerId: selectedMCPServer,
           });
 
           value = "";
@@ -120,6 +128,7 @@
             reasoningLevel: actualReasoningLevel,
             webSearchEnabled: actualWebSearchEnabled,
             draftId: draft?.id,
+            mcpServerId: selectedMCPServer,
           });
           value = "";
 
@@ -421,6 +430,29 @@
                 <SelectItem value="low">Low</SelectItem>
                 <SelectItem value="medium">Medium</SelectItem>
                 <SelectItem value="high">High</SelectItem>
+              </SelectContent>
+            </Select>
+          {/if}
+
+          {#if $mcpServersQuery.data?.length}
+            <Select
+              type="single"
+              value={selectedMCPServer}
+              onValueChange={(newValue: any) => (selectedMCPServer = newValue || undefined)}
+            >
+              <SelectTrigger>
+                <ServerIcon />
+                <span class="hidden sm:block">
+                  {selectedMCPServer 
+                    ? $mcpServersQuery.data?.find((s: any) => s.id === selectedMCPServer)?.name || "MCP"
+                    : "No MCP"}
+                </span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">No MCP Server</SelectItem>
+                                  {#each $mcpServersQuery.data?.filter((s: any) => s.enabled) || [] as server (server.id)}
+                  <SelectItem value={server.id}>{server.name}</SelectItem>
+                {/each}
               </SelectContent>
             </Select>
           {/if}

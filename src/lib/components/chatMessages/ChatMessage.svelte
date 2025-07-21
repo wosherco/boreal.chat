@@ -17,6 +17,7 @@
   import { MODEL_DETAILS, type ModelId } from "$lib/common/ai/models";
   import ModelPickerPopover from "../chatInput/ModelPickerPopover.svelte";
   import ReasoningSegment from "./ReasoningSegment.svelte";
+  import MCPToolConfirmation from "./MCPToolConfirmation.svelte";
   import { orpc } from "$lib/client/orpc";
   import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
   import Markdown from "../markdown/Markdown.svelte";
@@ -98,6 +99,8 @@
             continue;
           case "tool_call":
           case "tool_result":
+          case "mcp_tool_call":
+          case "mcp_tool_result":
             {
               if (cacheSegment) {
                 cleanedSegments.push(cacheSegment);
@@ -194,6 +197,30 @@
           TODO: Tool call
         {:else if segment.kind === "tool_result"}
           TODO: Tool result
+        {:else if segment.kind === "mcp_tool_call"}
+          {#if message.status === "waiting_confirmation"}
+            <MCPToolConfirmation
+              messageId={message.id}
+              toolName={segment.toolName ?? "Unknown Tool"}
+              toolArgs={segment.toolArgs ?? {}}
+              confirmationMessage="Do you want to execute this MCP tool?"
+              mcpServerName="MCP Server"
+            />
+          {:else}
+            <div class="bg-muted rounded-md p-3 text-sm">
+              <p class="font-medium">MCP Tool Call: {segment.toolName}</p>
+              {#if segment.toolArgs}
+                <pre class="text-xs mt-2 overflow-x-auto">{JSON.stringify(segment.toolArgs, null, 2)}</pre>
+              {/if}
+            </div>
+          {/if}
+        {:else if segment.kind === "mcp_tool_result"}
+          <div class="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md p-3 text-sm">
+            <p class="font-medium text-green-800 dark:text-green-200">MCP Tool Result</p>
+            {#if segment.toolResult}
+              <pre class="text-xs mt-2 overflow-x-auto text-green-700 dark:text-green-300">{JSON.stringify(segment.toolResult, null, 2)}</pre>
+            {/if}
+          </div>
         {/if}
       {/each}
     </div>
