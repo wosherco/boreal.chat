@@ -6,16 +6,21 @@ import PasswordResetEmail from "$lib/server/emails/PasswordResetEmail.svelte";
 
 async function sendEmail(email: string, subject: string, html: string) {
   if (!emailTransport) {
-    console.log(`Tried sending email "${subject}" to ${email} but no email transport was found`);
+    console.warn(`Email transport not configured. Would have sent "${subject}" to ${email}`);
     return;
   }
 
-  await emailTransport.sendMail({
-    from: env.SMTP_FROM || "no-reply@boreal.chat",
-    to: email,
-    subject,
-    html,
-  });
+  try {
+    await emailTransport.sendMail({
+      from: env.SMTP_FROM || "no-reply@boreal.chat",
+      to: email,
+      subject,
+      html,
+    });
+  } catch (e) {
+    console.error(`Failed to send email "${subject}" to ${email}:`, e);
+    throw e;
+  }
 }
 
 export async function sendEmailVerificationEmail(
