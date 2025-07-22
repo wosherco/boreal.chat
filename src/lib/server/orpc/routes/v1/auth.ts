@@ -251,7 +251,7 @@ export const v1AuthRouter = osBase.router({
     .use(authenticatedMiddleware)
     .input(
       z.object({
-        code: z.string().min(6).max(6),
+        code: z.string().min(8).max(8),
       }),
     )
     .handler(async ({ context, input }) => {

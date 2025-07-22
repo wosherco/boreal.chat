@@ -70,7 +70,7 @@
 
 {#await data.justSentEmail}
   <Loader2Icon class="size-4 animate-spin" />
-{:then value}
+{:then}
   <div class="mb-6 flex items-center justify-center">
     <div
       class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-200 text-2xl font-bold text-gray-500"
@@ -104,7 +104,7 @@
       {/if}
     </Form.Button>
   </form>
-{:catch error}
+{:catch}
   <div class="flex flex-col items-center justify-center">
     <p class="text-center text-sm text-gray-500">Failed to verify email. Please try again.</p>
   </div>
