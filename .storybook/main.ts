@@ -1,7 +1,7 @@
 import type { StorybookConfig } from "@storybook/sveltekit";
 
 const config: StorybookConfig = {
-  stories: ["../src/stories/**/*.mdx", "../src/stories/**/*.stories.@(js|ts|svelte)"],
+  stories: ["../src/stories/**/*.stories.@(js|ts|svelte)"],
   addons: [
     "@storybook/addon-svelte-csf",
     "@chromatic-com/storybook",
