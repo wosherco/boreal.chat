@@ -10,12 +10,10 @@ export const load: PageServerLoad = async ({ cookies }) => {
     return redirect(302, "/auth/forgot-password");
   }
 
-  if (session === null) {
-    return redirect(302, "/forgot-password");
-  }
   if (!session.emailVerified) {
-    return redirect(302, "/reset-password/verify-email");
+    return redirect(302, "/auth/reset-password/verify-email");
   }
+
   if (user.registered2FA && !session.twoFactorVerified) {
     const redirectUrl = getPasswordReset2FARedirect(user);
     if (redirectUrl) {
