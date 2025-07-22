@@ -33,6 +33,7 @@
     "build:docker": "docker build -t boreal.chat .",
     "i18n": "paraglide-js compile --outdir src/lib/paraglide",
     "script:fetchModels": "pnpm dlx bun run ./scripts/fetchModelFeatures.ts",
+    "script:createAuthKey": "openssl rand --base64 16",
     "test": "vitest",
     "storybook": "storybook dev -p 6006 --no-open",
     "build-storybook": "storybook build"
@@ -66,8 +67,10 @@
     "@testcontainers/redis": "^11.2.1",
     "@types/async-lock": "^1.4.2",
     "@types/bun": "^1.2.17",
+    "@types/cloudflare-turnstile": "^0.2.2",
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^20",
+    "@types/nodemailer": "^6.4.17",
     "@upstash/ratelimit": "^2.0.5",
     "@upstash/redis": "^1.35.1",
     "@vitest/browser": "3.2.4",
@@ -119,8 +122,10 @@
     "@electric-sql/pglite": "^0.3.5",
     "@electric-sql/pglite-sync": "^0.3.8",
     "@inlang/paraglide-js": "^2.0.0",
+    "@node-rs/argon2": "^2.0.2",
     "@orpc/client": "^1.6.8",
     "@orpc/tanstack-query": "^1.6.8",
+    "@oslojs/binary": "^1.0.0",
     "@oslojs/crypto": "^1.0.1",
     "@oslojs/encoding": "^1.1.0",
     "@remotion/media-parser": "4.0.322",
@@ -140,13 +145,17 @@
     "katex": "^0.16.22",
     "nanoid": "^5.1.5",
     "node-fetch": "^3.3.2",
+    "nodemailer": "^7.0.5",
     "postgres": "^3.4.7",
     "posthog-js": "^1.255.0",
+    "pv-duration": "^1.0.1",
+    "pv-ratelimit": "^1.1.0",
     "rehype-katex": "^7.0.1",
     "remark-math": "^6.0.0",
     "runed": "^0.30.0",
     "shiki": "^3.6.0",
-    "svelte-exmarkdown": "^5.0.1"
+    "svelte-exmarkdown": "^5.0.1",
+    "svelty-email": "^0.1.1"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

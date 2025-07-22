@@ -4,16 +4,15 @@ import { chatTable, openRouterKeyTable } from "../db/schema";
 import { and, eq } from "drizzle-orm";
 import { ORPCError } from "@orpc/client";
 import { isSubscribed } from "$lib/common/utils/subscription";
-import {
-  burstCULimiter,
-  getRatelimitConsumeHeaders,
-  localCULimiter,
-  type transcribeRatelimiter,
-} from "../ratelimit";
+import { burstCULimiter, getRatelimitConsumeHeaders, localCULimiter } from "../ratelimit";
 import type { ModelId } from "$lib/common/ai/models";
 import { BILLING_ENABLED } from "$lib/common/constants";
 import { env } from "$env/dynamic/private";
 import { approximateTokens, calculateCUs, type CUResult } from "../ratelimit/cu";
+import type { TokenBucketRateLimiter } from "pv-ratelimit";
+import { z } from "zod/v4";
+import { dev } from "$app/environment";
+import { getClientIp } from "../utils/ip";
 
 export const authenticatedMiddleware = osBase.middleware(async ({ context, next }) => {
   if (!context.userCtx.user || !context.userCtx.session) {
@@ -109,7 +108,9 @@ export const inferenceMiddleware = authenticatedMiddleware.concat(
       const burstResult = await burstCULimiter.consume(context.userCtx.user.id, estimatedCUs.total);
 
       if (!burstResult.success) {
-        context.setHeaders?.(getRatelimitConsumeHeaders(burstCULimiter, burstResult));
+        context.setHeaders?.(
+          getRatelimitConsumeHeaders(burstResult.remainingTokens, burstResult.nextRefillAt),
+        );
 
         throw new ORPCError("RATE_LIMIT_EXCEEDED", {
           message: "You have reached the rate limit. Please, try again later.",
@@ -159,12 +160,12 @@ export const chatOwnerMiddleware = authenticatedMiddleware.concat(
   },
 );
 
-export const ratelimitMiddleware = (ratelimit: typeof transcribeRatelimiter) =>
+export const tokenBucketRatelimitMiddleware = (ratelimit: TokenBucketRateLimiter) =>
   authenticatedMiddleware.concat(async ({ context, next }) => {
     const result = await ratelimit.consume(context.userCtx.user.id);
 
     if (!result.success) {
-      context.setHeaders?.(getRatelimitConsumeHeaders(ratelimit, result));
+      context.setHeaders?.(getRatelimitConsumeHeaders(result.remainingTokens, result.nextRefillAt));
 
       throw new ORPCError("RATE_LIMIT_EXCEEDED", {
         message: "You have reached the rate limit. Please, try again later.",
@@ -173,3 +174,65 @@ export const ratelimitMiddleware = (ratelimit: typeof transcribeRatelimiter) =>
 
     return next();
   });
+
+export const ipMiddleware = osBase.middleware(({ context, next }) => {
+  const clientIp = getClientIp(context.headers);
+
+  if (!clientIp) {
+    throw new ORPCError("BAD_REQUEST", {
+      message: "Client IP not found",
+    });
+  }
+
+  return next({
+    context: {
+      ...context,
+      clientIp,
+    },
+  });
+});
+
+const basicTurnstileSchema = z.object({
+  success: z.boolean(),
+});
+
+const TURNSTILE_SECRET_KEY = dev ? "1x0000000000000000000000000000000AA" : env.TURNSTILE_SECRET_KEY;
+
+export const turnstileMiddleware = ipMiddleware.concat(
+  async ({ context, next }, input: { turnstileToken?: string }) => {
+    if (TURNSTILE_SECRET_KEY && !input.turnstileToken) {
+      throw new ORPCError("BAD_REQUEST", {
+        message: "Turnstile token is required",
+      });
+    }
+
+    const url = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+    const result = await fetch(url, {
+      body: JSON.stringify({
+        secret: TURNSTILE_SECRET_KEY,
+        response: input.turnstileToken,
+        remoteip: context.clientIp,
+      }),
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await basicTurnstileSchema.safeParseAsync(await result.json());
+
+    if (!data.success) {
+      throw new ORPCError("BAD_REQUEST", {
+        message: "Invalid turnstile token",
+      });
+    }
+
+    if (!data.data.success) {
+      throw new ORPCError("BAD_REQUEST", {
+        message: "Invalid turnstile token",
+      });
+    }
+
+    return next();
+  },
+);
