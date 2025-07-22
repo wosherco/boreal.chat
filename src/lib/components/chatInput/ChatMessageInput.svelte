@@ -362,6 +362,7 @@
     {#if voiceMessageService.state === "idle" || voiceMessageService.state === "error"}
       <!-- svelte-ignore a11y_autofocus -->
       <textarea
+        id="chat-input"
         autocomplete="off"
         autofocus={browser}
         disabled={loading}
