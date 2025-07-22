@@ -1,5 +1,5 @@
 import { chatTable } from "$lib/server/db/schema";
-import { eq, and, isNull, lt } from "drizzle-orm";
+import { eq, and, lt } from "drizzle-orm";
 import type { TransactableDBType } from "../db";
 
 export async function renameChat(tx: TransactableDBType, chatId: string, newTitle: string) {
@@ -20,7 +20,10 @@ export async function deleteChat(tx: TransactableDBType, chatId: string) {
 }
 
 export async function restoreChat(tx: TransactableDBType, chatId: string) {
-  await tx.update(chatTable).set({ deletedAt: null }).where(eq(chatTable.id, chatId));
+  await tx
+    .update(chatTable)
+    .set({ deletedAt: null, archived: false })
+    .where(eq(chatTable.id, chatId));
 }
 
 export async function permanentlyDeleteChat(tx: TransactableDBType, chatId: string) {

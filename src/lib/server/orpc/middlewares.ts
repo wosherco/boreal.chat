@@ -141,6 +141,8 @@ export const chatOwnerMiddleware = authenticatedMiddleware.concat(
         model: chatTable.selectedModel,
         reasoningLevel: chatTable.reasoningLevel,
         webSearchEnabled: chatTable.webSearchEnabled,
+        deletedAt: chatTable.deletedAt,
+        archived: chatTable.archived,
       })
       .from(chatTable)
       .where(and(eq(chatTable.id, input.chatId), eq(chatTable.userId, context.userCtx.user.id)))
@@ -159,6 +161,22 @@ export const chatOwnerMiddleware = authenticatedMiddleware.concat(
     });
   },
 );
+
+export const activeChatMiddleware = chatOwnerMiddleware.concat(async ({ context, next }) => {
+  if (context.chat.deletedAt) {
+    throw new ORPCError("BAD_REQUEST", {
+      message: "Chat is deleted",
+    });
+  }
+
+  if (context.chat.archived) {
+    throw new ORPCError("BAD_REQUEST", {
+      message: "Chat is archived",
+    });
+  }
+
+  return next();
+});
 
 export const tokenBucketRatelimitMiddleware = (ratelimit: TokenBucketRateLimiter) =>
   authenticatedMiddleware.concat(async ({ context, next }) => {

@@ -8,25 +8,35 @@
     MessageSquareIcon,
     ArrowLeftIcon,
     AlertTriangleIcon,
+    Loader2Icon,
   } from "@lucide/svelte";
   import { orpcQuery } from "$lib/client/orpc";
   import { createMutation } from "@tanstack/svelte-query";
   import { toast } from "svelte-sonner";
   import { goto } from "$app/navigation";
-  import { cn } from "$lib/utils";
-
+  import { useDeletedChats } from "$lib/client/hooks/useDeletedChats.svelte";
   const { data }: { data: PageData } = $props();
 
-  const deletedChats = $derived(data.deletedChats || []);
+  const deletedChats = useDeletedChats(data.deletedChats ?? null);
 
   const restoreMutation = createMutation(
     orpcQuery.v1.chat.restoreChat.mutationOptions({
       onSuccess: () => {
         toast.success("Chat restored");
-        location.reload(); // Simple refresh to update the list
       },
       onError: () => {
         toast.error("Failed to restore chat");
+      },
+    }),
+  );
+
+  const permanentlyDeleteMutation = createMutation(
+    orpcQuery.v1.chat.permanentlyDeleteChat.mutationOptions({
+      onSuccess: () => {
+        toast.success("Chat permanently deleted");
+      },
+      onError: () => {
+        toast.error("Failed to permanently delete chat");
       },
     }),
   );
@@ -41,10 +51,7 @@
         "Are you sure you want to permanently delete this chat? This action cannot be undone.",
       )
     ) {
-      // For now, we'll just show a message since permanent deletion will be handled by the cron job
-      toast.info(
-        "Chat marked for permanent deletion. It will be removed automatically after 14 days.",
-      );
+      $permanentlyDeleteMutation.mutate({ chatId });
     }
   }
 
@@ -61,96 +68,102 @@
   <title>Deleted Chats | boreal.chat</title>
 </svelte:head>
 
-<div class="h-full overflow-y-auto p-6">
-  <div class="mx-auto max-w-4xl">
-    <!-- Header -->
-    <div class="mb-6 flex items-center gap-4">
-      <Button variant="ghost" size="icon" onclick={() => goto("/")}>
-        <ArrowLeftIcon class="size-4" />
-      </Button>
-      <div>
-        <h1 class="text-2xl font-bold">Deleted Chats</h1>
-        <p class="text-muted-foreground text-sm">
-          {deletedChats.length} deleted {deletedChats.length === 1 ? "chat" : "chats"}
-        </p>
-      </div>
-    </div>
-
-    <!-- Warning -->
-    {#if deletedChats.length > 0}
-      <div class="bg-destructive/10 border-destructive/20 mb-6 rounded-lg border p-4">
-        <div class="flex gap-3">
-          <AlertTriangleIcon class="text-destructive size-5 flex-shrink-0" />
-          <div>
-            <h3 class="text-destructive font-medium">Automatic Deletion</h3>
-            <p class="text-destructive/80 text-sm">
-              Deleted chats will be permanently removed after 14 days. You can restore them anytime
-              before then.
-            </p>
-          </div>
+{#if $deletedChats.loading || !$deletedChats.data}
+  <div class="flex h-full items-center justify-center">
+    <Loader2Icon class="h-10 w-10 animate-spin" />
+  </div>
+{:else}
+  <div class="h-full overflow-y-auto p-6">
+    <div class="mx-auto max-w-4xl">
+      <!-- Header -->
+      <div class="mb-6 flex items-center gap-4">
+        <Button variant="ghost" size="icon" onclick={() => goto("/")}>
+          <ArrowLeftIcon class="size-4" />
+        </Button>
+        <div>
+          <h1 class="text-2xl font-bold">Deleted Chats</h1>
+          <p class="text-muted-foreground text-sm">
+            {$deletedChats.data.length} deleted {$deletedChats.data.length === 1 ? "chat" : "chats"}
+          </p>
         </div>
       </div>
-    {/if}
 
-    <!-- Content -->
-    {#if deletedChats.length === 0}
-      <div
-        class="text-muted-foreground flex flex-col items-center justify-center py-16 text-center"
-      >
-        <MessageSquareIcon class="mb-4 h-12 w-12" />
-        <h3 class="mb-2 text-lg font-medium">No deleted chats</h3>
-        <p class="text-sm">
-          When you delete chats, they'll appear here for 14 days before being permanently removed.
-        </p>
-      </div>
-    {:else}
-      <div class="grid gap-3">
-        {#each deletedChats as chat (chat.id)}
-          {@const daysLeft = chat.deletedAt ? getDaysUntilDeletion(chat.deletedAt) : 0}
-          <div class="bg-card hover:bg-accent/50 rounded-lg border p-4 transition-colors">
-            <div class="flex items-start justify-between gap-4">
-              <div class="min-w-0 flex-1">
-                <h3 class="truncate font-medium">
-                  {chat.title || "Untitled Chat"}
-                </h3>
-                <div class="mt-1 flex items-center gap-2">
-                  <Badge variant="destructive" class="text-xs">Deleted</Badge>
-                  {#if chat.deletedAt}
-                    <span class="text-muted-foreground text-xs">
-                      Deleted {chat.deletedAt.toLocaleDateString()}
-                    </span>
-                    <span class="text-destructive text-xs font-medium">
-                      • {daysLeft > 0
-                        ? `${daysLeft} days until permanent deletion`
-                        : "Will be deleted soon"}
-                    </span>
-                  {/if}
-                </div>
-              </div>
-              <div class="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onclick={() => handleRestore(chat.id)}
-                  disabled={$restoreMutation.isPending}
-                >
-                  <ArchiveRestoreIcon class="mr-2 size-4" />
-                  Restore
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onclick={() => handlePermanentDelete(chat.id)}
-                  class="text-destructive hover:text-destructive"
-                >
-                  <TrashIcon class="mr-2 size-4" />
-                  Delete Forever
-                </Button>
-              </div>
+      <!-- Warning -->
+      {#if $deletedChats.data.length > 0}
+        <div class="bg-destructive/10 border-destructive/20 mb-6 rounded-lg border p-4">
+          <div class="flex gap-3">
+            <AlertTriangleIcon class="text-destructive size-5 flex-shrink-0" />
+            <div>
+              <h3 class="text-destructive font-medium">Automatic Deletion</h3>
+              <p class="text-destructive/80 text-sm">
+                Deleted chats will be permanently removed after 14 days. You can restore them
+                anytime before then.
+              </p>
             </div>
           </div>
-        {/each}
-      </div>
-    {/if}
+        </div>
+      {/if}
+
+      <!-- Content -->
+      {#if $deletedChats.data.length === 0}
+        <div
+          class="text-muted-foreground flex flex-col items-center justify-center py-16 text-center"
+        >
+          <MessageSquareIcon class="mb-4 h-12 w-12" />
+          <h3 class="mb-2 text-lg font-medium">No deleted chats</h3>
+          <p class="text-sm">
+            When you delete chats, they'll appear here for 14 days before being permanently removed.
+          </p>
+        </div>
+      {:else}
+        <div class="grid gap-3">
+          {#each $deletedChats.data as chat (chat.id)}
+            {@const daysLeft = chat.deletedAt ? getDaysUntilDeletion(chat.deletedAt) : 0}
+            <div class="bg-card hover:bg-accent/50 rounded-lg border p-4 transition-colors">
+              <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0 flex-1">
+                  <h3 class="truncate font-medium">
+                    {chat.title || "Untitled Chat"}
+                  </h3>
+                  <div class="mt-1 flex items-center gap-2">
+                    <Badge variant="destructive" class="text-xs">Deleted</Badge>
+                    {#if chat.deletedAt}
+                      <span class="text-muted-foreground text-xs">
+                        Deleted {chat.deletedAt.toLocaleDateString()}
+                      </span>
+                      <span class="text-destructive text-xs font-medium">
+                        • {daysLeft > 0
+                          ? `${daysLeft} days until permanent deletion`
+                          : "Will be deleted soon"}
+                      </span>
+                    {/if}
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onclick={() => handleRestore(chat.id)}
+                    disabled={$restoreMutation.isPending}
+                  >
+                    <ArchiveRestoreIcon class="mr-2 size-4" />
+                    Restore
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onclick={() => handlePermanentDelete(chat.id)}
+                    class="text-destructive hover:text-destructive"
+                  >
+                    <TrashIcon class="mr-2 size-4" />
+                    Delete Forever
+                  </Button>
+                </div>
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
   </div>
-</div>
+{/if}

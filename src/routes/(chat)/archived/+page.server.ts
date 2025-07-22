@@ -5,6 +5,7 @@ import { chatTable } from "$lib/server/db/schema";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { transformKeyToCamelCaseRecursive } from "$lib/client/hooks/utils";
 import { building } from "$app/environment";
+import { error } from "@sveltejs/kit";
 
 export const load: PageServerLoad = async ({ locals }) => {
   if (building) {
@@ -12,6 +13,10 @@ export const load: PageServerLoad = async ({ locals }) => {
   }
 
   const userId = locals.user?.id;
+
+  if (!userId) {
+    return error(401, "Unauthorized");
+  }
 
   const archivedChats = userId
     ? (db
@@ -33,6 +38,7 @@ export const load: PageServerLoad = async ({ locals }) => {
           ),
         )
         .orderBy(desc(chatTable.updatedAt))
+        .limit(50)
         .execute()
         .then((rows) =>
           rows.map(
@@ -42,7 +48,7 @@ export const load: PageServerLoad = async ({ locals }) => {
               ) as unknown as Chat,
           ),
         ) satisfies ServerData<Chat[]>)
-    : [];
+    : Promise.resolve([]);
 
   return {
     archivedChats,

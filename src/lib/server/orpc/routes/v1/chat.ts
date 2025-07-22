@@ -3,6 +3,7 @@ import { z } from "zod";
 import { GPT_4_1_NANO, LLAMA_3_3_8B_FREE, MODELS, REASONING_LEVELS } from "$lib/common/ai/models";
 import { db } from "$lib/server/db";
 import {
+  activeChatMiddleware,
   authenticatedMiddleware,
   chatOwnerMiddleware,
   inferenceMiddleware,
@@ -31,6 +32,7 @@ import {
   archiveChat,
   unarchiveChat,
   restoreChat,
+  permanentlyDeleteChat,
 } from "$lib/server/services/chat";
 import { chatTitleSchema } from "$lib/common/validators/chat";
 import type { CUResult } from "$lib/server/ratelimit/cu";
@@ -245,8 +247,8 @@ export const v1ChatRouter = osBase.router({
         draftId: z.string().uuid().optional(),
       }),
     )
+    .use(activeChatMiddleware)
     .use(inferenceMiddleware)
-    .use(chatOwnerMiddleware)
     .handler(async ({ context, input }) => {
       const actualReasoningLevel = input.reasoningLevel ?? context.chat.reasoningLevel;
       const actualModel = input.model ?? context.chat.model;
@@ -402,10 +404,12 @@ export const v1ChatRouter = osBase.router({
     .use(authenticatedMiddleware)
     .input(
       z.object({
+        chatId: z.string().uuid(),
         model: z.enum(MODELS),
         messageId: z.string().uuid(),
       }),
     )
+    .use(activeChatMiddleware)
     .use(inferenceMiddleware)
     .handler(async ({ context, input }) => {
       const result = await db.transaction(async (tx) => {
@@ -517,7 +521,8 @@ export const v1ChatRouter = osBase.router({
 
   cancelMessage: osBase
     .use(authenticatedMiddleware)
-    .input(z.object({ messageId: z.string().uuid() }))
+    .input(z.object({ chatId: z.string().uuid(), messageId: z.string().uuid() }))
+    .use(activeChatMiddleware)
     .handler(async ({ context, input }) => {
       const [message] = await db
         .select({
@@ -554,7 +559,7 @@ export const v1ChatRouter = osBase.router({
   renameChat: osBase
     .use(authenticatedMiddleware)
     .input(z.object({ chatId: z.string().uuid(), newTitle: chatTitleSchema }))
-    .use(chatOwnerMiddleware)
+    .use(activeChatMiddleware)
     .handler(async ({ input }) => {
       await renameChat(db, input.chatId, input.newTitle);
 
@@ -568,8 +573,32 @@ export const v1ChatRouter = osBase.router({
     .use(authenticatedMiddleware)
     .input(z.object({ chatId: z.string().uuid() }))
     .use(chatOwnerMiddleware)
-    .handler(async ({ input }) => {
+    .handler(async ({ input, context }) => {
+      if (context.chat.deletedAt) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Chat is already deleted",
+        });
+      }
+
       await deleteChat(db, input.chatId);
+
+      return {
+        chatId: input.chatId,
+      };
+    }),
+
+  permanentlyDeleteChat: osBase
+    .use(authenticatedMiddleware)
+    .input(z.object({ chatId: z.string().uuid() }))
+    .use(chatOwnerMiddleware)
+    .handler(async ({ input, context }) => {
+      if (!context.chat.deletedAt) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Chat is not deleted",
+        });
+      }
+
+      await permanentlyDeleteChat(db, input.chatId);
 
       return {
         chatId: input.chatId,
@@ -580,7 +609,19 @@ export const v1ChatRouter = osBase.router({
     .use(authenticatedMiddleware)
     .input(z.object({ chatId: z.string().uuid() }))
     .use(chatOwnerMiddleware)
-    .handler(async ({ input }) => {
+    .handler(async ({ input, context }) => {
+      if (context.chat.deletedAt) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Chat is deleted",
+        });
+      }
+
+      if (context.chat.archived) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Chat is already archived",
+        });
+      }
+
       await archiveChat(db, input.chatId);
 
       return {
@@ -593,7 +634,19 @@ export const v1ChatRouter = osBase.router({
     .use(authenticatedMiddleware)
     .input(z.object({ chatId: z.string().uuid() }))
     .use(chatOwnerMiddleware)
-    .handler(async ({ input }) => {
+    .handler(async ({ input, context }) => {
+      if (context.chat.deletedAt) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Chat is deleted",
+        });
+      }
+
+      if (!context.chat.archived) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Chat is not archived",
+        });
+      }
+
       await unarchiveChat(db, input.chatId);
 
       return {
@@ -606,7 +659,13 @@ export const v1ChatRouter = osBase.router({
     .use(authenticatedMiddleware)
     .input(z.object({ chatId: z.string().uuid() }))
     .use(chatOwnerMiddleware)
-    .handler(async ({ input }) => {
+    .handler(async ({ input, context }) => {
+      if (!context.chat.deletedAt) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Chat is not deleted",
+        });
+      }
+
       await restoreChat(db, input.chatId);
 
       return {

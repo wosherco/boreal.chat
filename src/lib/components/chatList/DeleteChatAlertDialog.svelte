@@ -41,7 +41,7 @@
     <AlertDialog.Header>
       <AlertDialog.Title>Delete this chat?</AlertDialog.Title>
       <AlertDialog.Description>
-        This chat will be moved to the deleted folder. You can restore it anytime within 14 days,
+        This chat will be permanently deleted in 14 days. You can restore it anytime within 14 days,
         after which it will be permanently removed.
       </AlertDialog.Description>
     </AlertDialog.Header>
