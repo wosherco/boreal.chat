@@ -99,6 +99,13 @@
       "when": 1752354551904,
       "tag": "0013_brown_maverick",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1753131633061,
+      "tag": "0014_goofy_may_parker",
+      "breakpoints": true
     }
   ]
 }

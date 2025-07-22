@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { boolean, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { SUBSCRIPTION_PLANS, SUBSCRIPTION_STATUS, USER_ROLES } from "../../common";
 import { createChatTables } from "../../common/schema/chats";
 import { createDraftsTable } from "../../common/schema/drafts";
@@ -9,6 +9,7 @@ export const userTable = pgTable("user", {
   email: text().notNull().unique(),
   profilePicture: text(),
   role: varchar({ length: 255, enum: USER_ROLES }).notNull().default("USER"),
+  emailVerified: boolean().notNull().default(false),
 
   // Payment stuff
   subscribedUntil: timestamp({ withTimezone: true }),
