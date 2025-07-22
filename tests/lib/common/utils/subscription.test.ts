@@ -33,6 +33,7 @@ const createUser = (overrides: Partial<UserInfo> = {}): UserInfo => ({
   name: "Test User",
   email: "test@example.com",
   profilePicture: null,
+  emailVerified: true,
   subscribedUntil: null,
   subscriptionStatus: null,
   subscriptionPlan: null,

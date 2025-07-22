@@ -83,7 +83,7 @@
   });
 
   async function onSendMessage() {
-    if (loading) return;
+    if (loading || !isLastMessageFinished) return;
     loading = true;
 
     try {
@@ -192,6 +192,12 @@
       debouncedSaveDraft.runScheduledNow();
       prevDraftId = draft?.id;
       value = draft?.content ?? "";
+
+      if (draft?.selectedModel && !MODEL_DETAILS[draft.selectedModel]) {
+        console.warn(`Unknown model: ${draft.selectedModel}`);
+        return;
+      }
+
       selectedModel = draft?.selectedModel ?? untrack(() => actualSelectedModel);
       webSearchEnabled = draft?.webSearchEnabled ?? untrack(() => actualWebSearchEnabled);
       reasoningLevel = draft?.reasoningLevel ?? untrack(() => actualReasoningLevel);

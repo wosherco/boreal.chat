@@ -26,6 +26,7 @@
     BookOpenIcon,
     ArchiveIcon,
     TrashIcon,
+    MailWarningIcon,
   } from "@lucide/svelte";
   import { goto } from "$app/navigation";
   import { orpc } from "$lib/client/orpc";
@@ -64,7 +65,11 @@
     logoutLoading = true;
     try {
       await orpc.v1.auth.logout();
-      await clearLocalDb();
+      try {
+        await clearLocalDb();
+      } catch {
+        console.warn("Failed to clear local db. Ignoring...");
+      }
       window.location.reload();
     } catch (e) {
       console.error(e);
@@ -197,6 +202,16 @@
                     {/if}
                   </p>
                 </div>
+                {#if !user.data.emailVerified}
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <MailWarningIcon class="size-4 text-amber-600" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Email not verified</p>
+                    </TooltipContent>
+                  </Tooltip>
+                {/if}
                 <ChevronsUpDownIcon class="size-4" />
               </div>
             </Button>
@@ -205,7 +220,15 @@
             <DropdownMenuLabel>
               <div class="flex flex-col space-y-1">
                 <p class="text-sm leading-none font-medium">{user.data.name}</p>
-                <p class="text-muted-foreground text-xs leading-none">{user.data.email}</p>
+                <p class="text-muted-foreground text-xs leading-none">
+                  {user.data.email}
+                  {#if !user.data.emailVerified}
+                    <span class="mt-2 flex items-center gap-1 text-amber-600">
+                      <MailWarningIcon class="size-4" />
+                      <span class="text-xs">Email not verified</span>
+                    </span>
+                  {/if}
+                </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

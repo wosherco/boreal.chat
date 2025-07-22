@@ -1,5 +1,5 @@
 {
-  "id": "18c71a51-6966-4980-af54-b835819fc8c1",
+  "id": "f4b03bc2-50d7-4e8b-8a89-5832f8b891f2",
   "prevId": "29116d4c-eaff-432a-886e-5eab4ae54eb5",
   "version": "7",
   "dialect": "postgresql",
@@ -60,19 +60,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "archived": {
-          "name": "archived",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -672,6 +659,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'USER'"
+        },
+        "email_verified": {
+          "name": "email_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "subscribed_until": {
           "name": "subscribed_until",

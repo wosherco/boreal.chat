@@ -5,6 +5,7 @@
   import SvelteSeo from "svelte-seo";
   import type { PageProps } from "./$types";
   import { Button } from "$lib/components/ui/button";
+  import EmailVerificationAlert from "$lib/components/alerts/EmailVerificationAlert.svelte";
 
   const { data }: PageProps = $props();
 
@@ -25,6 +26,10 @@
       >Please, log in first <ArrowRightIcon /></Button
     >
   {:else}
+    {#if $user.data?.authenticated && !$user.data?.data?.emailVerified}
+      <EmailVerificationAlert />
+    {/if}
+
     <p>👋 Welcome back, {$user.data.data.name}!</p>
 
     <Card class="w-fit">

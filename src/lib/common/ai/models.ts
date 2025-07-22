@@ -280,6 +280,8 @@ export const MODEL_DETAILS: Record<ModelId, ModelDetails> = {
   },
 };
 
+export const DEFAULT_MODEL = GPT_4_1;
+
 export const REASONING_HIGH = "high";
 export const REASONING_MEDIUM = "medium";
 export const REASONING_LOW = "low";

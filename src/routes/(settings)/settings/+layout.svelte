@@ -7,6 +7,7 @@
     CreditCardIcon,
     HomeIcon,
     KeyIcon,
+    LockIcon,
     MailIcon,
     MenuIcon,
     PaintbrushIcon,
@@ -41,6 +42,11 @@
       label: "Overview",
       href: "/settings",
       icon: HomeIcon,
+    },
+    {
+      label: "Authentication",
+      href: "/settings/authentication",
+      icon: LockIcon,
     },
     {
       label: "Customization",
