@@ -24,14 +24,12 @@
           turnstileToken = token;
         },
       });
-    console.log("MOUNTING THIS THING");
 
     try {
       renderCaptcha();
     } catch {
       // @ts-expect-error - Turnstile callback is not typed
       window.onloadTurnstileCallback = () => {
-        console.log("RENDERING");
         renderCaptcha();
       };
     }
