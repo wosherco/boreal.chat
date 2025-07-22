@@ -15,7 +15,7 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
   }
 
   let verificationRequest = await getUserEmailVerificationRequestFromRequest(locals.user, cookies);
-  let justSentEmail = false;
+  let justSentEmail = Promise.resolve(false);
 
   if (verificationRequest === null || isPast(verificationRequest.expiresAt)) {
     if (locals.user.emailVerified) {
@@ -24,13 +24,12 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
 
     // Note: We don't need rate limiting since it takes time before requests expire
     verificationRequest = await createEmailVerificationRequest(locals.user.id, locals.user.email);
-    await sendEmailVerificationEmail(
+    justSentEmail = sendEmailVerificationEmail(
       verificationRequest.email,
       `${env.PUBLIC_URL}/auth/verify-email?code=${verificationRequest.code}`,
       verificationRequest.code,
-    );
+    ).then(() => true);
     setEmailVerificationRequestCookie(cookies, verificationRequest);
-    justSentEmail = true;
   }
 
   return {
