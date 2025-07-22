@@ -24,12 +24,13 @@
   import { toast } from "svelte-sonner";
   import AuthBackArrow from "$lib/components/auth/AuthBackArrow.svelte";
   import TurnstileCaptcha from "$lib/components/TurnstileCaptcha.svelte";
+  import { safeValidateEmail } from "$lib/utils/email";
 
   let turnstileToken = $state<string | undefined>(undefined);
 
   onMount(() => {
-    const passwordInput = document.querySelector("input[name='name']") as HTMLInputElement;
-    passwordInput?.focus();
+    const nameInput = document.querySelector("input[name='name']") as HTMLInputElement;
+    nameInput?.focus();
   });
 
   const signupMutation = createMutation(
@@ -54,7 +55,7 @@
     defaults(
       {
         name: "",
-        email: page.url.searchParams.get("email") ?? "",
+        email: safeValidateEmail(page.url.searchParams.get("email")),
         password: "",
       },
       zod(formSchema),
@@ -88,7 +89,7 @@
   </div>
 </div>
 <!-- Title -->
-<h2 class="mb-2 text-center text-2xl font-semibold">Sign in to boreal.chat</h2>
+<h2 class="mb-2 text-center text-2xl font-semibold">Sign up to boreal.chat</h2>
 <!-- Email Form -->
 <form class="w-full space-y-6" use:enhance>
   <Form.Field {form} name="name">

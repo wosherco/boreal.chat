@@ -4,7 +4,19 @@ import { DynamicBuffer } from "@oslojs/binary";
 
 import { env } from "$env/dynamic/private";
 
-const key = decodeBase64(env.AUTH_ENCRYPTION_KEY);
+const key = (() => {
+  try {
+    const decoded = decodeBase64(env.AUTH_ENCRYPTION_KEY);
+    if (decoded.length !== 16) {
+      throw new Error(`Invalid key length: expected 16 bytes, got ${decoded.length}`);
+    }
+    return decoded;
+  } catch (error) {
+    throw new Error(
+      `Invalid AUTH_ENCRYPTION_KEY: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+  }
+})();
 
 export function encrypt(data: Uint8Array): Uint8Array {
   const iv = new Uint8Array(16);

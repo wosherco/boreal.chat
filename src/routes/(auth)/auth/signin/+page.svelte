@@ -22,6 +22,7 @@
   import { orpcQuery } from "$lib/client/orpc";
   import { toast } from "svelte-sonner";
   import AuthBackArrow from "$lib/components/auth/AuthBackArrow.svelte";
+  import { safeValidateEmail } from "$lib/utils/email";
 
   onMount(() => {
     const passwordInput = document.querySelector("input[name='password']") as HTMLInputElement;
@@ -48,7 +49,10 @@
   );
 
   const form = superForm(
-    defaults({ email: page.url.searchParams.get("email") ?? "", password: "" }, zod(formSchema)),
+    defaults(
+      { email: safeValidateEmail(page.url.searchParams.get("email")), password: "" },
+      zod(formSchema),
+    ),
     {
       validators: zod(formSchema),
       SPA: true,

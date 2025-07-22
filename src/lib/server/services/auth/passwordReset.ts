@@ -58,10 +58,10 @@ export async function validatePasswordResetSessionToken(
         name: userTable.name,
         passwordHash: userTable.passwordHash,
         emailVerified: userTable.emailVerified,
-        registeredTOTP: sql<boolean>`${totpCredentialTable} IS NOT NULL`,
-        registeredPasskey: sql<boolean>`${passkeyCredentialTable} IS NOT NULL`,
-        registeredSecurityKey: sql<boolean>`${securityKeyCredentialTable} IS NOT NULL`,
-        registered2FA: sql<boolean>`${totpCredentialTable} IS NOT NULL OR ${passkeyCredentialTable} IS NOT NULL OR ${securityKeyCredentialTable} IS NOT NULL`,
+        registeredTOTP: sql<boolean>`${totpCredentialTable.id} IS NOT NULL`,
+        registeredPasskey: sql<boolean>`${passkeyCredentialTable.id} IS NOT NULL`,
+        registeredSecurityKey: sql<boolean>`${securityKeyCredentialTable.id} IS NOT NULL`,
+        registered2FA: sql<boolean>`${totpCredentialTable.id} IS NOT NULL OR ${passkeyCredentialTable.id} IS NOT NULL OR ${securityKeyCredentialTable.id} IS NOT NULL`,
       },
     })
     .from(passwordResetSessionTable)

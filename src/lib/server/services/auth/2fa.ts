@@ -10,6 +10,7 @@ import {
 } from "$lib/server/db/schema";
 import { and, eq } from "drizzle-orm";
 import type { BackendUser } from "./user";
+import { constantTimeEquals } from "./utils";
 
 export async function resetUser2FAWithRecoveryCode(
   userId: string,
@@ -30,7 +31,7 @@ export async function resetUser2FAWithRecoveryCode(
     }
 
     const userRecoveryCode = decryptToString(user.recoveryCode);
-    if (recoveryCode !== userRecoveryCode) {
+    if (!constantTimeEquals(recoveryCode, userRecoveryCode)) {
       return false;
     }
 
@@ -44,6 +45,9 @@ export async function resetUser2FAWithRecoveryCode(
       .returning();
 
     if (!updatedUser) {
+      console.error(
+        `Failed to update recovery code for user ${userId} - possible concurrent modification`,
+      );
       return false;
     }
 

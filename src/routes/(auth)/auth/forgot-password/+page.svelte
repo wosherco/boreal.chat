@@ -22,7 +22,7 @@
   import { toast } from "svelte-sonner";
   import AuthBackArrow from "$lib/components/auth/AuthBackArrow.svelte";
   import TurnstileCaptcha from "$lib/components/TurnstileCaptcha.svelte";
-
+  import { safeValidateEmail } from "$lib/utils/email";
   let turnstileToken = $state<string | undefined>(undefined);
 
   onMount(() => {
@@ -46,7 +46,7 @@
   );
 
   const form = superForm(
-    defaults({ email: page.url.searchParams.get("email") ?? "" }, zod(formSchema)),
+    defaults({ email: safeValidateEmail(page.url.searchParams.get("email")) }, zod(formSchema)),
     {
       validators: zod(formSchema),
       SPA: true,
