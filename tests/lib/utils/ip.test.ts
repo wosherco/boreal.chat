@@ -41,6 +41,6 @@ describe("getClientIp", () => {
 
   it("returns undefined if no relevant headers are present", () => {
     const headers = makeHeaders({});
-    expect(getClientIp(headers)).toBeUndefined();
+    expect(getClientIp(headers)).toBeNull();
   });
 });
