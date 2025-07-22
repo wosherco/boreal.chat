@@ -69,7 +69,7 @@
   </div>
 </div>
 <!-- Title -->
-<h2 class="mb-2 text-center text-2xl font-semibold">Verify your email</h2>
+<h2 class="mb-2 text-center text-2xl font-semibold">Reset Password</h2>
 <!-- Email Form -->
 <form class="w-full space-y-6" use:enhance>
   <Form.Field {form} name="password">
