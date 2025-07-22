@@ -18,13 +18,17 @@ export const loginThrottler = redis
   ? new IORedisThrottlingRateLimiter(redis, Duration.ofSeconds(1))
   : new DummyThrottling();
 export const loginIpLimiter = redis
-  ? new IORedisSlidingWindowRateLimiter(redis, 20, Duration.ofSeconds(1))
+  ? new IORedisSlidingWindowRateLimiter(redis, 5, Duration.ofSeconds(1))
   : new DummySlidingWindow();
 export const registerIpLimiter = redis
   ? new IORedisSlidingWindowRateLimiter(redis, 3, Duration.ofSeconds(10))
   : new DummySlidingWindow();
 export const recoveryCodeLimiter = redis
   ? new IORedisSlidingWindowRateLimiter(redis, 3, Duration.ofHours(1))
+  : new DummySlidingWindow();
+// Password reset email verification limiter: 5 attempts per hour per IP
+export const passwordResetVerifyLimiter = redis
+  ? new IORedisSlidingWindowRateLimiter(redis, 5, Duration.ofHours(1))
   : new DummySlidingWindow();
 
 // RATELIMITER FOR WEB AUTHN

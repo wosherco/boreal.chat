@@ -15,6 +15,7 @@ import {
   loginThrottler,
   registerIpLimiter,
   webauthnRatelimiter,
+  passwordResetVerifyLimiter,
 } from "$lib/server/ratelimit";
 import { createWebAuthnChallenge } from "$lib/server/services/auth/webauthn";
 import { encodeBase64 } from "@oslojs/encoding";
@@ -343,14 +344,23 @@ export const v1AuthRouter = osBase.router({
       };
     }),
 
-  // TODO: Add rate limiting
   passwordResetVerifyEmail: osBase
+    .use(ipMiddleware)
     .input(
       z.object({
         code: z.string().min(8).max(8),
       }),
     )
     .handler(async ({ context, input }) => {
+      // Add rate limiting by IP
+      const { clientIp } = context;
+      const ipLimiterResult = await passwordResetVerifyLimiter.consume(clientIp);
+      if (!ipLimiterResult.success) {
+        throw new ORPCError("RATE_LIMIT_EXCEEDED", {
+          message: "You have reached the rate limit. Please, try again later.",
+        });
+      }
+
       if (!context.cookies) {
         throw new ORPCError("BAD_REQUEST", {
           message: "Cookies not found",
