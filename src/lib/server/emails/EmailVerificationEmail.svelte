@@ -57,6 +57,7 @@
           fontSize: "16px",
           fontWeight: "bold",
           display: "inline-block",
+          border: "2px solid #0056b3",
         }}
       >
         Verify Email Address
@@ -125,8 +126,18 @@
           textAlign: "center",
         }}
       >
-        This verification link will expire in 24 hours. If you didn't create an account, you can
-        safely ignore this email.
+        This verification link will expire in 15 minutes. If you didn't create an account, let us
+        know at support@boreal.chat.
+      </Text>
+      <Text
+        style={{
+          fontSize: "12px",
+          color: "#999",
+          textAlign: "center",
+        }}
+      >
+        For security, we will never ask for your password via email. This email was sent from
+        noreply@boreal.chat.
       </Text>
     </Section>
   </Container>

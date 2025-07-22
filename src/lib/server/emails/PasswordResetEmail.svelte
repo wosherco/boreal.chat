@@ -50,7 +50,7 @@
           marginBottom: "20px",
         }}
       >
-        Click the button below to create a new password. This link will expire in 1 hour.
+        Click the button below to create a new password. This link will expire in 5 minutes.
       </Text>
     </Section>
 
@@ -145,7 +145,8 @@
           textAlign: "center",
         }}
       >
-        For security reasons, this reset link will expire in 1 hour.
+        For security reasons, this reset link will expire in 5 minutes. This email was sent from
+        no-reply@boreal.chat.
       </Text>
     </Section>
   </Container>
