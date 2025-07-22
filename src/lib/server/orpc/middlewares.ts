@@ -12,6 +12,7 @@ import { approximateTokens, calculateCUs, type CUResult } from "../ratelimit/cu"
 import type { TokenBucketRateLimiter } from "pv-ratelimit";
 import { z } from "zod/v4";
 import { dev } from "$app/environment";
+import { getClientIp } from "../utils/ip";
 
 export const authenticatedMiddleware = osBase.middleware(async ({ context, next }) => {
   if (!context.userCtx.user || !context.userCtx.session) {
@@ -175,7 +176,7 @@ export const tokenBucketRatelimitMiddleware = (ratelimit: TokenBucketRateLimiter
   });
 
 export const ipMiddleware = osBase.middleware(({ context, next }) => {
-  const clientIp = context.headers.get("x-forwarded-for")?.split(",")[0];
+  const clientIp = getClientIp(context.headers);
 
   if (!clientIp) {
     throw new ORPCError("BAD_REQUEST", {

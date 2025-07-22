@@ -190,6 +190,7 @@ export const v1AuthRouter = osBase.router({
         });
       }
 
+      // Disabled for now, we're already checking password strength in the schema
       // const strongPassword = await verifyPasswordStrength(input.password);
 
       // if (!strongPassword) {
