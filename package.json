@@ -113,15 +113,14 @@
     "typescript-eslint": "^8.20.0",
     "vaul-svelte": "1.0.0-next.7",
     "vite": "^6.2.6",
+    "vite-plugin-devtools-json": "^0.3.0",
     "vite-plugin-mkcert": "^1.17.8",
     "vitest": "^3.2.4",
     "zod": "^3.25.64"
   },
   "dependencies": {
-    "@electric-sql/pglite": "^0.3.3",
-    "@electric-sql/pglite-sync": "^0.3.6",
-    "@humanspeak/svelte-markdown": "^0.8.7",
-    "@humanspeak/svelte-virtual-list": "^0.2.5",
+    "@electric-sql/pglite": "^0.3.5",
+    "@electric-sql/pglite-sync": "^0.3.8",
     "@inlang/paraglide-js": "^2.0.0",
     "@node-rs/argon2": "^2.0.2",
     "@orpc/client": "^1.6.8",

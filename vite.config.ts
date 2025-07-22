@@ -6,6 +6,7 @@ import { sveltekit } from "@sveltejs/kit/vite";
 import { defineConfig } from "vite";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import devtoolsJson from "vite-plugin-devtools-json";
 import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 const dirname =
   typeof __dirname !== "undefined" ? __dirname : path.dirname(fileURLToPath(import.meta.url));
@@ -25,6 +26,7 @@ export default defineConfig({
       project: "./project.inlang",
       outdir: "./src/lib/paraglide",
     }),
+    devtoolsJson(),
   ],
   optimizeDeps: {
     exclude: ["@electric-sql/pglite"],
