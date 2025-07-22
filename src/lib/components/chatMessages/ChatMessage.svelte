@@ -134,6 +134,7 @@
 
   async function regenerateMessage(newModel: ModelId) {
     const result = await orpc.v1.chat.regenerateMessage({
+      chatId: message.chatId,
       model: newModel,
       messageId: message.id,
     });

@@ -34,6 +34,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         selectedModel: chatTable.selectedModel,
         webSearchEnabled: chatTable.webSearchEnabled,
         reasoningLevel: chatTable.reasoningLevel,
+        archived: chatTable.archived,
+        deletedAt: chatTable.deletedAt,
       },
     })
     .from(messageTable)

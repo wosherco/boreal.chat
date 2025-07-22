@@ -161,6 +161,7 @@
 
       if (currentChatState?.lastMessageId) {
         await orpc.v1.chat.cancelMessage({
+          chatId: currentChatState.chatId,
           messageId: currentChatState.lastMessageId,
         });
       }
