@@ -52,6 +52,7 @@ import {
 } from "$lib/server/services/auth/passwordReset";
 import { passwordSchema } from "$lib/common/validators/chat";
 import * as Sentry from "@sentry/sveltekit";
+import { constantTimeEquals } from "$lib/server/services/auth/utils";
 
 export const v1AuthRouter = osBase.router({
   getUser: osBase.handler(async ({ context }) => {
@@ -279,7 +280,7 @@ export const v1AuthRouter = osBase.router({
         });
       }
 
-      if (verificationRequest.code !== input.code) {
+      if (!constantTimeEquals(verificationRequest.code, input.code)) {
         throw new ORPCError("BAD_REQUEST", {
           message: "Invalid verification code",
         });
