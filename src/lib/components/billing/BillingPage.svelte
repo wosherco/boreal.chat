@@ -9,6 +9,7 @@
   import { toast } from "svelte-sonner";
   import PricingPlan from "$lib/components/PricingPlan.svelte";
   import { pricingPlans } from "$lib/common/pricing";
+  import type { PricingPlan as PricingPlanType } from "$lib/common/pricing";
 
   const user = useCurrentUser(null);
 
@@ -53,7 +54,7 @@
   const isLoading = $derived($createCheckoutSession.isPending || $createCustomerSession.isPending);
 
   function getButtonConfig(
-    plan: any,
+    plan: PricingPlanType,
     isLoggedIn: boolean,
     isUserSubscribed: boolean,
     isLoading: boolean,
