@@ -1,5 +1,18 @@
 # boreal.chat
 
+## 0.2.0
+
+### Minor Changes
+
+- 5168cea: added chat archiving and deletion
+- e22a95a: Added auth with email and password
+
+### Patch Changes
+
+- 40091c2: fixed kimi k2
+- 64bff57: bump pglite to fix db
+- 40091c2: fix: auth not being accessible by logged in users
+
 ## 0.1.4
 
 ### Patch Changes
