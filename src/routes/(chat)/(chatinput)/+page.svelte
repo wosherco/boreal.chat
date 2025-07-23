@@ -1,9 +1,24 @@
 <script lang="ts">
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
-  import { BrainIcon, CalculatorIcon, CodeIcon, FileTextIcon } from "@lucide/svelte";
+  import {
+    BrainIcon,
+    CalculatorIcon,
+    CodeIcon,
+    FileTextIcon,
+    StarIcon,
+    DollarSignIcon,
+    BriefcaseIcon,
+  } from "@lucide/svelte";
   import type { PageProps } from "./$types";
   import type { Component } from "svelte";
   import { Button } from "$lib/components/ui/button";
+  import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+  } from "$lib/components/ui/card";
   import SvelteSeo from "svelte-seo";
   import { goto } from "$app/navigation";
 
@@ -81,52 +96,65 @@
 
     <!-- Landing Page Cards -->
     <div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-      <a
-        href="/business"
-        class="group focus:ring-primary flex h-full flex-col rounded-lg border p-6 shadow transition hover:shadow-lg focus:ring-2 focus:outline-none"
-        tabindex="0"
-      >
-        <div class="flex-1">
-          <h2 class="mb-2 text-xl font-semibold">Business</h2>
-          <p class="mb-4">
-            Discover how boreal.chat can empower your business with advanced AI chat solutions.
-          </p>
-        </div>
-        <div class="mt-2 flex items-center justify-end">
-          <span class="text-primary opacity-80 transition-transform group-hover:translate-x-1"
-            >→</span
-          >
-        </div>
+      <a href="/consumer" class="group">
+        <Card class="h-full transition-shadow hover:shadow-lg">
+          <CardHeader>
+            <div class="flex items-center gap-3">
+              <StarIcon class="text-primary h-6 w-6" />
+              <CardTitle>Features</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <CardDescription class="text-base">
+              Explore features tailored for individual users and enthusiasts.
+            </CardDescription>
+            <div class="mt-4 flex items-center justify-end">
+              <span class="text-primary opacity-80 transition-transform group-hover:translate-x-1"
+                >→</span
+              >
+            </div>
+          </CardContent>
+        </Card>
       </a>
-      <a
-        href="/consumer"
-        class="group focus:ring-primary flex h-full flex-col rounded-lg border p-6 shadow transition hover:shadow-lg focus:ring-2 focus:outline-none"
-        tabindex="0"
-      >
-        <div class="flex-1">
-          <h2 class="mb-2 text-xl font-semibold">Consumer</h2>
-          <p class="mb-4">Explore features tailored for individual users and enthusiasts.</p>
-        </div>
-        <div class="mt-2 flex items-center justify-end">
-          <span class="text-primary opacity-80 transition-transform group-hover:translate-x-1"
-            >→</span
-          >
-        </div>
+      <a href="/pricing" class="group">
+        <Card class="h-full transition-shadow hover:shadow-lg">
+          <CardHeader>
+            <div class="flex items-center gap-3">
+              <DollarSignIcon class="text-primary h-6 w-6" />
+              <CardTitle>Pricing</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <CardDescription class="text-base">
+              Check out our simple pricing. Just one paid plan, unlimited usage.
+            </CardDescription>
+            <div class="mt-4 flex items-center justify-end">
+              <span class="text-primary opacity-80 transition-transform group-hover:translate-x-1"
+                >→</span
+              >
+            </div>
+          </CardContent>
+        </Card>
       </a>
-      <a
-        href="/pricing"
-        class="group focus:ring-primary flex h-full flex-col rounded-lg border p-6 shadow transition hover:shadow-lg focus:ring-2 focus:outline-none"
-        tabindex="0"
-      >
-        <div class="flex-1">
-          <h2 class="mb-2 text-xl font-semibold">Pricing</h2>
-          <p class="mb-4">Check out our simple pricing. Just one paid plan, unlimited usage.</p>
-        </div>
-        <div class="mt-2 flex items-center justify-end">
-          <span class="text-primary opacity-80 transition-transform group-hover:translate-x-1"
-            >→</span
-          >
-        </div>
+      <a href="/business" class="group">
+        <Card class="h-full transition-shadow hover:shadow-lg">
+          <CardHeader>
+            <div class="flex items-center gap-3">
+              <BriefcaseIcon class="text-primary h-6 w-6" />
+              <CardTitle>Business</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <CardDescription class="text-base">
+              Discover how boreal.chat can empower your business with advanced AI chat solutions.
+            </CardDescription>
+            <div class="mt-4 flex items-center justify-end">
+              <span class="text-primary opacity-80 transition-transform group-hover:translate-x-1"
+                >→</span
+              >
+            </div>
+          </CardContent>
+        </Card>
       </a>
     </div>
   {/if}
