@@ -1,5 +1,11 @@
 # boreal.chat
 
+## 0.2.1
+
+### Patch Changes
+
+- e2c1987: Prepare for launch
+
 ## 0.2.0
 
 ### Minor Changes
