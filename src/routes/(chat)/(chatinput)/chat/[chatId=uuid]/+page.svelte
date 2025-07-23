@@ -7,7 +7,7 @@
   import SvelteSeo from "svelte-seo";
   import type { PageProps } from "./$types";
   import { cn } from "$lib/utils";
-  import { isSidebarCollapsed } from "../../+layout.svelte";
+  import { isSidebarCollapsed } from "../../../+layout.svelte";
 
   const { data }: PageProps = $props();
 

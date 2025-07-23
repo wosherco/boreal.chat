@@ -6,6 +6,8 @@
     PencilIcon,
     TrashIcon,
     PinIcon,
+    ArchiveIcon,
+    PinOffIcon,
   } from "@lucide/svelte";
   import { Button } from "../ui/button";
   import SheetClosableOnlyOnPhone from "../utils/SheetClosableOnlyOnPhone.svelte";
@@ -44,6 +46,17 @@
       },
       onError: () => {
         toast.error("Failed to toggle pin");
+      },
+    }),
+  );
+
+  const archiveMutation = createMutation(
+    orpcQuery.v1.chat.archiveChat.mutationOptions({
+      onSuccess: () => {
+        toast.success("Chat archived");
+      },
+      onError: () => {
+        toast.error("Failed to archive chat");
       },
     }),
   );
@@ -94,12 +107,24 @@
             })}
           disabled={$pinToggleMutation.isPending}
         >
-          <PinIcon />
-          {chat.pinned ? "Unpin" : "Pin"}
+          {#if chat.pinned}
+            <PinOffIcon />
+            Unpin
+          {:else}
+            <PinIcon />
+            Pin
+          {/if}
         </DropdownMenuItem>
         <DropdownMenuItem onclick={() => (editChatTitleDialogOpen = true)}>
           <PencilIcon />
           Rename
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onclick={() => $archiveMutation.mutate({ chatId: chat.id })}
+          disabled={$archiveMutation.isPending}
+        >
+          <ArchiveIcon />
+          Archive
         </DropdownMenuItem>
         <DropdownMenuItem onclick={() => (deleteChatModalOpen = true)}>
           <TrashIcon />

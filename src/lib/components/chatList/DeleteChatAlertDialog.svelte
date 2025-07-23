@@ -22,7 +22,7 @@
   const deleteMutation = createMutation(
     orpcQuery.v1.chat.deleteChat.mutationOptions({
       onSuccess: () => {
-        toast.success("Chat deleted");
+        toast.success("Chat moved to deleted folder");
         open = false;
 
         if (page.params.chatId === chatId) {
@@ -39,10 +39,10 @@
   </AlertDialog.Trigger>
   <AlertDialog.Content>
     <AlertDialog.Header>
-      <AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
+      <AlertDialog.Title>Delete this chat?</AlertDialog.Title>
       <AlertDialog.Description>
-        This action cannot be undone. This will permanently delete the chat and all its messages
-        from our servers.
+        This chat will be permanently deleted in 14 days. You can restore it anytime within 14 days,
+        after which it will be permanently removed.
       </AlertDialog.Description>
     </AlertDialog.Header>
     <AlertDialog.Footer>

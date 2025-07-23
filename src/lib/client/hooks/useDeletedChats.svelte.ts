@@ -1,14 +1,14 @@
 import type { Chat, ServerData } from "$lib/common/sharedTypes";
-import { desc, eq, isNull, and } from "drizzle-orm";
+import { desc, isNotNull } from "drizzle-orm";
 import { clientDb } from "../db/index.svelte";
 import { chatTable } from "../db/schema";
 import { createHydratableData } from "./localDbHook";
 import { transformKeyToCamelCaseRecursive } from "./utils";
 
-export const useChats = (serverData: ServerData<Chat[]>) =>
+export const useDeletedChats = (serverData: ServerData<Chat[]>) =>
   createHydratableData<Chat[]>(
     {
-      key: "chats",
+      key: "deletedChats",
       query: () =>
         clientDb()
           .select({
@@ -21,8 +21,8 @@ export const useChats = (serverData: ServerData<Chat[]>) =>
             updatedAt: chatTable.updatedAt,
           })
           .from(chatTable)
-          .where(and(eq(chatTable.archived, false), isNull(chatTable.deletedAt)))
-          .orderBy(desc(chatTable.pinned), desc(chatTable.updatedAt))
+          .where(isNotNull(chatTable.deletedAt))
+          .orderBy(desc(chatTable.deletedAt))
           .toSQL(),
       transform: (chatData) =>
         chatData.map(

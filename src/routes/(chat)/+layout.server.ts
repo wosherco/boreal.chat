@@ -3,7 +3,7 @@ import { SIDEBAR_COLLAPSED_COOKIE } from "$lib/common/cookies";
 import { type Chat, type Draft, type ServerData } from "$lib/common/sharedTypes";
 import { db } from "$lib/server/db";
 import { chatTable, draftsTable } from "$lib/server/db/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { transformKeyToCamelCaseRecursive } from "$lib/client/hooks/utils";
 import { building } from "$app/environment";
 import { getDraftIdFromUrl } from "$lib/utils/drafts";
@@ -41,11 +41,19 @@ export const load: LayoutServerLoad = async ({ cookies, locals, url }) => {
           id: chatTable.id,
           title: chatTable.title,
           pinned: chatTable.pinned,
+          archived: chatTable.archived,
+          deletedAt: chatTable.deletedAt,
           createdAt: chatTable.createdAt,
           updatedAt: chatTable.updatedAt,
         })
         .from(chatTable)
-        .where(eq(chatTable.userId, userId))
+        .where(
+          and(
+            eq(chatTable.userId, userId),
+            eq(chatTable.archived, false),
+            isNull(chatTable.deletedAt),
+          ),
+        )
         .orderBy(desc(chatTable.pinned), desc(chatTable.updatedAt))
         .limit(40)
         .execute()

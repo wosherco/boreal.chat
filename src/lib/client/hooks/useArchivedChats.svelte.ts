@@ -5,12 +5,14 @@ import { chatTable } from "../db/schema";
 import { createHydratableData } from "./localDbHook";
 import { transformKeyToCamelCaseRecursive } from "./utils";
 
-export const useChats = (serverData: ServerData<Chat[]>) =>
+export const useArchivedChats = (serverData: ServerData<Chat[]>) =>
   createHydratableData<Chat[]>(
     {
-      key: "chats",
-      query: () =>
-        clientDb()
+      key: "archivedChats",
+      query: () => {
+        const cdb = clientDb();
+
+        return cdb
           .select({
             id: chatTable.id,
             title: chatTable.title,
@@ -21,9 +23,10 @@ export const useChats = (serverData: ServerData<Chat[]>) =>
             updatedAt: chatTable.updatedAt,
           })
           .from(chatTable)
-          .where(and(eq(chatTable.archived, false), isNull(chatTable.deletedAt)))
-          .orderBy(desc(chatTable.pinned), desc(chatTable.updatedAt))
-          .toSQL(),
+          .where(and(eq(chatTable.archived, true), isNull(chatTable.deletedAt)))
+          .orderBy(desc(chatTable.updatedAt))
+          .toSQL();
+      },
       transform: (chatData) =>
         chatData.map(
           (chat) =>

@@ -34,6 +34,8 @@ export interface Chat {
   id: string;
   title: string | null;
   pinned: boolean;
+  archived: boolean;
+  deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

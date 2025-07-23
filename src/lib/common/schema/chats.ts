@@ -32,6 +32,8 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
         .default(REASONING_NONE),
       webSearchEnabled: boolean().notNull().default(false),
       pinned: boolean().notNull().default(false),
+      archived: boolean().notNull().default(false),
+      deletedAt: timestamp({ withTimezone: true }),
       createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
       updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     },

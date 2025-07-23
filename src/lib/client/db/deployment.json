@@ -126,5 +126,15 @@
     "tag": "0012_tricky_young_avengers",
     "hash": "9941de581bde387a48e4158af90e79dd71326d76e64ba0e7502266ff6e865f7c",
     "sql": ["ALTER TABLE \"user\" ADD COLUMN \"email_verified\" boolean DEFAULT false NOT NULL;"]
+  },
+  {
+    "idx": 13,
+    "when": 1753209993519,
+    "tag": "0013_burly_mesmero",
+    "hash": "6f4926d3f2e25b8b35171bf9a2c0bdf52be7f30c3e3c72763431b5d84b3d93bc",
+    "sql": [
+      "ALTER TABLE \"chats\" ADD COLUMN \"archived\" boolean DEFAULT false NOT NULL;",
+      "ALTER TABLE \"chats\" ADD COLUMN \"deleted_at\" timestamp with time zone;"
+    ]
   }
 ]

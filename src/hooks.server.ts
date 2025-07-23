@@ -6,14 +6,17 @@ import { paraglideMiddleware } from "$lib/paraglide/server";
 import { env } from "$env/dynamic/public";
 import { posthog } from "$lib/server/posthog";
 import { POSTHOG_PROXY_PATH } from "$lib/common/constants";
+import { startCronJobs, stopCronJobs } from "$lib/server/services/cron";
 import { dev } from "$app/environment";
 
 process.on("SIGINT", async () => {
+  stopCronJobs();
   await posthog?.shutdown();
   process.exit(0);
 });
 
 process.on("SIGTERM", async () => {
+  stopCronJobs();
   await posthog?.shutdown();
   process.exit(0);
 });
@@ -31,6 +34,9 @@ if (dev) {
   // Not initializing Sentry in development to avoid sending events to Sentry
   Sentry.init({});
 }
+
+// Start cron jobs on server startup
+startCronJobs();
 
 const handleParaglide: Handle = ({ event, resolve }) =>
   paraglideMiddleware(event.request, ({ request, locale }) => {
