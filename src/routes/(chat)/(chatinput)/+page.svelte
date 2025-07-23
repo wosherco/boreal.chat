@@ -71,14 +71,63 @@
     </div>
   {:else}
     <h1 class="text-2xl font-bold">Welcome to boreal.chat!</h1>
-    <ul class="list-inside list-disc space-y-2 pt-4">
-      <li>The upcoming best AI chat platform.</li>
-      <li>Use any model you want, and add web search, and more!</li>
-      <li>Pay for what you use, no subscription required for simple chatting.</li>
-      <li>Completely open-source.</li>
-    </ul>
+    <p class="pt-4">
+      The open-source AI chat platform where you can use any model, add web search, and more. Pay
+      only for what you use—no subscription required for simple chatting.
+    </p>
     <div class="flex justify-center pt-4">
       <Button href="/auth">Sign up Today</Button>
+    </div>
+
+    <!-- Landing Page Cards -->
+    <div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+      <a
+        href="/business"
+        class="group focus:ring-primary flex h-full flex-col rounded-lg border p-6 shadow transition hover:shadow-lg focus:ring-2 focus:outline-none"
+        tabindex="0"
+      >
+        <div class="flex-1">
+          <h2 class="mb-2 text-xl font-semibold">Business</h2>
+          <p class="mb-4">
+            Discover how boreal.chat can empower your business with advanced AI chat solutions.
+          </p>
+        </div>
+        <div class="mt-2 flex items-center justify-end">
+          <span class="text-primary opacity-80 transition-transform group-hover:translate-x-1"
+            >→</span
+          >
+        </div>
+      </a>
+      <a
+        href="/consumer"
+        class="group focus:ring-primary flex h-full flex-col rounded-lg border p-6 shadow transition hover:shadow-lg focus:ring-2 focus:outline-none"
+        tabindex="0"
+      >
+        <div class="flex-1">
+          <h2 class="mb-2 text-xl font-semibold">Consumer</h2>
+          <p class="mb-4">Explore features tailored for individual users and enthusiasts.</p>
+        </div>
+        <div class="mt-2 flex items-center justify-end">
+          <span class="text-primary opacity-80 transition-transform group-hover:translate-x-1"
+            >→</span
+          >
+        </div>
+      </a>
+      <a
+        href="/pricing"
+        class="group focus:ring-primary flex h-full flex-col rounded-lg border p-6 shadow transition hover:shadow-lg focus:ring-2 focus:outline-none"
+        tabindex="0"
+      >
+        <div class="flex-1">
+          <h2 class="mb-2 text-xl font-semibold">Pricing</h2>
+          <p class="mb-4">Check out our simple pricing. Just one paid plan, unlimited usage.</p>
+        </div>
+        <div class="mt-2 flex items-center justify-end">
+          <span class="text-primary opacity-80 transition-transform group-hover:translate-x-1"
+            >→</span
+          >
+        </div>
+      </a>
     </div>
   {/if}
 </div>

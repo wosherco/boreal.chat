@@ -264,9 +264,11 @@
     <div class="mx-auto max-w-4xl text-center">
       <h2 class="mb-6 text-3xl font-bold md:text-4xl">Commercial Licensing</h2>
       <p class="mb-12 text-xl text-slate-600 dark:text-slate-300">
-        boreal.chat is currently available under the <strong>PolyForm Noncommercial License</strong>
-        for personal, research, and educational use. We're developing enterprise licensing for commercial
-        deployments.
+        <strong>Using boreal.chat (the official website):</strong> You can pay and use boreal.chat
+        for any purpose, including commercial use.<br />
+        <strong>Self-hosting:</strong> boreal.chat is currently available under the
+        <strong>PolyForm Noncommercial License</strong> when self-hosting for personal, research, and
+        educational use. We're developing enterprise licensing for commercial self-hosted deployments.
       </p>
     </div>
 
@@ -300,7 +302,6 @@
             <li>• Business and enterprise use</li>
             <li>• Revenue-generating activities</li>
             <li>• Commercial services and products</li>
-            <li>• Resale and distribution rights</li>
           </ul>
         </CardContent>
       </Card>

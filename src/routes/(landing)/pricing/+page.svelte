@@ -99,8 +99,10 @@
         <div>
           <h3 class="mb-3 text-lg font-semibold">What about commercial usage?</h3>
           <p class="text-slate-600 dark:text-slate-300">
-            Our current license is for non-commercial use. We're developing enterprise solutions for
-            businesses.
+            If you use the official boreal.chat website, you can pay and use it for any purpose,
+            including commercial use. If you self-host boreal.chat, the current license is for
+            non-commercial use only. We're developing enterprise solutions for businesses who want
+            to self-host commercially.
             <a href="/business" class="text-primary hover:underline">Learn more</a>.
           </p>
         </div>

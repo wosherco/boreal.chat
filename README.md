@@ -66,6 +66,8 @@ It's as simple as creating an account and logging in in [boreal.chat](https://bo
 
 ### Self-Hosting
 
+> **Note:** If you use the official [boreal.chat](https://boreal.chat) website, you can pay and use it for any purpose, including commercial use. The PolyForm Noncommercial License only applies if you are self-hosting your own instance of boreal.chat.
+
 For detailed self-hosting instructions, please visit our [Self-Hosting Guide](https://docs.boreal.chat/beta-docs/self-hosting/).
 
 ## 📖 Documentation
@@ -95,7 +97,10 @@ We welcome contributions from the community! Please read our [Contributing Guide
 
 This project is licensed under the PolyForm Noncommercial License 1.0.0 - see the [LICENSE.md](LICENSE.md) file for details.
 
-**Note**: This license allows for non-commercial use, personal use, research, and educational purposes. For commercial licensing, please [contact us](https://docs.boreal.chat/beta-docs/contact/).
+**Note:**
+
+- If you use the official [boreal.chat](https://boreal.chat) website, you can pay and use it for any purpose, including commercial use.
+- The PolyForm Noncommercial License only applies if you are self-hosting your own instance of boreal.chat. Self-hosted instances are for non-commercial use only. For commercial self-hosted licensing, please [contact us](https://docs.boreal.chat/beta-docs/contact/).
 
 ## 🆘 Support
 
