@@ -1,5 +1,5 @@
 import { chatTable } from "$lib/server/db/schema";
-import { eq, and, lt } from "drizzle-orm";
+import { eq, and, lt, isNotNull } from "drizzle-orm";
 import type { TransactableDBType } from "../db";
 
 export async function renameChat(tx: TransactableDBType, chatId: string, newTitle: string) {
@@ -36,5 +36,7 @@ export async function permanentlyDeleteExpiredChats(tx: TransactableDBType) {
   const fourteenDaysAgo = new Date();
   fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
-  await tx.delete(chatTable).where(and(lt(chatTable.deletedAt, fourteenDaysAgo)));
+  await tx
+    .delete(chatTable)
+    .where(and(isNotNull(chatTable.deletedAt), lt(chatTable.deletedAt, fourteenDaysAgo)));
 }
