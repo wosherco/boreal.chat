@@ -128,7 +128,7 @@
         isPopular={isUnlimited && !isUserSubscribed ? plan.isPopular : false}
         isPrimary={plan.isPrimary}
         customBadgeText={isUnlimited && isUserSubscribed ? "Current Plan" : null}
-        customBadgeIcon={isUnlimited && isUserSubscribed ? Star : null}
+        customBadgeIcon={isUnlimited && isUserSubscribed ? Star : undefined}
         isButtonDisabled={isDisabled}
       />
     {/each}
