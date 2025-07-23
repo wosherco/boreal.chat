@@ -2,7 +2,8 @@ import { db } from "$lib/server/db";
 import { permanentlyDeleteExpiredChats } from "./chat";
 
 export class CronService {
-  private intervals: NodeJS.Timeout[] = [];
+  private interval: NodeJS.Timeout | null = null;
+  private initialTimeout: NodeJS.Timeout | null = null;
 
   constructor() {
     this.startCleanupJob();
@@ -16,18 +17,21 @@ export class CronService {
 
       // Set to the next 30-minute mark (0 or 30)
       const currentMinutes = now.getMinutes();
-      const nextMinutes = currentMinutes < 30 ? 30 : 0;
-
-      if (nextMinutes === 0) {
-        // If we're past 30, go to the next hour
-        nextRun.setHours(now.getHours() + 1, 0, 0, 0);
-      } else {
+      if (currentMinutes < 30) {
         nextRun.setMinutes(30, 0, 0);
+      } else {
+        nextRun.setHours(now.getHours() + 1, 0, 0, 0);
       }
 
-      const delay = nextRun.getTime() - now.getTime();
+      let delay = nextRun.getTime() - now.getTime();
+      delay = Math.max(0, delay); // Clamp to avoid negative delays
 
-      const timeout = setTimeout(async () => {
+      // Clear any previous scheduled timeout
+      if (this.interval) {
+        clearTimeout(this.interval);
+      }
+
+      this.interval = setTimeout(async () => {
         try {
           console.log("[CRON] Starting cleanup of expired deleted chats...");
           await permanentlyDeleteExpiredChats(db);
@@ -35,19 +39,16 @@ export class CronService {
         } catch (error) {
           console.error("[CRON] Error during cleanup:", error);
         }
-
-        // Schedule the next run
+        // Schedule the next run based on fixed :00/:30 marks
         scheduleNextRun();
       }, delay);
-
-      this.intervals.push(timeout);
     };
 
     // Start the cron-like scheduling
     scheduleNextRun();
 
-    // Also run immediately on startup
-    setTimeout(async () => {
+    // Also run immediately on startup (after 5s)
+    this.initialTimeout = setTimeout(async () => {
       try {
         console.log("[CRON] Running initial cleanup on startup...");
         await permanentlyDeleteExpiredChats(db);
@@ -59,8 +60,14 @@ export class CronService {
   }
 
   stop() {
-    this.intervals.forEach(clearTimeout);
-    this.intervals = [];
+    if (this.interval) {
+      clearTimeout(this.interval);
+      this.interval = null;
+    }
+    if (this.initialTimeout) {
+      clearTimeout(this.initialTimeout);
+      this.initialTimeout = null;
+    }
     console.log("[CRON] All cron jobs stopped");
   }
 }
