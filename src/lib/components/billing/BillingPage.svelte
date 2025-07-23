@@ -5,18 +5,11 @@
   import { createMutation } from "@tanstack/svelte-query";
   import { Button } from "../ui/button";
   import { Loader2 } from "@lucide/svelte";
-  import { Check, Star, Zap } from "@lucide/svelte";
+  import { Star } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
-  import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-  } from "$lib/components/ui/card";
-  import { Badge } from "$lib/components/ui/badge";
-  import { cn } from "$lib/utils";
+  import PricingPlan from "$lib/components/PricingPlan.svelte";
+  import { pricingPlans } from "$lib/common/pricing";
+  import type { PricingPlan as PricingPlanType } from "$lib/common/pricing";
 
   const user = useCurrentUser(null);
 
@@ -59,6 +52,38 @@
   );
 
   const isLoading = $derived($createCheckoutSession.isPending || $createCustomerSession.isPending);
+
+  function getButtonConfig(
+    plan: PricingPlanType,
+    isLoggedIn: boolean,
+    isUserSubscribed: boolean,
+    isLoading: boolean,
+  ) {
+    const isFree = plan.id === "free";
+    const isUnlimited = plan.id === "unlimited";
+
+    let text: string;
+    if (isFree) {
+      text = !isLoggedIn ? "Get Started Free" : "Current plan";
+    } else {
+      text = !isLoggedIn
+        ? "Get Unlimited"
+        : isUserSubscribed
+          ? "Currently Active"
+          : isLoading
+            ? "Processing..."
+            : "Subscribe to Unlimited";
+    }
+
+    const variant =
+      (isFree && isLoggedIn) || (isUnlimited && isUserSubscribed)
+        ? "outline"
+        : isUnlimited
+          ? "default"
+          : plan.buttonVariant;
+
+    return { text, variant };
+  }
 </script>
 
 <div class="space-y-6">
@@ -95,144 +120,38 @@
   {/if}
 
   <div class="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-2">
-    <!-- Free Plan -->
-    <Card class="relative">
-      <CardHeader>
-        <CardTitle class="text-2xl text-gray-600 dark:text-gray-400">Free</CardTitle>
-        <CardDescription>Perfect for getting started with boreal.chat</CardDescription>
-        <div class="text-3xl font-bold">
-          Free<span class="text-muted-foreground text-base font-normal">/forever</span>
-        </div>
-      </CardHeader>
-      <CardContent class="space-y-4">
-        <ul class="space-y-3">
-          <li class="flex items-center gap-3">
-            <Check class="h-5 w-5 text-green-500" />
-            <span>Bring your own key (BYOK) option</span>
-          </li>
-          <li class="flex items-center gap-3">
-            <Check class="h-5 w-5 text-green-500" />
-            <span><strong>Access to all AI models</strong></span>
-          </li>
-          <li class="flex items-center gap-3">
-            <Check class="h-5 w-5 text-green-500" />
-            <span>Unlimited syncing across all platforms</span>
-          </li>
-          <li class="flex items-center gap-3">
-            <Check class="h-5 w-5 text-green-500" />
-            <span>Basic chat functionality</span>
-          </li>
-          <li class="flex items-center gap-3">
-            <Check class="h-5 w-5 text-green-500" />
-            <span>No censorship, complete privacy</span>
-          </li>
-        </ul>
-      </CardContent>
-      <CardFooter class="mt-auto">
-        {#if !$user.data?.authenticated}
-          <Button href="/auth" variant="outline" class="w-full">Get Started Free</Button>
-        {:else}
-          <Button variant="outline" class="w-full" disabled>Current plan</Button>
-        {/if}
-      </CardFooter>
-    </Card>
+    {#each pricingPlans as plan (plan.id)}
+      {@const isFree = plan.id === "free"}
+      {@const isUnlimited = plan.id === "unlimited"}
+      {@const isDisabled = (isFree && isLoggedIn) || (isUnlimited && isUserSubscribed) || isLoading}
+      {@const buttonConfig = getButtonConfig(plan, isLoggedIn, isUserSubscribed, isLoading)}
 
-    <!-- Unlimited Plan -->
-    <Card
-      class={cn(
-        "border-primary from-primary/5 via-primary/10 to-primary/5 relative border-2 bg-gradient-to-br",
-        isUserSubscribed ? "ring-primary shadow-lg ring-2" : "",
-      )}
-    >
-      {#if isUserSubscribed}
-        <div class="absolute -top-3 left-1/2 -translate-x-1/2 transform">
-          <Badge class="bg-primary text-primary-foreground">
-            <Star class="mr-1 h-3 w-3" />
-            Current Plan
-          </Badge>
-        </div>
-      {:else}
-        <div class="absolute -top-3 left-1/2 -translate-x-1/2 transform">
-          <Badge class="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
-            <Zap class="mr-1 h-3 w-3" />
-            Most Popular
-          </Badge>
-        </div>
-      {/if}
-      <CardHeader>
-        <CardTitle
-          class="from-primary to-primary/80 bg-gradient-to-r bg-clip-text text-2xl text-transparent"
-        >
-          Unlimited
-        </CardTitle>
-        <CardDescription>For power users and teams who need everything.</CardDescription>
-        <div class="text-3xl font-bold">
-          12€<span class="text-muted-foreground text-base font-normal">/month</span>
-        </div>
-      </CardHeader>
-      <CardContent class="space-y-4">
-        <ul class="space-y-3">
-          <li class="flex items-center gap-3">
-            <div class="bg-primary/20 rounded-full p-1">
-              <Check class="text-primary h-3 w-3" />
-            </div>
-            <span><strong>Everything in the Premium plan, plus:</strong></span>
-          </li>
-          <li class="flex items-center gap-3">
-            <div class="bg-primary/20 rounded-full p-1">
-              <Check class="text-primary h-3 w-3" />
-            </div>
-            <span
-              ><strong>Unlimited Messages</strong>
-              <small class="text-muted-foreground">(fair rate limits applied)</small></span
-            >
-          </li>
-          <li class="flex items-center gap-3">
-            <div class="bg-primary/20 rounded-full p-1">
-              <Check class="text-primary h-3 w-3" />
-            </div>
-            <span
-              ><strong>Unlimited storage</strong>
-              <small class="text-muted-foreground">(fair rate limits applied)</small></span
-            >
-          </li>
-        </ul>
+      <PricingPlan
+        title={plan.title}
+        description={plan.description}
+        price={plan.price}
+        priceSubtext={plan.priceSubtext}
+        features={plan.features}
+        buttonText={buttonConfig.text}
+        buttonVariant={buttonConfig.variant}
+        buttonAction={() => {
+          if (isDisabled) return;
 
-        <!-- Everything from Premium plan included note -->
-        <div class="border-primary/20 border-t pt-2">
-          <p class="text-muted-foreground text-sm">Plus everything from the Premium plan</p>
-        </div>
-      </CardContent>
-      <CardFooter class="mt-auto">
-        {#if !isLoggedIn}
-          <Button
-            href="/auth"
-            class="from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground w-full bg-gradient-to-r shadow-lg"
-          >
-            <Zap class="mr-2 h-4 w-4" />
-            Get Unlimited
-          </Button>
-        {:else if isUserSubscribed}
-          <Button disabled class="w-full" variant="outline">
-            <Check class="mr-2 h-4 w-4" />
-            Currently Active
-          </Button>
-        {:else}
-          <Button
-            class="from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground w-full bg-gradient-to-r shadow-lg"
-            disabled={isLoading}
-            onclick={() => $createCheckoutSession.mutate({ plan: "unlimited" })}
-          >
-            {#if isLoading}
-              <Loader2 class="mr-2 animate-spin" />
-            {:else}
-              <Zap class="mr-2 h-4 w-4" />
-            {/if}
-            Subscribe to Unlimited
-          </Button>
-        {/if}
-      </CardFooter>
-    </Card>
+          if (isFree && !isLoggedIn) {
+            window.location.href = "/auth";
+          } else if (isUnlimited && !isLoggedIn) {
+            window.location.href = "/auth";
+          } else if (isUnlimited && isLoggedIn && !isUserSubscribed) {
+            $createCheckoutSession.mutate({ plan: "unlimited" });
+          }
+        }}
+        isPopular={isUnlimited && !isUserSubscribed ? plan.isPopular : false}
+        isPrimary={plan.isPrimary}
+        customBadgeText={isUnlimited && isUserSubscribed ? "Current Plan" : null}
+        customBadgeIcon={isUnlimited && isUserSubscribed ? Star : undefined}
+        isButtonDisabled={isDisabled}
+      />
+    {/each}
   </div>
 
   <!-- FAQ or additional info section -->

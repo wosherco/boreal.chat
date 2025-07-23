@@ -1,13 +1,9 @@
 <script lang="ts">
-  import { dev } from "$app/environment";
-  import { BILLING_FEATURE_FLAG, getFeatureFlag } from "$lib/common/featureFlags";
   import BillingPage from "$lib/components/billing/BillingPage.svelte";
   import SvelteSeo from "svelte-seo";
   import type { PageProps } from "./$types";
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { Loader2Icon } from "@lucide/svelte";
-
-  let isBillingPageEnabled = $derived(dev || getFeatureFlag(BILLING_FEATURE_FLAG).enabled);
 
   const { data }: PageProps = $props();
 
@@ -24,8 +20,6 @@
     <div class="flex items-center justify-center">
       <Loader2Icon class="size-4 animate-spin" />
     </div>
-  {:else if !isBillingPageEnabled}
-    <p>Billing page is not enabled</p>
   {:else}
     <BillingPage />
   {/if}
