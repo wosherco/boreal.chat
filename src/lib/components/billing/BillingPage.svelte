@@ -51,6 +51,38 @@
   );
 
   const isLoading = $derived($createCheckoutSession.isPending || $createCustomerSession.isPending);
+
+  function getButtonConfig(
+    plan: any,
+    isLoggedIn: boolean,
+    isUserSubscribed: boolean,
+    isLoading: boolean,
+  ) {
+    const isFree = plan.id === "free";
+    const isUnlimited = plan.id === "unlimited";
+
+    let text: string;
+    if (isFree) {
+      text = !isLoggedIn ? "Get Started Free" : "Current plan";
+    } else {
+      text = !isLoggedIn
+        ? "Get Unlimited"
+        : isUserSubscribed
+          ? "Currently Active"
+          : isLoading
+            ? "Processing..."
+            : "Subscribe to Unlimited";
+    }
+
+    const variant =
+      (isFree && isLoggedIn) || (isUnlimited && isUserSubscribed)
+        ? "outline"
+        : isUnlimited
+          ? "default"
+          : plan.buttonVariant;
+
+    return { text, variant };
+  }
 </script>
 
 <div class="space-y-6">
@@ -91,6 +123,7 @@
       {@const isFree = plan.id === "free"}
       {@const isUnlimited = plan.id === "unlimited"}
       {@const isDisabled = (isFree && isLoggedIn) || (isUnlimited && isUserSubscribed) || isLoading}
+      {@const buttonConfig = getButtonConfig(plan, isLoggedIn, isUserSubscribed, isLoading)}
 
       <PricingPlan
         title={plan.title}
@@ -98,22 +131,8 @@
         price={plan.price}
         priceSubtext={plan.priceSubtext}
         features={plan.features}
-        buttonText={isFree
-          ? !isLoggedIn
-            ? "Get Started Free"
-            : "Current plan"
-          : !isLoggedIn
-            ? "Get Unlimited"
-            : isUserSubscribed
-              ? "Currently Active"
-              : isLoading
-                ? "Processing..."
-                : "Subscribe to Unlimited"}
-        buttonVariant={(isFree && isLoggedIn) || (isUnlimited && isUserSubscribed)
-          ? "outline"
-          : isUnlimited
-            ? "default"
-            : plan.buttonVariant}
+        buttonText={buttonConfig.text}
+        buttonVariant={buttonConfig.variant}
         buttonAction={() => {
           if (isDisabled) return;
 

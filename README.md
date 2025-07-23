@@ -119,6 +119,6 @@ If you find boreal.chat useful, please consider giving us a star on GitHub! It h
 
 **Made with ❤️ by the boreal.chat team**
 
-[Website](https://boreal.chat) • [Documentation](https://docs.boreal.chat) • [Discord](https://discord.gg/boreal-chat) • [GitHub](https://github.com/your-org/boreal.chat)
+[Website](https://boreal.chat) • [Documentation](https://docs.boreal.chat) • [Discord](https://discord.com/invite/knDFUB5UtU) • [GitHub](https://github.com/wosherco/boreal.chat)
 
 </div>

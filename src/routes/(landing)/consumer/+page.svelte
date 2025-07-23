@@ -114,7 +114,9 @@
           variant="ghost"
           size="lg"
           class="min-w-[200px] px-8 py-4 text-lg"
-          onclick={() => window.open("https://docs.boreal.chat/beta-docs/self-hosting/", "_blank")}
+          href="https://docs.boreal.chat/beta-docs/self-hosting/"
+          target="_blank"
+          rel="noopener noreferrer"
         >
           🔧 Self-Host
         </Button>
@@ -301,13 +303,19 @@
     </div>
 
     <div class="mb-6 flex flex-wrap justify-center gap-6">
-      <a href="https://docs.boreal.chat" target="_blank" class="transition-colors hover:text-white">
+      <a
+        href="https://docs.boreal.chat"
+        target="_blank"
+        class="transition-colors hover:text-white"
+        rel="noopener noreferrer"
+      >
         📚 Documentation
       </a>
       <a
         href="https://discord.gg/boreal-chat"
         target="_blank"
         class="transition-colors hover:text-white"
+        rel="noopener noreferrer"
       >
         💬 Discord
       </a>
@@ -315,6 +323,7 @@
         href="https://github.com/wosherco/boreal.chat"
         target="_blank"
         class="transition-colors hover:text-white"
+        rel="noopener noreferrer"
       >
         ⭐ GitHub
       </a>

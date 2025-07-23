@@ -82,7 +82,7 @@ To contribute to boreal.chat, you need to have the following tools installed:
 
 ### Before You Start
 
-1. Check existing [issues](https://github.com/your-org/boreal.chat/issues) and [pull requests](https://github.com/your-org/boreal.chat/pulls)
+1. Check existing [issues](https://github.com/wosherco/boreal.chat/issues) and [pull requests](https://github.com/wosherco/boreal.chat/pulls)
 2. Create an issue if one doesn't exist for your contribution
 3. Comment on the issue to let others know you're working on it
 

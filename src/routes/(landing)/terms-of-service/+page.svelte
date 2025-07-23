@@ -28,8 +28,8 @@
   <h2>2. Use of Our Services</h2>
   <h3>2.1. Eligibility</h3>
   <p>
-    You must be at least 16 years old to use the Service. By agreeing to these Terms, you represent
-    and warrant to us that you are at least 16 years old.
+    You must be at least 18 years old to use the Service. By agreeing to these Terms, you represent
+    and warrant to us that you are at least 18 years old.
   </p>
 
   <h3>2.2. User Accounts</h3>
