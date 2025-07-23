@@ -1,7 +1,5 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
-  import { Badge } from "$lib/components/ui/badge";
-  import { Zap } from "@lucide/svelte";
   import { goto } from "$app/navigation";
   import PricingPlan from "$lib/components/PricingPlan.svelte";
   import { pricingPlans } from "$lib/common/pricing";
@@ -39,7 +37,7 @@
 <section class="pb-16 md:pb-24">
   <div class="container mx-auto px-4">
     <div class="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-2">
-      {#each pricingPlans as plan}
+      {#each pricingPlans as plan (plan.title)}
         <PricingPlan
           title={plan.title}
           description={plan.description}

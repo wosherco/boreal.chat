@@ -5,12 +5,10 @@
   import { createMutation } from "@tanstack/svelte-query";
   import { Button } from "../ui/button";
   import { Loader2 } from "@lucide/svelte";
-  import { Check, Star, Zap } from "@lucide/svelte";
+  import { Star } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
-  import { Badge } from "$lib/components/ui/badge";
   import PricingPlan from "$lib/components/PricingPlan.svelte";
   import { pricingPlans } from "$lib/common/pricing";
-  import { cn } from "$lib/utils";
 
   const user = useCurrentUser(null);
 
@@ -89,7 +87,7 @@
   {/if}
 
   <div class="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-2">
-    {#each pricingPlans as plan}
+    {#each pricingPlans as plan (plan.id)}
       {@const isFree = plan.id === "free"}
       {@const isUnlimited = plan.id === "unlimited"}
       {@const isDisabled = (isFree && isLoggedIn) || (isUnlimited && isUserSubscribed) || isLoading}

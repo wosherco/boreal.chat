@@ -9,8 +9,7 @@
     CardTitle,
   } from "$lib/components/ui/card";
   import { Badge } from "$lib/components/ui/badge";
-  import { Check, Zap } from "@lucide/svelte";
-  import { goto } from "$app/navigation";
+  import { Check, Icon, Zap } from "@lucide/svelte";
 
   interface Props {
     title: string;
@@ -24,7 +23,7 @@
     isPopular: boolean;
     isPrimary: boolean;
     customBadgeText?: string | null;
-    customBadgeIcon?: any;
+    customBadgeIcon?: typeof Icon;
     isButtonDisabled?: boolean;
   }
 
@@ -40,7 +39,7 @@
     isPopular,
     isPrimary,
     customBadgeText,
-    customBadgeIcon,
+    customBadgeIcon: CustomBadgeIcon,
     isButtonDisabled,
   }: Props = $props();
 </script>
@@ -51,8 +50,8 @@
   {#if customBadgeText}
     <div class="absolute -top-3 left-1/2 -translate-x-1/2 transform">
       <Badge class="bg-primary text-primary-foreground">
-        {#if customBadgeIcon}
-          <svelte:component this={customBadgeIcon} class="mr-1 h-3 w-3" />
+        {#if CustomBadgeIcon}
+          <CustomBadgeIcon class="mr-1 h-3 w-3" />
         {/if}
         {customBadgeText}
       </Badge>
@@ -80,7 +79,7 @@
 
   <CardContent class="flex-1 space-y-4">
     <ul class="space-y-3">
-      {#each features as feature}
+      {#each features as feature (feature)}
         <li class="flex items-center gap-3">
           {#if isPrimary}
             <div class="bg-primary/20 rounded-full p-1">

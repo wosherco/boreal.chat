@@ -1,15 +1,8 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
-  import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-  } from "$lib/components/ui/card";
+  import { Card, CardContent, CardHeader, CardTitle } from "$lib/components/ui/card";
   import { Badge } from "$lib/components/ui/badge";
   import { Check, Building, Shield, Users, Server, Key, Lock, Zap } from "@lucide/svelte";
-  import { goto } from "$app/navigation";
 </script>
 
 <svelte:head>

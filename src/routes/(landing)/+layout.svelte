@@ -32,7 +32,7 @@
 
         <!-- Navigation Links -->
         <div class="hidden items-center gap-1 md:flex">
-          {#each navItems as item}
+          {#each navItems as item (item.href)}
             <Button
               variant={currentPath === item.href ? "default" : "ghost"}
               class="gap-2"
@@ -54,7 +54,7 @@
       <!-- Mobile Navigation -->
       <div class="border-t border-slate-200 py-2 md:hidden dark:border-slate-800">
         <div class="flex gap-1">
-          {#each navItems as item}
+          {#each navItems as item (item.href)}
             <Button
               variant={currentPath === item.href ? "default" : "ghost"}
               size="sm"

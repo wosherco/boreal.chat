@@ -136,7 +136,7 @@
     </div>
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-      {#each features as feature}
+      {#each features as feature (feature.title)}
         <Card class="h-full transition-shadow duration-300 hover:shadow-lg">
           <CardHeader class="pb-4 text-center">
             <div class="mb-2 text-4xl">{feature.icon}</div>
@@ -236,7 +236,7 @@
     </div>
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {#each upcomingFeatures as feature}
+      {#each upcomingFeatures as feature (feature.title)}
         <Card
           class="border-2 border-dashed opacity-80 transition-shadow duration-300 hover:shadow-lg"
         >
