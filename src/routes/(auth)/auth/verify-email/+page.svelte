@@ -25,12 +25,14 @@
   const { data }: PageProps = $props();
 
   onMount(() => {
-    if (data.justSentEmail) {
-      toast.success("Email verification request sent. Please check your email.");
-    }
+    data.justSentEmail.then((justSentEmail) => {
+      if (justSentEmail) {
+        toast.success("Email verification request sent. Please check your email.");
+      }
 
-    const codeInput = document.querySelector("input[name='code']") as HTMLInputElement;
-    codeInput?.focus();
+      const codeInput = document.querySelector("input[name='code']") as HTMLInputElement;
+      codeInput?.focus();
+    });
   });
 
   const verifyEmailMutation = createMutation(
@@ -66,37 +68,44 @@
 
 <AuthBackArrow />
 
-<!-- Logo Placeholder -->
-<div class="mb-6 flex items-center justify-center">
-  <div
-    class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-200 text-2xl font-bold text-gray-500"
-  >
-    <!-- Replace with logo -->
-    <img src={logo} alt="boreal.chat" class="size-8" />
+{#await data.justSentEmail}
+  <Loader2Icon class="size-4 animate-spin" />
+{:then}
+  <div class="mb-6 flex items-center justify-center">
+    <div
+      class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-200 text-2xl font-bold text-gray-500"
+    >
+      <!-- Replace with logo -->
+      <img src={logo} alt="boreal.chat" class="size-8" />
+    </div>
   </div>
-</div>
-<!-- Title -->
-<h2 class="mb-2 text-center text-2xl font-semibold">Verify your email</h2>
-<!-- Email Form -->
-<form class="w-full space-y-6" use:enhance>
-  <Form.Field {form} name="code">
-    <Form.Control>
-      {#snippet children({ props })}
-        <Form.Label>Code</Form.Label>
-        <Input {...props} bind:value={$formData.code} />
-        <Form.Description>
-          Check your email for the reset code. We sent the code to <b>{data.email}</b>.
-        </Form.Description>
-      {/snippet}
-    </Form.Control>
-    <Form.FieldErrors />
-  </Form.Field>
+  <!-- Title -->
+  <h2 class="mb-2 text-center text-2xl font-semibold">Verify your email</h2>
+  <!-- Email Form -->
+  <form class="w-full space-y-6" use:enhance>
+    <Form.Field {form} name="code">
+      <Form.Control>
+        {#snippet children({ props })}
+          <Form.Label>Code</Form.Label>
+          <Input {...props} bind:value={$formData.code} />
+          <Form.Description>
+            Check your email for the reset code. We sent the code to <b>{data.email}</b>.
+          </Form.Description>
+        {/snippet}
+      </Form.Control>
+      <Form.FieldErrors />
+    </Form.Field>
 
-  <Form.Button disabled={$verifyEmailMutation.isPending} class="mt-2 w-full">
-    {#if $verifyEmailMutation.isPending}
-      <Loader2Icon class="size-4 animate-spin" />
-    {:else}
-      Submit
-    {/if}
-  </Form.Button>
-</form>
+    <Form.Button disabled={$verifyEmailMutation.isPending} class="mt-2 w-full">
+      {#if $verifyEmailMutation.isPending}
+        <Loader2Icon class="size-4 animate-spin" />
+      {:else}
+        Submit
+      {/if}
+    </Form.Button>
+  </form>
+{:catch}
+  <div class="flex flex-col items-center justify-center">
+    <p class="text-center text-sm text-gray-500">Failed to verify email. Please try again.</p>
+  </div>
+{/await}

@@ -45,7 +45,7 @@ export const GROK_3_MINI_BETA = "x-ai/grok-3-mini-beta";
 export const GROK_4 = "x-ai/grok-4";
 
 // Moonshot
-export const KIMI_K2 = "moonshot/kimi-k2";
+export const KIMI_K2 = "moonshotai/kimi-k2";
 export const KIMI_K2_FREE = "moonshotai/kimi-k2:free";
 
 export const MODELS = [
