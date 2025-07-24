@@ -77,6 +77,7 @@ export const MODELS = [
   DEEPSEEK_V3_FREE,
 
   // From meta
+  LLAMA_3_3_70B_FREE,
   LLAMA_4_MAVERICK,
   LLAMA_4_MAVERICK_FREE,
   LLAMA_4_SCOUT,
@@ -229,6 +230,11 @@ export const MODEL_DETAILS: Record<ModelId, ModelDetails> = {
   },
 
   // From meta
+  [LLAMA_3_3_70B_FREE]: {
+    displayName: "(Free) Llama 3.3 70B",
+    reasoning: false,
+    free: true,
+  },
   [LLAMA_4_MAVERICK]: {
     displayName: "Llama 4 Maverick",
     reasoning: false,
