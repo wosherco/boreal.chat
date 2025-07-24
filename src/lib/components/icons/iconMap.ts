@@ -31,6 +31,7 @@ import {
   GROK_4,
   KIMI_K2,
   KIMI_K2_FREE,
+  LLAMA_3_3_70B_FREE,
 } from "$lib/common/ai/models";
 import OpenAiIcon from "./OpenAIIcon.svelte";
 import AnthropicIcon from "./AnthropicIcon.svelte";
@@ -69,6 +70,7 @@ export const ICON_MAP: Record<ModelId, Component> = {
   [DEEPSEEK_V3_FREE]: DeepseekIcon,
 
   // From meta
+  [LLAMA_3_3_70B_FREE]: MetaIcon,
   [LLAMA_4_MAVERICK]: MetaIcon,
   [LLAMA_4_MAVERICK_FREE]: MetaIcon,
   [LLAMA_4_SCOUT]: MetaIcon,
