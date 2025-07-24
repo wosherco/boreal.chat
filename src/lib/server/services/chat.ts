@@ -40,3 +40,9 @@ export async function permanentlyDeleteExpiredChats(tx: TransactableDBType) {
     .delete(chatTable)
     .where(and(isNotNull(chatTable.deletedAt), lt(chatTable.deletedAt, fourteenDaysAgo)));
 }
+
+export async function migrateChatsToRegisteredUser(tx: TransactableDBType, anonymousUserId: string, registeredUserId: string) {
+  await tx.update(chatTable)
+    .set({ userId: registeredUserId })
+    .where(eq(chatTable.userId, anonymousUserId));
+}

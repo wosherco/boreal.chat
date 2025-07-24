@@ -9,6 +9,8 @@ import { hashPassword } from "./password";
 import { encryptString, decryptToString } from "./encryption";
 import { eq, and, sql, SQL } from "drizzle-orm";
 import { generateRandomRecoveryCode } from "./utils";
+import { migrateChatsToRegisteredUser } from "$lib/server/services/chat";
+import { anonymousUserConversionTable } from "$lib/server/db/schema/users";
 
 export interface BackendUser {
   id: string;
@@ -42,17 +44,54 @@ export class UserAlreadyExistsError extends Error {
  * @param email - The user's email address.
  * @param name - The user's name.
  * @param password - The user's password.
+ * @param anonymousUserId - If provided, migrate chats and track conversion.
  * @returns The created user.
  */
 export async function createUser(
   email: string,
   name: string,
   password: string,
+  anonymousUserId?: string,
 ): Promise<BackendUser> {
   const passwordHash = await hashPassword(password);
   const recoveryCode = generateRandomRecoveryCode();
   const encryptedRecoveryCode = encryptString(recoveryCode);
 
+  if (anonymousUserId) {
+    // Transaction: create user, migrate chats, track conversion
+    return await db.transaction(async (tx) => {
+      const [user] = await tx
+        .insert(userTable)
+        .values({
+          email,
+          name,
+          passwordHash,
+          recoveryCode: Buffer.from(encryptedRecoveryCode),
+          authenticated: true,
+          anonymous: false,
+        })
+        .onConflictDoNothing()
+        .returning();
+      if (!user) throw new UserAlreadyExistsError();
+      await migrateChatsToRegisteredUser(tx, anonymousUserId, user.id);
+      await tx.insert(anonymousUserConversionTable).values({
+        anonymousUserId,
+        registeredUserId: user.id,
+      });
+      return {
+        id: user.id,
+        email: user.email,
+        passwordHash: user.passwordHash,
+        emailVerified: user.emailVerified,
+        registeredTOTP: false,
+        registeredPasskey: false,
+        registeredSecurityKey: false,
+        registered2FA: false,
+      };
+    });
+  }
+
+  // Normal user creation
   const [user] = await db
     .insert(userTable)
     .values({
@@ -60,6 +99,8 @@ export async function createUser(
       name,
       passwordHash,
       recoveryCode: Buffer.from(encryptedRecoveryCode),
+      authenticated: true,
+      anonymous: false,
     })
     .onConflictDoNothing()
     .returning();

@@ -21,6 +21,10 @@ export const userTable = pgTable("user", {
   passwordHash: text(),
   recoveryCode: bytea(),
 
+  // Anonymous/Authenticated flags
+  anonymous: boolean().notNull().default(false),
+  authenticated: boolean().notNull().default(true),
+
   // Payment stuff
   stripeCustomerId: text().unique(),
   subscriptionId: text().unique(),
@@ -39,6 +43,7 @@ export const sessionTable = pgTable("session", {
     .references(() => userTable.id),
   expiresAt: timestamp({ withTimezone: true, mode: "date" }).notNull(),
   twoFactorVerified: boolean().notNull().default(false),
+  lastTurnstileVerifiedAt: timestamp({ withTimezone: true }),
 });
 
 export const emailVerificationRequestTable = pgTable("email_verification_request", {
@@ -116,3 +121,10 @@ export const accountTable = pgTable("account", {
 });
 
 export type UserAccount = typeof accountTable.$inferSelect;
+
+export const anonymousUserConversionTable = pgTable("anonymous_user_conversion", {
+  id: serial().primaryKey(),
+  anonymousUserId: uuid().notNull(),
+  registeredUserId: uuid().notNull(),
+  convertedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
