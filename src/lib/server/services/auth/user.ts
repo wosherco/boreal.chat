@@ -4,11 +4,14 @@ import {
   passkeyCredentialTable,
   securityKeyCredentialTable,
   totpCredentialTable,
+  anonymousUserConversionTable,
+  chatTable,
 } from "$lib/server/db/schema";
 import { hashPassword } from "./password";
 import { encryptString, decryptToString } from "./encryption";
 import { eq, and, sql, SQL } from "drizzle-orm";
 import { generateRandomRecoveryCode } from "./utils";
+import { FREE_PLAN_NAME } from "$lib/common";
 
 export interface BackendUser {
   id: string;
@@ -224,4 +227,121 @@ export async function getUserPasswordHash(userId: string): Promise<string> {
   }
 
   return user.passwordHash;
+}
+
+/**
+ * Creates an anonymous user.
+ * @param name - The user's display name (can be auto-generated).
+ * @returns The created anonymous user.
+ */
+export async function createAnonymousUser(name: string = "Anonymous User"): Promise<BackendUser> {
+  const [user] = await db
+    .insert(userTable)
+    .values({
+      email: `anonymous-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@temp.local`,
+      name,
+      anonymous: true,
+      emailVerified: false,
+      subscriptionPlan: FREE_PLAN_NAME,
+    })
+    .returning();
+
+  return {
+    id: user.id,
+    email: user.email,
+    passwordHash: user.passwordHash,
+    emailVerified: user.emailVerified,
+    registeredTOTP: false,
+    registeredPasskey: false,
+    registeredSecurityKey: false,
+    registered2FA: false,
+  };
+}
+
+/**
+ * Converts an anonymous user to a registered user and migrates their chats.
+ * @param anonymousUserId - The anonymous user's ID.
+ * @param email - The new user's email.
+ * @param name - The new user's name.
+ * @param password - The new user's password.
+ * @returns The newly created registered user.
+ */
+export async function convertAnonymousUser(
+  anonymousUserId: string,
+  email: string,
+  name: string,
+  password: string,
+): Promise<BackendUser> {
+  const passwordHash = await hashPassword(password);
+  const recoveryCode = generateRandomRecoveryCode();
+  const encryptedRecoveryCode = encryptString(recoveryCode);
+
+  // Start a transaction to ensure data consistency
+  return await db.transaction(async (tx) => {
+    // Create the new registered user
+    const [newUser] = await tx
+      .insert(userTable)
+      .values({
+        email,
+        name,
+        passwordHash,
+        recoveryCode: Buffer.from(encryptedRecoveryCode),
+        anonymous: false,
+        emailVerified: false,
+        subscriptionPlan: FREE_PLAN_NAME,
+      })
+      .onConflictDoNothing()
+      .returning();
+
+    if (!newUser) {
+      throw new UserAlreadyExistsError();
+    }
+
+    // Transfer all chats from anonymous user to the new registered user
+    await tx
+      .update(chatTable)
+      .set({ userId: newUser.id })
+      .where(eq(chatTable.userId, anonymousUserId));
+
+    // Record the conversion for tracking purposes
+    await tx.insert(anonymousUserConversionTable).values({
+      anonymousUserId,
+      registeredUserId: newUser.id,
+    });
+
+    // Mark the anonymous user as converted (optional: you could also delete it)
+    await tx
+      .update(userTable)
+      .set({ 
+        email: `converted-${anonymousUserId}@temp.local`,
+        name: `Converted Anonymous User`,
+      })
+      .where(eq(userTable.id, anonymousUserId));
+
+    return {
+      id: newUser.id,
+      email: newUser.email,
+      passwordHash: newUser.passwordHash,
+      emailVerified: newUser.emailVerified,
+      registeredTOTP: false,
+      registeredPasskey: false,
+      registeredSecurityKey: false,
+      registered2FA: false,
+    };
+  });
+}
+
+/**
+ * Gets an anonymous user's conversion info if they were converted.
+ * @param anonymousUserId - The anonymous user's ID.
+ * @returns The conversion info or null if not converted.
+ */
+export async function getAnonymousUserConversion(anonymousUserId: string) {
+  const [conversion] = await db
+    .select()
+    .from(anonymousUserConversionTable)
+    .where(eq(anonymousUserConversionTable.anonymousUserId, anonymousUserId))
+    .limit(1);
+
+  return conversion || null;
 }

@@ -29,6 +29,8 @@ import {
   updateUserPassword,
   UserAlreadyExistsError,
   type BackendUser,
+  createAnonymousUser,
+  convertAnonymousUser,
 } from "$lib/server/services/auth/user";
 import { verifyPasswordHash } from "$lib/server/services/auth/password";
 import { get2FARedirect, getPasswordReset2FARedirect } from "$lib/server/services/auth/2fa";
@@ -236,6 +238,106 @@ export const v1AuthRouter = osBase.router({
       }
 
       // Creating session
+      const sessionToken = generateSessionToken();
+      const session = await createSession(sessionToken, user.id, false);
+      setSessionTokenCookie(context.cookies, sessionToken, session.expiresAt);
+
+      return {
+        success: true,
+        redirect: "/",
+        done: true,
+      };
+    }),
+
+  createAnonymousUser: osBase
+    .input(z.object({
+      name: z.string().optional().default("Anonymous User"),
+    }))
+    .output(z.object({
+      success: z.boolean(),
+      userId: z.string(),
+      sessionId: z.string().optional(),
+    }))
+    .use(ipMiddleware)
+    .handler(async ({ input, context }) => {
+      // Create anonymous user
+      const user = await createAnonymousUser(input.name);
+
+      // Create session for anonymous user
+      const sessionToken = generateSessionToken();
+      const session = await createSession(sessionToken, user.id, false);
+      setSessionTokenCookie(context.cookies, sessionToken, session.expiresAt);
+
+      return {
+        success: true,
+        userId: user.id,
+        sessionId: sessionToken,
+      };
+    }),
+
+  registerFromAnonymous: osBase
+    .input(z.object({
+      email: z.string().email(),
+      name: z.string().min(1),
+      password: passwordSchema,
+      anonymousUserId: z.string(),
+    }))
+    .output(z.object({
+      success: z.boolean(),
+      redirect: z.string().optional(),
+      done: z.boolean(),
+    }))
+    .use(ipMiddleware)
+    .use(turnstileMiddleware)
+    .handler(async ({ input, context }) => {
+      const ipLimiterResult = await registerIpLimiter.consume(context.clientIp);
+
+      if (!ipLimiterResult.success) {
+        throw new ORPCError("RATE_LIMIT_EXCEEDED", {
+          message: "You have reached the rate limit. Please, try again later.",
+        });
+      }
+
+      let user: BackendUser;
+
+      try {
+        user = await convertAnonymousUser(
+          input.anonymousUserId,
+          input.email,
+          input.name,
+          input.password
+        );
+      } catch (e) {
+        if (e instanceof UserAlreadyExistsError) {
+          throw new ORPCError("BAD_REQUEST", {
+            message: "User already exists. Try logging in.",
+          });
+        }
+
+        throw e;
+      }
+
+      if (!user) {
+        throw new ORPCError("INTERNAL_SERVER_ERROR", {
+          message: "Failed to create user. Please, try again.",
+        });
+      }
+
+      // Sending email verification email
+      try {
+        const emailVerificationRequest = await createEmailVerificationRequest(user.id, user.email);
+        await sendEmailVerificationEmail(
+          user.email,
+          `${env.PUBLIC_URL}/auth/verify-email?code=${emailVerificationRequest.code}`,
+          emailVerificationRequest.code,
+        );
+        setEmailVerificationRequestCookie(context.cookies, emailVerificationRequest);
+      } catch (e) {
+        Sentry.captureException(e);
+        console.error("Failed to send email verification email", e);
+      }
+
+      // Creating session for the new registered user
       const sessionToken = generateSessionToken();
       const session = await createSession(sessionToken, user.id, false);
       setSessionTokenCookie(context.cookies, sessionToken, session.expiresAt);

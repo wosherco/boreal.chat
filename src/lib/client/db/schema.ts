@@ -10,6 +10,7 @@ export const userTable = pgTable("user", {
   profilePicture: text(),
   role: varchar({ length: 255, enum: USER_ROLES }).notNull().default("USER"),
   emailVerified: boolean().notNull().default(false),
+  anonymous: boolean().notNull().default(false),
 
   // Payment stuff
   subscribedUntil: timestamp({ withTimezone: true }),

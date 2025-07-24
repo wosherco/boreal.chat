@@ -44,5 +44,6 @@ export const SUBSCRIPTION_STATUS = [
 export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUS)[number];
 
 export const UNLIMITED_PLAN_NAME = "unlimited";
-export const SUBSCRIPTION_PLANS = [UNLIMITED_PLAN_NAME] as const;
+export const FREE_PLAN_NAME = "free";
+export const SUBSCRIPTION_PLANS = [FREE_PLAN_NAME, UNLIMITED_PLAN_NAME] as const;
 export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number];

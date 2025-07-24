@@ -25,6 +25,7 @@ export type UserInfo = {
   email: string;
   profilePicture: string | null;
   emailVerified: boolean;
+  anonymous?: boolean;
   subscribedUntil: Date | null;
   subscriptionStatus: SubscriptionStatus | null;
   subscriptionPlan: SubscriptionPlan | null;

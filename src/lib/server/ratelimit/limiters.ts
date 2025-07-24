@@ -72,3 +72,29 @@ export const burstCULimiter = redis
       Duration.ofSeconds(burstRefillTime),
     )
   : new DummyTokenBucket();
+
+// RATELIMITERS FOR ANONYMOUS USERS (very limited)
+const anonymousLimitSize = 100; // Very limited for anonymous users
+const anonymousRefillTime = 24 * 60 * 60; // 24 hours
+
+export const anonymousCULimiter = redis
+  ? new IORedisTokenBucketRateLimiter(
+      redis,
+      anonymousLimitSize,
+      anonymousLimitSize,
+      Duration.ofSeconds(anonymousRefillTime),
+    )
+  : new DummyTokenBucket();
+
+// RATELIMITERS FOR FREE PLAN USERS (much more limited than unlimited)
+const freeLimitSize = 10000; // More limited than unlimited users
+const freeRefillTime = 24 * 60 * 60; // 24 hours
+
+export const freeCULimiter = redis
+  ? new IORedisTokenBucketRateLimiter(
+      redis,
+      freeLimitSize,
+      freeLimitSize,
+      Duration.ofSeconds(freeRefillTime),
+    )
+  : new DummyTokenBucket();

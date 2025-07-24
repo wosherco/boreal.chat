@@ -18,6 +18,7 @@ export const userTable = pgTable("user", {
   profilePicture: text(),
   role: varchar({ length: 255, enum: USER_ROLES }).notNull().default("USER"),
   emailVerified: boolean().notNull().default(false),
+  anonymous: boolean().notNull().default(false),
   passwordHash: text(),
   recoveryCode: bytea(),
 
@@ -96,6 +97,25 @@ export const webauthnChallengeTable = pgTable("webauthn_challenge", {
   id: uuid().defaultRandom().primaryKey(),
   challenge: text().notNull().unique(),
   clientIp: text().notNull(),
+  expiresAt: timestamp({ withTimezone: true }).notNull(),
+});
+
+export const anonymousUserConversionTable = pgTable("anonymous_user_conversion", {
+  id: uuid().defaultRandom().primaryKey(),
+  anonymousUserId: uuid()
+    .notNull()
+    .references(() => userTable.id),
+  registeredUserId: uuid()
+    .notNull()
+    .references(() => userTable.id),
+  convertedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
+export const anonymousVerificationTable = pgTable("anonymous_verification", {
+  id: uuid().defaultRandom().primaryKey(),
+  sessionId: text().notNull().unique(),
+  clientIp: text().notNull(),
+  verifiedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   expiresAt: timestamp({ withTimezone: true }).notNull(),
 });
 
