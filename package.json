@@ -70,6 +70,8 @@
     "@types/node": "^20",
     "@upstash/ratelimit": "^2.0.5",
     "@upstash/redis": "^1.35.1",
+    "@vitest/browser": "3.2.4",
+    "@vitest/coverage-v8": "3.2.4",
     "bits-ui": "^2.8.10",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -87,6 +89,7 @@
     "openai": "^5.3.0",
     "p-queue": "^8.1.0",
     "paneforge": "1.0.0-next.5",
+    "playwright": "^1.54.1",
     "posthog-node": "^5.1.1",
     "prettier": "^3.4.2",
     "prettier-plugin-svelte": "^3.3.3",
@@ -109,10 +112,7 @@
     "vite": "^6.2.6",
     "vite-plugin-mkcert": "^1.17.8",
     "vitest": "^3.2.4",
-    "zod": "^3.25.64",
-    "@vitest/browser": "3.2.4",
-    "playwright": "^1.54.1",
-    "@vitest/coverage-v8": "3.2.4"
+    "zod": "^3.25.64"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.3",
@@ -135,6 +135,8 @@
     "drizzle-orm": "^0.44.2",
     "fast-tree-builder": "^2.0.1",
     "flagsmith": "^9.3.0",
+    "http-proxy-agent": "^7.0.2",
+    "https-proxy-agent": "^7.0.6",
     "ioredis": "^5.6.1",
     "is-promise": "^4.0.0",
     "js-cookie": "^3.0.5",

@@ -53,9 +53,14 @@
   let argsText = $state("");
 
   // Queries and mutations
-  const mcpServersQuery = createQuery(
-    orpcQuery.v1.mcp.list.queryOptions()
-  ) as { data?: MCPServer[]; isPending: boolean; error?: any; refetch: () => void };
+  const mcpServersQuery = createQuery(orpcQuery.v1.mcp.list.queryOptions());
+  const proxyStatusQuery = createQuery(orpcQuery.v1.mcp.proxyStatus.queryOptions());
+  
+  // Derived reactive values
+  const mcpServers = $derived($mcpServersQuery.data || []);
+  const isLoadingServers = $derived($mcpServersQuery.isPending);
+  const serversError = $derived($mcpServersQuery.error);
+  const proxyStatus = $derived($proxyStatusQuery.data);
 
   const createMCPMutation = createMutation(
     orpcQuery.v1.mcp.create.mutationOptions({
@@ -130,7 +135,8 @@
     isEditDialogOpen = true;
   }
 
-  function handleSubmit() {
+  function handleSubmit(e: Event) {
+    e.preventDefault();
     const args = argsText.trim() ? argsText.split("\n").map(arg => arg.trim()).filter(Boolean) : [];
     
     const submitData = {
@@ -182,7 +188,7 @@
   <div class="flex items-center justify-between">
     <div>
       <p class="text-sm text-muted-foreground">
-        {$mcpServersQuery.data?.length || 0} server{($mcpServersQuery.data?.length || 0) !== 1 ? 's' : ''} configured
+        {mcpServers.length} server{mcpServers.length !== 1 ? 's' : ''} configured
       </p>
     </div>
     
@@ -198,7 +204,7 @@
           <DialogTitle>Add MCP Server</DialogTitle>
         </DialogHeader>
         
-        <form on:submit|preventDefault={handleSubmit} class="space-y-4">
+        <form onsubmit={handleSubmit} class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-2">
               <Label for="name">Name *</Label>
@@ -319,17 +325,17 @@
     </Dialog>
   </div>
 
-  {#if $mcpServersQuery.isPending}
+  {#if isLoadingServers}
     <div class="text-muted-foreground flex items-center justify-center py-8">
       <Loader2Icon class="mr-2 h-4 w-4 animate-spin" />
       Loading MCP servers...
     </div>
-  {:else if $mcpServersQuery.error}
+  {:else if serversError}
     <Alert variant="destructive">
       <AlertCircleIcon class="h-4 w-4" />
-      <p>Error loading MCP servers: {$mcpServersQuery.error.message}</p>
+      <p>Error loading MCP servers: {serversError.message}</p>
     </Alert>
-  {:else if !$mcpServersQuery.data?.length}
+  {:else if !mcpServers.length}
     <Card class="text-center py-8">
       <CardContent>
         <ServerIcon class="mx-auto h-12 w-12 text-muted-foreground mb-4" />
@@ -345,7 +351,7 @@
     </Card>
   {:else}
     <div class="grid gap-4">
-      {#each $mcpServersQuery.data as server (server.id)}
+      {#each mcpServers as server (server.id)}
         <Card>
           <CardHeader>
             <div class="flex items-start justify-between">
@@ -421,7 +427,7 @@
         <DialogTitle>Edit MCP Server</DialogTitle>
       </DialogHeader>
       
-      <form on:submit|preventDefault={handleSubmit} class="space-y-4">
+      <form onsubmit={handleSubmit} class="space-y-4">
         <div class="grid grid-cols-2 gap-4">
           <div class="space-y-2">
             <Label for="edit-name">Name *</Label>
@@ -541,15 +547,39 @@
     </DialogContent>
   </Dialog>
 
-  <Alert>
-    <AlertCircleIcon class="h-4 w-4" />
-    <div>
-      <p class="font-medium">About MCP (Model Context Protocol)</p>
-      <p class="text-sm text-muted-foreground mt-1">
-        MCP allows you to connect custom tools and resources to your AI agent. You can create your own MCP servers 
-        or connect to existing ones. Each server provides tools that will appear in your chat when the corresponding 
-        MCP server is selected.
-      </p>
-    </div>
-  </Alert>
+  <div class="space-y-4">
+    <Alert>
+      <AlertCircleIcon class="h-4 w-4" />
+      <div>
+        <p class="font-medium">About MCP (Model Context Protocol)</p>
+        <p class="text-sm text-muted-foreground mt-1">
+          MCP allows you to connect custom tools and resources to your AI agent. You can create your own MCP servers 
+          or connect to existing ones. Each server provides tools that will appear in your chat when the corresponding 
+          MCP server is selected.
+        </p>
+      </div>
+    </Alert>
+
+    {#if proxyStatus}
+      <Alert variant={proxyStatus.enabled ? "default" : "destructive"}>
+        <ServerIcon class="h-4 w-4" />
+        <div>
+          <p class="font-medium">Proxy Configuration</p>
+          <div class="text-sm text-muted-foreground mt-1 space-y-1">
+            <p>Proxy: {proxyStatus.enabled ? 'Enabled' : 'Disabled'}</p>
+            <p>Allowed domains: {proxyStatus.allowedDomains?.join(', ') || 'None'}</p>
+            <p>Max concurrent requests: {proxyStatus.maxConcurrentRequests}</p>
+            <p>Active requests: {proxyStatus.activeRequests}</p>
+            {#if proxyStatus.enabled && proxyStatus.hasProxy}
+              <p class="text-green-600 dark:text-green-400">✓ External proxy configured</p>
+            {:else if proxyStatus.enabled}
+              <p class="text-yellow-600 dark:text-yellow-400">⚠ Proxy enabled but no external proxy URL set</p>
+            {:else}
+              <p class="text-orange-600 dark:text-orange-400">⚠ No proxy protection - direct connections allowed</p>
+            {/if}
+          </div>
+        </div>
+      </Alert>
+    {/if}
+  </div>
 </div>

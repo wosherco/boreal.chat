@@ -78,9 +78,11 @@
   );
 
   // MCP servers query
-  const mcpServersQuery = createQuery(
-    orpcQuery.v1.mcp.list.queryOptions()
-  ) as { data?: any[]; isPending: boolean; error?: any };
+  const mcpServersQuery = createQuery(orpcQuery.v1.mcp.list.queryOptions());
+  
+  // Derived values for template usage
+  const mcpServers = $derived($mcpServersQuery.data || []);
+  const hasMCPServers = $derived(mcpServers.length > 0);
 
   // Reactive statement to adjust textarea height
   new TextareaAutosize({
@@ -434,7 +436,7 @@
             </Select>
           {/if}
 
-          {#if $mcpServersQuery.data?.length}
+          {#if hasMCPServers}
             <Select
               type="single"
               value={selectedMCPServer}
@@ -444,13 +446,13 @@
                 <ServerIcon />
                 <span class="hidden sm:block">
                   {selectedMCPServer 
-                    ? $mcpServersQuery.data?.find((s: any) => s.id === selectedMCPServer)?.name || "MCP"
+                    ? mcpServers.find((s: any) => s.id === selectedMCPServer)?.name || "MCP"
                     : "No MCP"}
                 </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">No MCP Server</SelectItem>
-                                  {#each $mcpServersQuery.data?.filter((s: any) => s.enabled) || [] as server (server.id)}
+                {#each mcpServers.filter((s: any) => s.enabled) as server (server.id)}
                   <SelectItem value={server.id}>{server.name}</SelectItem>
                 {/each}
               </SelectContent>

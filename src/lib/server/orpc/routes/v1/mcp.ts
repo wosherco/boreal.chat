@@ -5,6 +5,8 @@ import { eq, and } from "drizzle-orm";
 import { ORPCError } from "@orpc/client";
 import { osBase } from "../../context";
 import { authenticatedMiddleware } from "../../middlewares";
+import { getProxyInfo } from "../../utils/proxiedFetch";
+import { testMCPConnection } from "../../utils/mcpTester";
 
 const createMCPServerSchema = z.object({
   name: z.string().min(1).max(100),
@@ -195,5 +197,32 @@ export const v1MCPRouter = osBase.router({
         // This will be handled by the chat AI service
         // For now, just return success to indicate the endpoint exists
         return { success: true };
+      }),
+
+    proxyStatus: osBase
+      .use(authenticatedMiddleware)
+      .handler(async ({ context }) => {
+        return getProxyInfo();
+      }),
+
+    testConnection: osBase
+      .use(authenticatedMiddleware)
+      .input(z.object({ id: z.string().uuid() }))
+      .handler(async ({ input, context }) => {
+        // Get the MCP server
+        const [server] = await db
+          .select()
+          .from(mcpServerTable)
+          .where(and(eq(mcpServerTable.id, input.id), eq(mcpServerTable.userId, context.userCtx.user.id)))
+          .limit(1);
+
+        if (!server) {
+          throw new ORPCError("NOT_FOUND", {
+            message: "MCP server not found",
+          });
+        }
+
+        const testResult = await testMCPConnection(server);
+        return testResult;
       }),
   });

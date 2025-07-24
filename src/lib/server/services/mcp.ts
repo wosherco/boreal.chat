@@ -1,15 +1,19 @@
 import { MultiServerMCPClient } from "@langchain/mcp-adapters";
 import type { MCPServer } from "$lib/server/db/schema";
 import type { Tool } from "@langchain/core/tools";
+import { getMCPFetch, getProxyInfo } from "../utils/proxiedFetch";
+import { withMCPFetch } from "../utils/mcpGlobalFetch";
 
 export class MCPService {
   private clients = new Map<string, MultiServerMCPClient>();
 
   async getTools(mcpServer: MCPServer): Promise<Tool[]> {
     try {
-      const client = await this.getOrCreateClient(mcpServer);
-      const tools = await client.get_tools();
-      return tools;
+      return await withMCPFetch(async () => {
+        const client = await this.getOrCreateClient(mcpServer);
+        const tools = await client.getTools();
+        return tools;
+      });
     } catch (error) {
       console.error(`Failed to get tools from MCP server ${mcpServer.name}:`, error);
       return [];
@@ -23,13 +27,17 @@ export class MCPService {
       return this.clients.get(cacheKey)!;
     }
 
-    const connection = this.buildConnection(mcpServer);
-    const client = new MultiServerMCPClient({
-      [mcpServer.name]: connection,
-    });
+    return await withMCPFetch(async () => {
+      const connection = this.buildConnection(mcpServer);
+      const client = new MultiServerMCPClient({
+        mcpServers: {
+          [mcpServer.name]: connection,
+        }
+      });
 
-    this.clients.set(cacheKey, client);
-    return client;
+      this.clients.set(cacheKey, client);
+      return client;
+    });
   }
 
   private buildConnection(mcpServer: MCPServer) {
@@ -48,9 +56,21 @@ export class MCPService {
         throw new Error("streamable_http transport requires url");
       }
       
+      // For HTTP transport, we'll use the proxied fetch if available
+      const proxyInfo = getProxyInfo();
+      console.log(`MCP HTTP connection to ${mcpServer.url}:`, {
+        proxyEnabled: proxyInfo.enabled,
+        hasProxy: proxyInfo.hasProxy,
+        allowedDomains: proxyInfo.allowedDomains,
+      });
+      
       return {
         url: mcpServer.url,
         transport: "streamable_http" as const,
+        // Note: The MCP client might not directly support custom fetch
+        // We may need to set up a proxy at the environment level or 
+        // patch the global fetch if the MCP client doesn't support custom fetch
+        fetch: getMCPFetch(),
       };
     } else {
       throw new Error(`Unsupported transport: ${mcpServer.transport}`);
@@ -67,19 +87,21 @@ export class MCPService {
     confirmationMessage?: string 
   }> {
     try {
-      const tools = await this.getTools(mcpServer);
-      const tool = tools.find(t => t.name === toolName);
-      
-      if (!tool) {
-        throw new Error(`Tool ${toolName} not found in MCP server ${mcpServer.name}`);
-      }
+      return await withMCPFetch(async () => {
+        const tools = await this.getTools(mcpServer);
+        const tool = tools.find(t => t.name === toolName);
+        
+        if (!tool) {
+          throw new Error(`Tool ${toolName} not found in MCP server ${mcpServer.name}`);
+        }
 
-      // For now, all MCP tools require confirmation
-      // In the future, we could add configuration to bypass confirmation for certain tools
-      return {
-        needsConfirmation: true,
-        confirmationMessage: `Do you want to execute the MCP tool "${toolName}" with arguments: ${JSON.stringify(toolArgs, null, 2)}?`,
-      };
+        // For now, all MCP tools require confirmation
+        // In the future, we could add configuration to bypass confirmation for certain tools
+        return {
+          needsConfirmation: true,
+          confirmationMessage: `Do you want to execute the MCP tool "${toolName}" with arguments: ${JSON.stringify(toolArgs, null, 2)}?`,
+        };
+      });
     } catch (error) {
       console.error(`Failed to prepare MCP tool execution:`, error);
       throw error;
@@ -92,15 +114,17 @@ export class MCPService {
     toolArgs: Record<string, any>
   ): Promise<any> {
     try {
-      const tools = await this.getTools(mcpServer);
-      const tool = tools.find(t => t.name === toolName);
-      
-      if (!tool) {
-        throw new Error(`Tool ${toolName} not found in MCP server ${mcpServer.name}`);
-      }
+      return await withMCPFetch(async () => {
+        const tools = await this.getTools(mcpServer);
+        const tool = tools.find(t => t.name === toolName);
+        
+        if (!tool) {
+          throw new Error(`Tool ${toolName} not found in MCP server ${mcpServer.name}`);
+        }
 
-      const result = await tool.invoke(toolArgs);
-      return result;
+        const result = await tool.invoke(toolArgs);
+        return result;
+      });
     } catch (error) {
       console.error(`Failed to execute MCP tool:`, error);
       throw error;
