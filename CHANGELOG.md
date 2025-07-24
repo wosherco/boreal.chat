@@ -1,5 +1,11 @@
 # boreal.chat
 
+## 0.2.2
+
+### Patch Changes
+
+- 6a14bc4: Fixed free model
+
 ## 0.2.1
 
 ### Patch Changes
