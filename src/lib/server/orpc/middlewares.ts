@@ -10,9 +10,9 @@ import { BILLING_ENABLED } from "$lib/common/constants";
 import { env } from "$env/dynamic/private";
 import { approximateTokens, calculateCUs, type CUResult } from "../ratelimit/cu";
 import type { TokenBucketRateLimiter } from "pv-ratelimit";
-import { z } from "zod/v4";
-import { dev } from "$app/environment";
 import { getClientIp } from "../utils/ip";
+import { verifyTurnstileToken } from "../utils/turnstile";
+import { TURNSTILE_SECRET_KEY } from "$env/static/private";
 
 export const authenticatedMiddleware = osBase.middleware(async ({ context, next }) => {
   if (!context.userCtx.user || !context.userCtx.session) {
@@ -210,45 +210,22 @@ export const ipMiddleware = osBase.middleware(({ context, next }) => {
   });
 });
 
-const basicTurnstileSchema = z.object({
-  success: z.boolean(),
-});
-
-const TURNSTILE_SECRET_KEY = dev ? "1x0000000000000000000000000000000AA" : env.TURNSTILE_SECRET_KEY;
-
 export const turnstileMiddleware = ipMiddleware.concat(
   async ({ context, next }, input: { turnstileToken?: string }) => {
-    if (TURNSTILE_SECRET_KEY && !input.turnstileToken) {
-      throw new ORPCError("BAD_REQUEST", {
-        message: "Turnstile token is required",
-      });
-    }
+    if (TURNSTILE_SECRET_KEY) {
+      if (!input.turnstileToken) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Turnstile token is required",
+        });
+      }
 
-    const url = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
-    const result = await fetch(url, {
-      body: JSON.stringify({
-        secret: TURNSTILE_SECRET_KEY,
-        response: input.turnstileToken,
-        remoteip: context.clientIp,
-      }),
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+      const verified = await verifyTurnstileToken(input.turnstileToken, context.clientIp);
 
-    const data = await basicTurnstileSchema.safeParseAsync(await result.json());
-
-    if (!data.success) {
-      throw new ORPCError("BAD_REQUEST", {
-        message: "Invalid turnstile token",
-      });
-    }
-
-    if (!data.data.success) {
-      throw new ORPCError("BAD_REQUEST", {
-        message: "Invalid turnstile token",
-      });
+      if (!verified) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Invalid turnstile token",
+        });
+      }
     }
 
     return next();
