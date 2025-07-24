@@ -30,7 +30,7 @@ export const DEEPSEEK_V3_FREE = "deepseek/deepseek-chat-v3-0324:free";
  * Not supported in app.
  */
 export const LLAMA_3_1_8B = "meta-llama/llama-3.1-8b-instruct";
-export const LLAMA_3_3_8B_FREE = "meta-llama/llama-3.3-8b-instruct:free";
+export const LLAMA_3_3_70B_FREE = "meta-llama/llama-3.3-70b-instruct:free";
 export const LLAMA_4_MAVERICK = "meta-llama/llama-4-maverick";
 export const LLAMA_4_MAVERICK_FREE = "meta-llama/llama-4-maverick:free";
 export const LLAMA_4_SCOUT = "meta-llama/llama-4-scout";
