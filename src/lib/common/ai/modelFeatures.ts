@@ -3,7 +3,7 @@
 
 import type { ModelId } from "./models";
 
-export const GENERATED_AT = "2025-07-17T17:56:19.638Z";
+export const GENERATED_AT = "2025-07-25T21:58:47.214Z";
 
 export type ModelFeatures = {
   contextLength: number;
@@ -18,11 +18,44 @@ export type ModelFeatures = {
 };
 
 export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
+  "qwen/qwen3-coder:free": {
+    contextLength: 262144,
+    pricing: {
+      prompt: 0,
+      completion: 0,
+      image: 0,
+      web_search: 0,
+      request: 0,
+    },
+    inputModalities: ["text"],
+  },
+  "qwen/qwen3-coder": {
+    contextLength: 262144,
+    pricing: {
+      prompt: 3.024e-7,
+      completion: 3.024e-7,
+      image: 0,
+      web_search: 0,
+      request: 0,
+    },
+    inputModalities: ["text"],
+  },
   "moonshotai/kimi-k2:free": {
     contextLength: 65536,
     pricing: {
       prompt: 0,
       completion: 0,
+      image: 0,
+      web_search: 0,
+      request: 0,
+    },
+    inputModalities: ["text"],
+  },
+  "moonshotai/kimi-k2": {
+    contextLength: 63000,
+    pricing: {
+      prompt: 1.4e-7,
+      completion: 0.00000249,
       image: 0,
       web_search: 0,
       request: 0,
@@ -270,6 +303,17 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
       request: 0,
     },
     inputModalities: ["text", "image"],
+  },
+  "meta-llama/llama-3.3-70b-instruct:free": {
+    contextLength: 65536,
+    pricing: {
+      prompt: 0,
+      completion: 0,
+      image: 0,
+      web_search: 0,
+      request: 0,
+    },
+    inputModalities: ["text"],
   },
   "anthropic/claude-3.5-sonnet": {
     contextLength: 200000,

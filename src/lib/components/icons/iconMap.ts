@@ -32,6 +32,8 @@ import {
   KIMI_K2,
   KIMI_K2_FREE,
   LLAMA_3_3_70B_FREE,
+  QWEN_3_CODER,
+  QWEN_3_CODER_FREE,
 } from "$lib/common/ai/models";
 import OpenAiIcon from "./OpenAIIcon.svelte";
 import AnthropicIcon from "./AnthropicIcon.svelte";
@@ -78,6 +80,8 @@ export const ICON_MAP: Record<ModelId, Component> = {
 
   // From qwen
   [QWEN_3_30B_A3B]: QwenIcon,
+  [QWEN_3_CODER]: QwenIcon,
+  [QWEN_3_CODER_FREE]: QwenIcon,
 
   // From xAi
   [GROK_3_BETA]: GrokIcon,
