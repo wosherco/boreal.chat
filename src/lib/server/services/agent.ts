@@ -8,7 +8,7 @@ import { db } from "../db";
 import { RateLimitError } from "openai";
 import { listenForCancelMessage } from "../db/mq/messageCancellation";
 import type { CUResult } from "../ratelimit/cu";
-import { burstCULimiter, localCULimiter } from "../ratelimit";
+import type { TokenBucketRateLimiter } from "pv-ratelimit";
 
 export async function executeAgentSafely(
   params: {
@@ -17,7 +17,7 @@ export async function executeAgentSafely(
     webSearchEnabled: boolean;
     openRouterKey: string;
     publicUsage: boolean;
-    ratelimit: undefined | "burst" | "local";
+    ratelimiters: TokenBucketRateLimiter[];
     estimatedCUs?: CUResult;
   },
   context: ChatContext,
@@ -76,9 +76,10 @@ export async function executeAgentSafely(
       console.error("Error invoking agent: ", error);
 
       // We're refunding the estimated CUs.
-      if (params.ratelimit && params.estimatedCUs) {
-        const ratelimiter = params.ratelimit === "burst" ? burstCULimiter : localCULimiter;
-        await ratelimiter.addTokens(context.userId, params.estimatedCUs.total);
+      if (params.ratelimiters.length > 0 && params.estimatedCUs) {
+        for (const ratelimiter of params.ratelimiters) {
+          await ratelimiter.addTokens(context.userId, params.estimatedCUs.total);
+        }
       }
     })
     .finally(() => {

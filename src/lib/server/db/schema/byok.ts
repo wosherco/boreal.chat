@@ -1,16 +1,21 @@
-import { pgTable, uuid, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, unique, varchar } from "drizzle-orm/pg-core";
 import { userTable } from "./users";
+import { BYOK_PLATFORMS } from "$lib/common";
 
-export const openRouterKeyTable = pgTable("openrouter_key", {
-  id: uuid().defaultRandom().primaryKey(),
-  userId: uuid()
-    .notNull()
-    .unique()
-    .references(() => userTable.id),
-  openRouterUserId: text().notNull(),
-  apiKey: text().notNull(),
-  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-});
+export const byokTable = pgTable(
+  "byok",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    userId: uuid()
+      .notNull()
+      .unique()
+      .references(() => userTable.id),
+    apiKey: text().notNull(),
+    platform: varchar({ length: 255, enum: BYOK_PLATFORMS }).notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique().on(t.userId, t.platform)],
+);
 
-export type OpenRouterKey = typeof openRouterKeyTable.$inferSelect;
+export type BYOKEntry = typeof byokTable.$inferSelect;

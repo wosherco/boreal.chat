@@ -1,5 +1,10 @@
 import { osBase } from "../../context";
-import { authenticatedMiddleware, ipMiddleware, turnstileMiddleware } from "../../middlewares";
+import {
+  anonymousUserMiddleware,
+  authenticatedMiddleware,
+  ipMiddleware,
+  turnstileMiddleware,
+} from "../../middlewares";
 import {
   createSession,
   generateSessionToken,
@@ -53,6 +58,8 @@ import {
 import { passwordSchema } from "$lib/common/validators/chat";
 import * as Sentry from "@sentry/sveltekit";
 import { constantTimeEquals } from "$lib/server/services/auth/utils";
+import { verifyAnonymousSession } from "$lib/server/services/auth/anonymous";
+import { isAnonymousUser } from "$lib/common/utils/anonymous";
 
 export const v1AuthRouter = osBase.router({
   getUser: osBase.handler(async ({ context }) => {
@@ -64,11 +71,12 @@ export const v1AuthRouter = osBase.router({
       };
     }
     return {
-      authenticated: true,
+      authenticated: !isAnonymousUser(user),
       data: {
         id: user.id,
         name: user.name,
         email: user.email,
+        role: user.role,
         profilePicture: user.profilePicture,
         emailVerified: user.emailVerified,
         subscribedUntil: user.subscribedUntil,
@@ -77,6 +85,32 @@ export const v1AuthRouter = osBase.router({
       },
     } satisfies CurrentUserInfo;
   }),
+
+  verifySession: osBase
+    .use(ipMiddleware)
+    .use(anonymousUserMiddleware)
+    .input(
+      z.object({
+        turnstileToken: z.string(),
+      }),
+    )
+    .handler(async ({ context, input }) => {
+      const verified = await verifyAnonymousSession(
+        context.userCtx.session,
+        input.turnstileToken,
+        context.clientIp,
+      );
+
+      if (!verified) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Invalid turnstile token",
+        });
+      }
+
+      return {
+        success: true,
+      };
+    }),
 
   webauthnChallenge: osBase.use(ipMiddleware).handler(async ({ context }) => {
     const { clientIp } = context;

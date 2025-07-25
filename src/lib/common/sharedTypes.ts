@@ -1,4 +1,4 @@
-import type { MessageSegmentKind, SubscriptionPlan, SubscriptionStatus } from ".";
+import type { MessageSegmentKind, SubscriptionPlan, SubscriptionStatus, UserRole } from ".";
 import type { ModelId, ReasoningLevel } from "./ai/models";
 import type { DBMessage } from "./schema/chats";
 
@@ -23,6 +23,7 @@ export type UserInfo = {
   id: string;
   name: string;
   email: string;
+  role: UserRole;
   profilePicture: string | null;
   emailVerified: boolean;
   subscribedUntil: Date | null;

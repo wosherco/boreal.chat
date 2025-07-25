@@ -92,6 +92,7 @@ export const GET: RequestHandler = async (event) => {
         email: claims.email,
         name: `${claims.given_name} ${claims.family_name}`,
         profilePicture: claims.picture,
+        role: "USER",
       })
       .returning();
 

@@ -116,6 +116,7 @@
     "vite-plugin-devtools-json": "^0.3.0",
     "vite-plugin-mkcert": "^1.17.8",
     "vitest": "^3.2.4",
+    "vitest-fetch-mock": "^0.4.5",
     "zod": "^3.25.64"
   },
   "dependencies": {
@@ -149,7 +150,7 @@
     "postgres": "^3.4.7",
     "posthog-js": "^1.255.0",
     "pv-duration": "^1.0.1",
-    "pv-ratelimit": "^1.1.0",
+    "pv-ratelimit": "^1.2.0",
     "rehype-katex": "^7.0.1",
     "remark-math": "^6.0.0",
     "runed": "^0.30.0",

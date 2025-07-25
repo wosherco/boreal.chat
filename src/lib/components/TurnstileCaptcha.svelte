@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { waitForTurnstile } from "$lib/client/services/turnstile.svelte";
   import { TURNSTILE_SITE_KEY } from "$lib/common/turnstile";
   import { onMount } from "svelte";
 
@@ -8,39 +9,29 @@
      */
     turnstileToken?: string;
     class?: string;
+    onSuccess?: (token: string) => void;
   }
 
-  let { turnstileToken = $bindable(), class: className }: Props = $props();
+  let { turnstileToken = $bindable(), class: className, onSuccess }: Props = $props();
 
   const randomId = Math.random().toString(36).substring(2, 15);
   const id = `captcha-${randomId}`;
 
-  onMount(() => {
-    const renderCaptcha = () =>
-      turnstile.render(`#${id}`, {
-        sitekey: TURNSTILE_SITE_KEY,
+  function renderCaptcha() {
+    turnstile.render(`#${id}`, {
+      sitekey: TURNSTILE_SITE_KEY,
 
-        callback: (token: string) => {
-          turnstileToken = token;
-        },
-      });
+      callback: (token: string) => {
+        turnstileToken = token;
+        onSuccess?.(token);
+      },
+    });
+  }
 
-    try {
-      renderCaptcha();
-    } catch {
-      // @ts-expect-error - Turnstile callback is not typed
-      window.onloadTurnstileCallback = () => {
-        renderCaptcha();
-      };
-    }
+  onMount(async () => {
+    await waitForTurnstile();
+    renderCaptcha();
   });
 </script>
-
-<svelte:head>
-  <script
-    src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback"
-    defer
-  ></script>
-</svelte:head>
 
 <div {id} data-sitekey={TURNSTILE_SITE_KEY} class={className}></div>

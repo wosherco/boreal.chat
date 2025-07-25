@@ -59,6 +59,7 @@ export async function createUser(
       email,
       name,
       passwordHash,
+      role: "USER",
       recoveryCode: Buffer.from(encryptedRecoveryCode),
     })
     .onConflictDoNothing()

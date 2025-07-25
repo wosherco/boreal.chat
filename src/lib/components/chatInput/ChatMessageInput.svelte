@@ -23,7 +23,7 @@
   import { getCurrentChatState } from "$lib/client/state/currentChatState.svelte";
   import { Toggle } from "../ui/toggle";
   import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
-  import { ORPCError } from "@orpc/client";
+  import { safe, ORPCError } from "@orpc/client";
   import { browser } from "$app/environment";
   import { toast } from "svelte-sonner";
   import { page } from "$app/state";
@@ -41,6 +41,7 @@
   import { gotoWithSeachParams } from "$lib/utils/navigate";
   import { untrack } from "svelte";
   import { PremiumWrapper } from "../ui/premium-badge";
+  import { openCaptchaDialog, waitForTurnstile } from "$lib/client/services/turnstile.svelte";
 
   interface Props {
     /**
@@ -86,67 +87,104 @@
     if (loading || !isLastMessageFinished) return;
     loading = true;
 
+    const currentChatState = getCurrentChatState();
+    const isNewChat = !currentChatState;
+    const genericErrorMessage = isNewChat ? "Failed to create chat" : "Failed to send message";
+
+    // Cancel any pending draft saves
+    debouncedSaveDraft.cancel();
+
     try {
-      const currentChatState = getCurrentChatState();
-      // Cancel any pending draft saves
-      debouncedSaveDraft.cancel();
+      const sendRequest = () =>
+        safe(
+          currentChatState
+            ? orpc.v1.chat.sendMessage({
+                chatId: currentChatState.chatId,
+                model: actualSelectedModel,
+                parentMessageId: currentChatState.lastMessageId,
+                message: value,
+                reasoningLevel: actualReasoningLevel,
+                webSearchEnabled: actualWebSearchEnabled,
+                draftId: draft?.id,
+              })
+            : orpc.v1.chat.newChat({
+                model: actualSelectedModel,
+                message: value,
+                reasoningLevel: actualReasoningLevel,
+                webSearchEnabled: actualWebSearchEnabled,
+                draftId: draft?.id,
+              }),
+        );
 
-      if (currentChatState) {
-        // We're replying to a message
-        try {
-          await orpc.v1.chat.sendMessage({
-            chatId: currentChatState.chatId,
-            model: actualSelectedModel,
-            parentMessageId: currentChatState.lastMessageId,
-            message: value,
-            reasoningLevel: actualReasoningLevel,
-            webSearchEnabled: actualWebSearchEnabled,
-            draftId: draft?.id,
-          });
+      const onSuccess = async (
+        data: NonNullable<Awaited<ReturnType<typeof sendRequest>>["data"]>,
+      ) => {
+        value = "";
 
-          value = "";
-        } catch (e) {
-          if (e instanceof ORPCError) {
-            toast.error(e.message);
-          } else {
-            toast.error("Failed to send message");
-          }
-        }
-      } else {
-        try {
-          const chatDetails = await orpc.v1.chat.newChat({
-            model: actualSelectedModel,
-            message: value,
-            reasoningLevel: actualReasoningLevel,
-            webSearchEnabled: actualWebSearchEnabled,
-            draftId: draft?.id,
-          });
-          value = "";
-
+        if (isNewChat) {
           const chatStream = syncStreams()?.streams.chat;
           const messagesStream = syncStreams()?.streams.message;
           if (chatStream && messagesStream) {
             try {
               await Promise.all([
-                waitForInsert(chatTable, chatDetails.chatId, 5000),
-                waitForInsert(messageTable, chatDetails.userMessageId, 5000),
+                waitForInsert(chatTable, data.chatId, 5000),
+                waitForInsert(messageTable, data.userMessageId, 5000),
               ]);
             } catch (err) {
               console.error("Waiting for chat sync failed", err);
             }
           }
 
-          await goto(`/chat/${chatDetails.chatId}`);
-        } catch (e) {
-          if (e instanceof ORPCError) {
-            toast.error(e.message);
-          } else {
-            toast.error("Failed to create chat");
-          }
+          await goto(`/chat/${data.chatId}`);
         }
+      };
+
+      const res = await sendRequest();
+      const { error, isDefined, isSuccess } = res;
+
+      if (isSuccess) {
+        await onSuccess(res.data);
+        return;
+      }
+
+      if (!isDefined) {
+        toast.error("Failed to send message");
+        return;
+      }
+
+      if (error.code === "SESSION_NOT_VERIFIED") {
+        await waitForTurnstile();
+        const token = await openCaptchaDialog();
+
+        if (!token) {
+          toast.error("Failed to verify session");
+          return;
+        }
+
+        const verified = await orpc.v1.auth.verifySession({
+          turnstileToken: token,
+        });
+
+        if (!verified.success) {
+          toast.error("Failed to verify session");
+          return;
+        }
+
+        const retryRes = await sendRequest();
+        const { error, isDefined, isSuccess } = retryRes;
+
+        if (isSuccess) {
+          await onSuccess(retryRes.data);
+          return;
+        }
+
+        toast.error(isDefined ? error.message : genericErrorMessage);
+      } else {
+        toast.error(error.message);
       }
     } catch (error) {
       console.error(error);
+      toast.error(genericErrorMessage);
     } finally {
       loading = false;
     }

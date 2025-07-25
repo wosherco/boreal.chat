@@ -36,6 +36,7 @@ import {
 } from "$lib/server/services/chat";
 import { chatTitleSchema } from "$lib/common/validators/chat";
 import type { CUResult } from "$lib/server/ratelimit/cu";
+import type { TokenBucketRateLimiter } from "pv-ratelimit";
 
 export const v1ChatRouter = osBase.router({
   newChat: osBase
@@ -197,10 +198,10 @@ export const v1ChatRouter = osBase.router({
                 ? (context.inferenceContext.estimatedCUs as CUResult)
                 : undefined,
             // TODO: IDK why the middleware is not picking the types correctly. Maybe updating orpc fixes this.
-            ratelimit:
-              "ratelimit" in context.inferenceContext
-                ? (context.inferenceContext.ratelimit as "local" | "burst")
-                : undefined,
+            ratelimiters:
+              "ratelimiters" in context.inferenceContext
+                ? (context.inferenceContext.ratelimiters as TokenBucketRateLimiter[])
+                : [],
           },
           chatContext,
         );
@@ -362,10 +363,10 @@ export const v1ChatRouter = osBase.router({
                 ? (context.inferenceContext.estimatedCUs as CUResult)
                 : undefined,
             // TODO: IDK why the middleware is not picking the types correctly. Maybe updating orpc fixes this.
-            ratelimit:
-              "ratelimit" in context.inferenceContext
-                ? (context.inferenceContext.ratelimit as "local" | "burst")
-                : undefined,
+            ratelimiters:
+              "ratelimiters" in context.inferenceContext
+                ? (context.inferenceContext.ratelimiters as TokenBucketRateLimiter[])
+                : [],
           },
           chatContext,
         );
@@ -483,10 +484,10 @@ export const v1ChatRouter = osBase.router({
                 ? (context.inferenceContext.estimatedCUs as CUResult)
                 : undefined,
             // TODO: IDK why the middleware is not picking the types correctly. Maybe updating orpc fixes this.
-            ratelimit:
-              "ratelimit" in context.inferenceContext
-                ? (context.inferenceContext.ratelimit as "local" | "burst")
-                : undefined,
+            ratelimiters:
+              "ratelimiters" in context.inferenceContext
+                ? (context.inferenceContext.ratelimiters as TokenBucketRateLimiter[])
+                : [],
           },
           chatContext,
         );

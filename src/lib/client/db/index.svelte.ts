@@ -144,13 +144,8 @@ async function startShapesSync() {
   console.log("Starting shapes sync");
 
   try {
-    const response = await orpc.v1.auth.getUser();
-
-    if (!response.authenticated) {
-      console.log("We're not logged in, we're not syncing shapes");
-      await clearLocalDb();
-      return;
-    }
+    // TODO: Check connection better...
+    await orpc.v1.auth.getUser();
   } catch {
     // Server might be down, we won't sync shapes.
     // TODO: Back-off to try to keep in sync with the server.

@@ -32,6 +32,7 @@ const createUser = (overrides: Partial<UserInfo> = {}): UserInfo => ({
   id: "user-1",
   name: "Test User",
   email: "test@example.com",
+  role: "USER" as const,
   profilePicture: null,
   emailVerified: true,
   subscribedUntil: null,
