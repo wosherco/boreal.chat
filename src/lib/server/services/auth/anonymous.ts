@@ -1,6 +1,17 @@
-import { userTable } from "$lib/client/db/schema";
+import { invalidateUserSessions } from "$lib/server/auth";
 import { db } from "$lib/server/db";
-import { sessionTable, type Session } from "$lib/server/db/schema";
+import {
+  anonymousUserConversionTable,
+  chatTable,
+  sessionTable,
+  threadTable,
+  messageTable,
+  userTable,
+  type Session,
+  messageSegmentsTable,
+  messageSegmentUsageTable,
+  draftsTable,
+} from "$lib/server/db/schema";
 import { verifyTurnstileToken } from "$lib/server/utils/turnstile";
 import { addMinutes, isFuture } from "date-fns";
 import { eq } from "drizzle-orm";
@@ -69,4 +80,65 @@ export async function verifyAnonymousSession(
     .where(eq(sessionTable.id, session.id));
 
   return true;
+}
+
+export async function convertAnonymousUser(
+  anonymousUserId: string,
+  newUserId: string,
+  transferContent: boolean,
+) {
+  await db.insert(anonymousUserConversionTable).values({
+    anonymousUserId,
+    newUserId,
+    transferContent,
+  });
+  await invalidateUserSessions(anonymousUserId);
+
+  if (transferContent) {
+    // Transfering chats and messages
+    await Promise.all([
+      db
+        .update(chatTable)
+        .set({
+          userId: newUserId,
+        })
+        .where(eq(chatTable.userId, anonymousUserId))
+        .execute(),
+      db
+        .update(threadTable)
+        .set({
+          userId: newUserId,
+        })
+        .where(eq(threadTable.userId, anonymousUserId))
+        .execute(),
+      db
+        .update(messageTable)
+        .set({
+          userId: newUserId,
+        })
+        .where(eq(messageTable.userId, anonymousUserId))
+        .execute(),
+      db
+        .update(messageSegmentsTable)
+        .set({
+          userId: newUserId,
+        })
+        .where(eq(messageSegmentsTable.userId, anonymousUserId))
+        .execute(),
+      db
+        .update(messageSegmentUsageTable)
+        .set({
+          userId: newUserId,
+        })
+        .where(eq(messageSegmentUsageTable.userId, anonymousUserId))
+        .execute(),
+      db
+        .update(draftsTable)
+        .set({
+          userId: newUserId,
+        })
+        .where(eq(draftsTable.userId, anonymousUserId))
+        .execute(),
+    ]);
+  }
 }

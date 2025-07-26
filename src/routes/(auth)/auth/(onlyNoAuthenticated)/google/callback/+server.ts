@@ -7,11 +7,13 @@ import {
   setSessionTokenCookie,
 } from "$lib/server/auth";
 import { db } from "$lib/server/db";
-import { accountTable, userTable } from "$lib/server/db/schema";
+import { accountTable } from "$lib/server/db/schema";
 import { and, eq } from "drizzle-orm";
 import { posthog } from "$lib/server/posthog";
-import { getUserById } from "$lib/server/services/auth/user";
+import { finishLogin, getUserById } from "$lib/server/services/auth/user";
 import { get2FARedirect } from "$lib/server/services/auth/2fa";
+import { createUser } from "$lib/server/services/auth/user";
+import { isAnonymousUser } from "$lib/common/utils/anonymous";
 
 export const GET: RequestHandler = async (event) => {
   const code = event.url.searchParams.get("code");
@@ -66,6 +68,11 @@ export const GET: RequestHandler = async (event) => {
     const session = await createSession(sessionToken, existingAccount.userId, false);
     setSessionTokenCookie(event.cookies, sessionToken, session.expiresAt);
 
+    await finishLogin(
+      existingAccount.userId,
+      event.locals.user && isAnonymousUser(event.locals.user) ? event.locals.user.id : undefined,
+    );
+
     const existingBackendUser = await getUserById(existingAccount.userId);
 
     if (existingBackendUser?.registered2FA) {
@@ -86,15 +93,13 @@ export const GET: RequestHandler = async (event) => {
   }
 
   const user = await db.transaction(async (tx) => {
-    const [user] = await tx
-      .insert(userTable)
-      .values({
-        email: claims.email,
-        name: `${claims.given_name} ${claims.family_name}`,
-        profilePicture: claims.picture,
-        role: "USER",
-      })
-      .returning();
+    const user = await createUser(tx, {
+      email: claims.email,
+      name: `${claims.given_name} ${claims.family_name}`,
+      profilePicture: claims.picture,
+      anonymousId:
+        event.locals.user && isAnonymousUser(event.locals.user) ? event.locals.user.id : undefined,
+    });
 
     if (!user) {
       throw new Error("Failed to create user");

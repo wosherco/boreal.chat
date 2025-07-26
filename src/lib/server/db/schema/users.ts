@@ -44,6 +44,18 @@ export const sessionTable = pgTable("session", {
   verifiedClientIp: text(),
 });
 
+export const anonymousUserConversionTable = pgTable("anonymous_user_conversion", {
+  id: serial().primaryKey(),
+  anonymousUserId: uuid()
+    .notNull()
+    .references(() => userTable.id),
+  newUserId: uuid()
+    .notNull()
+    .references(() => userTable.id),
+  transferContent: boolean().notNull().default(false),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
 export const emailVerificationRequestTable = pgTable("email_verification_request", {
   id: text().primaryKey(),
   userId: uuid()
