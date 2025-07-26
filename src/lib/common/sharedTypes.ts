@@ -45,6 +45,7 @@ export interface ChatWithSettings extends Chat {
   selectedModel: ModelId | null;
   webSearchEnabled: boolean | null;
   reasoningLevel: ReasoningLevel | null;
+  byokId: string | null;
 }
 
 export interface Draft {
@@ -90,3 +91,11 @@ export type MessageChainRow = MessageWithSegments & {
   /** depth in the parent-pointer chain (1 = newest) */
   depth: number;
 };
+
+export interface BYOKInfo {
+  id: string;
+  apiKey?: string;
+  platform: string;
+  createdAt: Date;
+  updatedAt: Date;
+}

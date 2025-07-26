@@ -17,7 +17,6 @@
   } from "@lucide/svelte";
   import { Button } from "../ui/button";
   import KeyboardShortcuts from "../utils/KeyboardShortcuts.svelte";
-  import ModelPickerPopover from "./ModelPickerPopover.svelte";
   import { afterNavigate, goto, onNavigate } from "$app/navigation";
   import { syncStreams } from "$lib/client/db/index.svelte";
   import { getCurrentChatState } from "$lib/client/state/currentChatState.svelte";
@@ -42,6 +41,8 @@
   import { untrack } from "svelte";
   import { PremiumWrapper } from "../ui/premium-badge";
   import { openCaptchaDialog, waitForTurnstile } from "$lib/client/services/turnstile.svelte";
+  import OptionsMenu from "./OptionsMenu.svelte";
+  import { ICON_MAP } from "../icons/iconMap";
 
   interface Props {
     /**
@@ -61,10 +62,12 @@
   const defaultSelectedModel = browser ? getLastSelectedModel() : GEMINI_FLASH_2_5;
   const defaultWebSearchEnabled = false;
   const defaultReasoningLevel = "low";
+  const defaultByokId = undefined;
 
   let selectedModel = $state<ModelId | undefined>(undefined);
   let webSearchEnabled = $state<boolean | undefined>(undefined);
   let reasoningLevel = $state<ReasoningLevel | undefined>(undefined);
+  let byokId = $state<string | undefined>(undefined);
 
   const actualSelectedModel = $derived(
     selectedModel ?? getCurrentChatState()?.model ?? defaultSelectedModel,
@@ -75,6 +78,7 @@
   const actualReasoningLevel = $derived(
     reasoningLevel ?? getCurrentChatState()?.reasoningLevel ?? defaultReasoningLevel,
   );
+  const actualByokId = $derived(byokId ?? getCurrentChatState()?.byokId ?? defaultByokId);
 
   // Reactive statement to adjust textarea height
   new TextareaAutosize({
@@ -106,6 +110,7 @@
                 reasoningLevel: actualReasoningLevel,
                 webSearchEnabled: actualWebSearchEnabled,
                 draftId: draft?.id,
+                byokId: actualByokId,
               })
             : orpc.v1.chat.newChat({
                 model: actualSelectedModel,
@@ -113,6 +118,7 @@
                 reasoningLevel: actualReasoningLevel,
                 webSearchEnabled: actualWebSearchEnabled,
                 draftId: draft?.id,
+                byokId: actualByokId,
               }),
         );
 
@@ -420,19 +426,23 @@
             </Button>
           </DraftManager>
 
-          <ModelPickerPopover
+          <OptionsMenu
             selectedModel={actualSelectedModel}
-            onSelect={(newModel) => {
+            onSelectModel={(newModel) => {
               selectedModel = newModel;
               setLastSelectedModel(newModel);
             }}
             bind:open={modelPickerOpen}
+            byokId={actualByokId}
+            onSelectByok={(newByokId) => (byokId = newByokId)}
           >
             <Button variant="ghost">
+              {@const ModelIcon = ICON_MAP[actualSelectedModel]}
+              <ModelIcon class="size-4" />
               {MODEL_DETAILS[actualSelectedModel].displayName}
               <ChevronDownIcon class="h-4 w-4" />
             </Button>
-          </ModelPickerPopover>
+          </OptionsMenu>
 
           <Toggle
             pressed={actualWebSearchEnabled}

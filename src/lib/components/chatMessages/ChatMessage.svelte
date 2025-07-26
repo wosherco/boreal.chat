@@ -15,7 +15,7 @@
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
   import { toast } from "svelte-sonner";
   import { MODEL_DETAILS, type ModelId } from "$lib/common/ai/models";
-  import ModelPickerPopover from "../chatInput/ModelPickerPopover.svelte";
+  import ModelPickerPopover from "../chatInput/ModelPickerPopover/ModelPickerPopover.svelte";
   import ReasoningSegment from "./ReasoningSegment.svelte";
   import { orpc } from "$lib/client/orpc";
   import { Alert, AlertDescription, AlertTitle } from "../ui/alert";

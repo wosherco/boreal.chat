@@ -3,7 +3,7 @@
   import { ChevronDownIcon, Loader2Icon } from "@lucide/svelte";
   import { Button } from "../ui/button";
   import KeyboardShortcuts from "../utils/KeyboardShortcuts.svelte";
-  import ModelPickerPopover from "../chatInput/ModelPickerPopover.svelte";
+  import ModelPickerPopover from "../chatInput/ModelPickerPopover/ModelPickerPopover.svelte";
   import { MODEL_DETAILS, type ModelId } from "$lib/common/ai/models";
   import { TextareaAutosize } from "runed";
 

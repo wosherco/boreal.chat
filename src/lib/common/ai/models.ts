@@ -292,6 +292,7 @@ export const MODEL_DETAILS: Record<ModelId, ModelDetails> = {
   },
   [QWEN_3_CODER_FREE]: {
     displayName: "(Free) Qwen 3 Coder",
+    free: true,
   },
 
   // From xAi

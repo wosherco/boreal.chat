@@ -48,6 +48,7 @@ export const v1ChatRouter = osBase.router({
         webSearchEnabled: z.boolean().optional(),
         reasoningLevel: z.enum(REASONING_LEVELS).optional(),
         draftId: z.string().uuid().optional(),
+        byokId: z.string().uuid().optional(),
       }),
     )
     .use(inferenceMiddleware)
@@ -246,6 +247,7 @@ export const v1ChatRouter = osBase.router({
         webSearchEnabled: z.boolean().optional(),
         reasoningLevel: z.enum(REASONING_LEVELS).optional(),
         draftId: z.string().uuid().optional(),
+        byokId: z.string().uuid().optional(),
       }),
     )
     .use(activeChatMiddleware)
@@ -408,6 +410,7 @@ export const v1ChatRouter = osBase.router({
         chatId: z.string().uuid(),
         model: z.enum(MODELS),
         messageId: z.string().uuid(),
+        byokId: z.string().uuid().optional(),
       }),
     )
     .use(activeChatMiddleware)

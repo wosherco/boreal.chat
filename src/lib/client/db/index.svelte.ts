@@ -168,6 +168,20 @@ async function startShapesSync() {
         table: "user",
         primaryKey: ["id"],
       },
+      byok: {
+        shape: {
+          url: `${env.PUBLIC_URL}/api/v1/shape`,
+          params: {
+            table: "byok",
+            columns: getTableColumnNames(schema.byokTable),
+          },
+          headers: {
+            "cache-control": "no-cache",
+          },
+        },
+        table: "byok",
+        primaryKey: ["id"],
+      },
       chat: {
         shape: {
           url: `${env.PUBLIC_URL}/api/v1/shape`,

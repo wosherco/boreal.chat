@@ -1,6 +1,6 @@
 {
-  "id": "1c036607-6977-4105-af5b-7a883c5693f0",
-  "prevId": "c7dc220a-229b-4c80-8c92-938839e5d461",
+  "id": "c8638756-98f9-4bc5-9fe2-edde71d8d371",
+  "prevId": "1c036607-6977-4105-af5b-7a883c5693f0",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -600,6 +600,12 @@
           "notNull": true,
           "default": false
         },
+        "byok_id": {
+          "name": "byok_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "pinned": {
           "name": "pinned",
           "type": "boolean",
@@ -1180,8 +1186,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.openrouter_key": {
-      "name": "openrouter_key",
+    "public.byok": {
+      "name": "byok",
       "schema": "",
       "columns": {
         "id": {
@@ -1197,15 +1203,15 @@
           "primaryKey": false,
           "notNull": true
         },
-        "open_router_user_id": {
-          "name": "open_router_user_id",
+        "api_key": {
+          "name": "api_key",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "api_key": {
-          "name": "api_key",
-          "type": "text",
+        "platform": {
+          "name": "platform",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
         },
@@ -1226,9 +1232,9 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "openrouter_key_user_id_user_id_fk": {
-          "name": "openrouter_key_user_id_user_id_fk",
-          "tableFrom": "openrouter_key",
+        "byok_user_id_user_id_fk": {
+          "name": "byok_user_id_user_id_fk",
+          "tableFrom": "byok",
           "tableTo": "user",
           "columnsFrom": ["user_id"],
           "columnsTo": ["id"],
@@ -1238,10 +1244,10 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "openrouter_key_userId_unique": {
-          "name": "openrouter_key_userId_unique",
+        "byok_userId_platform_unique": {
+          "name": "byok_userId_platform_unique",
           "nullsNotDistinct": false,
-          "columns": ["user_id"]
+          "columns": ["user_id", "platform"]
         }
       },
       "policies": {},

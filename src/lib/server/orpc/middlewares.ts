@@ -1,6 +1,6 @@
 import { db } from "../db";
 import { osBase } from "./context";
-import { chatTable, openRouterKeyTable } from "../db/schema";
+import { chatTable, byokTable } from "../db/schema";
 import { and, eq } from "drizzle-orm";
 import { ORPCError } from "@orpc/client";
 import { isSubscribed } from "$lib/common/utils/subscription";
@@ -122,7 +122,7 @@ export interface ModelExecutionContext {
 }
 
 export const inferenceMiddleware = verifiedSessionMiddleware.concat(
-  async ({ context, next }, input: { model: ModelId; message?: string }) => {
+  async ({ context, next }, input: { model: ModelId; message?: string; byokId?: string }) => {
     const anonymous = isAnonymousUser(context.userCtx.user);
 
     if (anonymous && !ANONYMOUS_ALLOWED) {
@@ -131,19 +131,24 @@ export const inferenceMiddleware = verifiedSessionMiddleware.concat(
       });
     }
 
-    const [openRouterKey] = await db
-      .select()
-      .from(openRouterKeyTable)
-      .where(eq(openRouterKeyTable.userId, context.userCtx.user.id))
-      .limit(1);
+    if (input.byokId) {
+      const [byok] = await db
+        .select()
+        .from(byokTable)
+        .where(and(eq(byokTable.userId, context.userCtx.user.id), eq(byokTable.id, input.byokId)))
+        .limit(1);
 
-    // TODO: Add check if the user wants to really use the openrouter key
-    if (openRouterKey) {
+      if (!byok) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "BYOK not found or invalid",
+        });
+      }
+
       return next({
         context: {
           inferenceContext: {
             publicUsage: true,
-            key: openRouterKey.apiKey,
+            key: byok.apiKey,
           },
         },
       });

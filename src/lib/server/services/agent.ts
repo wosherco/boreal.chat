@@ -1,4 +1,4 @@
-import type { ModelId, ReasoningLevel } from "$lib/common/ai/models";
+import { MODEL_DETAILS, type ModelId, type ReasoningLevel } from "$lib/common/ai/models";
 import { createAgent, invokeAgent } from "../ai/agents/main";
 import type { ChatContext } from "../ai/state";
 import { posthog } from "../posthog";
@@ -32,6 +32,8 @@ export async function executeAgentSafely(
     thinking: params.reasoningLevel,
     webSearchEnabled: params.webSearchEnabled,
     abortSignal: abortController.signal,
+    // Open router limits free models to 2048 tokens.
+    maxTokens: MODEL_DETAILS[params.model].free ? 2048 : undefined,
   });
 
   return invokeAgent(agent, context, params)

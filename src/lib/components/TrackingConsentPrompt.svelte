@@ -35,7 +35,7 @@
 </script>
 
 {#if showPrompt}
-  <div class="fixed right-0 bottom-0 z-50 m-4 w-full max-w-[400px]" transition:slide>
+  <div class="fixed right-0 bottom-0 z-50 m-4 w-full max-w-sm" transition:slide>
     <Card>
       <CardHeader>
         <CardTitle>Tracking Consent</CardTitle>
