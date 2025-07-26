@@ -1,5 +1,6 @@
 import CaptchaDialog from "$lib/components/dialogs/CaptchaDialog.svelte";
 import { mount } from "svelte";
+import { orpc } from "../orpc";
 
 let turnstileLoaded = $state(false);
 
@@ -28,6 +29,8 @@ export async function waitForTurnstile() {
       };
     }
   });
+
+  return turnstilePromiseCache;
 }
 
 export const isTurnstileLoaded = () => turnstileLoaded;
@@ -55,4 +58,22 @@ export async function openCaptchaDialog(timeout = 30000): Promise<string | undef
       },
     });
   });
+}
+
+export async function verifySession(): Promise<boolean> {
+  const token = await openCaptchaDialog();
+
+  if (!token) {
+    return false;
+  }
+
+  const verified = await orpc.v1.auth.verifySession({
+    turnstileToken: token,
+  });
+
+  if (!verified.success) {
+    return false;
+  }
+
+  return true;
 }

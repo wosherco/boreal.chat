@@ -40,7 +40,7 @@
   import { gotoWithSeachParams } from "$lib/utils/navigate";
   import { untrack } from "svelte";
   import { PremiumWrapper } from "../ui/premium-badge";
-  import { openCaptchaDialog, waitForTurnstile } from "$lib/client/services/turnstile.svelte";
+  import { openCaptchaDialog, verifySession } from "$lib/client/services/turnstile.svelte";
   import OptionsMenu from "./OptionsMenu.svelte";
   import { ICON_MAP } from "../icons/iconMap";
 
@@ -167,18 +167,9 @@
       }
 
       if (error.code === "SESSION_NOT_VERIFIED") {
-        const token = await openCaptchaDialog();
+        const verified = await verifySession();
 
-        if (!token) {
-          toast.error("Failed to verify session");
-          return;
-        }
-
-        const verified = await orpc.v1.auth.verifySession({
-          turnstileToken: token,
-        });
-
-        if (!verified.success) {
+        if (!verified) {
           toast.error("Failed to verify session");
           return;
         }

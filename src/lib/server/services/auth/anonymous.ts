@@ -49,7 +49,7 @@ export async function verifyAnonymousSession(
   session: Session,
   turnstileToken: string,
   clientIp: string,
-) {
+): Promise<boolean> {
   if (isAnonymousSessionVerified(session, clientIp)) {
     return true;
   }
@@ -67,4 +67,6 @@ export async function verifyAnonymousSession(
       verifiedClientIp: clientIp,
     })
     .where(eq(sessionTable.id, session.id));
+
+  return true;
 }

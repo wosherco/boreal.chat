@@ -25,6 +25,8 @@
   import { messageTable } from "$lib/client/db/schema";
   import { waitForInsert } from "$lib/client/hooks/waitForInsert";
   import ThreeDotsStreaming from "$lib/common/loaders/ThreeDotsStreaming.svelte";
+  import { safe } from "@orpc/client";
+  import { verifySession } from "$lib/client/services/turnstile.svelte";
 
   interface Props {
     message: MessageWithOptionalChainRow;
@@ -133,19 +135,50 @@
   }
 
   async function regenerateMessage(newModel: ModelId) {
-    const result = await orpc.v1.chat.regenerateMessage({
-      chatId: message.chatId,
-      model: newModel,
-      messageId: message.id,
-    });
+    const sendRequest = () =>
+      safe(
+        orpc.v1.chat.regenerateMessage({
+          chatId: message.chatId,
+          model: newModel,
+          messageId: message.id,
+        }),
+      );
 
-    try {
-      await waitForInsert(messageTable, result.messageId, 5000);
-    } catch (e) {
-      console.error("Waiting for message sync failed", e);
+    const onSuccess = async (messageId: string, threadId: string) => {
+      try {
+        await waitForInsert(messageTable, messageId, 5000);
+      } catch (e) {
+        console.error("Waiting for message sync failed", e);
+      }
+
+      onChangeThreadId?.(threadId);
+    };
+
+    const { error, isDefined, isSuccess, data } = await sendRequest();
+
+    if (isSuccess) {
+      return onSuccess(data.messageId, data.threadId);
     }
 
-    onChangeThreadId?.(result.threadId);
+    if (isDefined && error.code === "SESSION_NOT_VERIFIED") {
+      const verified = await verifySession();
+
+      if (!verified) {
+        toast.error("Failed to verify session");
+        return;
+      }
+
+      const retryRes = await sendRequest();
+      const { error, isSuccess } = retryRes;
+
+      if (isSuccess) {
+        return onSuccess(retryRes.data.messageId, retryRes.data.threadId);
+      }
+
+      toast.error("message" in error ? error.message : "Failed to regenerate message");
+    } else {
+      toast.error("message" in error ? error.message : "Failed to regenerate message");
+    }
   }
 
   async function onSubmitEdit(newThreadId: string, newMessageId: string) {

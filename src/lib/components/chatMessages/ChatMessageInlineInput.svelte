@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { safe } from "@orpc/client";
   import { orpc } from "$lib/client/orpc";
   import { ChevronDownIcon, Loader2Icon } from "@lucide/svelte";
   import { Button } from "../ui/button";
@@ -6,6 +7,8 @@
   import ModelPickerPopover from "../chatInput/ModelPickerPopover/ModelPickerPopover.svelte";
   import { MODEL_DETAILS, type ModelId } from "$lib/common/ai/models";
   import { TextareaAutosize } from "runed";
+  import { verifySession } from "$lib/client/services/turnstile.svelte";
+  import { toast } from "svelte-sonner";
 
   interface Props {
     defaultValue: string;
@@ -42,14 +45,44 @@
     loading = true;
 
     try {
-      const result = await orpc.v1.chat.sendMessage({
-        parentMessageId,
-        message: editValue,
-        chatId,
-        model: selectedModel,
-      });
+      const sendRequest = () =>
+        safe(
+          orpc.v1.chat.sendMessage({
+            parentMessageId,
+            message: editValue,
+            chatId,
+            model: selectedModel,
+          }),
+        );
 
-      await onSubmit(result.threadId, result.userMessageId);
+      const { error, isDefined, isSuccess, data } = await sendRequest();
+
+      if (isSuccess) {
+        await onSubmit(data.threadId, data.userMessageId);
+      } else {
+        if (isDefined && error.code === "SESSION_NOT_VERIFIED") {
+          const verified = await verifySession();
+
+          if (!verified) {
+            toast.error("Failed to verify session");
+            return;
+          }
+
+          const retryRes = await sendRequest();
+          const { error, isSuccess } = retryRes;
+
+          if (isSuccess) {
+            await onSubmit(retryRes.data.threadId, retryRes.data.userMessageId);
+          } else {
+            toast.error("message" in error ? error.message : "Failed to edit message");
+          }
+        } else {
+          toast.error("message" in error ? error.message : "Failed to edit message");
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to edit message");
     } finally {
       loading = false;
     }

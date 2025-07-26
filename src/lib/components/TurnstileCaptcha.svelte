@@ -1,7 +1,8 @@
 <script lang="ts">
   import { waitForTurnstile } from "$lib/client/services/turnstile.svelte";
   import { TURNSTILE_SITE_KEY } from "$lib/common/turnstile";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
+  import { toast } from "svelte-sonner";
 
   interface Props {
     id?: string;
@@ -22,22 +23,30 @@
 
   const elementId = `captcha-${id}`;
 
-  function renderCaptcha() {
-    console.log("Rendering captcha", elementId);
-    turnstile.render(`#${elementId}`, {
+  let renderedTurnstileId = $state<string | undefined | null>(undefined);
+
+  onMount(async () => {
+    await waitForTurnstile();
+
+    renderedTurnstileId = turnstile.render(`#${elementId}`, {
       sitekey: TURNSTILE_SITE_KEY,
 
       callback: (token: string) => {
         turnstileToken = token;
         onSuccess?.(token);
       },
+      "error-callback": (e) => {
+        toast.error("Failed to render captcha");
+        console.error("Turnstile error", e);
+      },
     });
-  }
+  });
 
-  onMount(async () => {
-    await waitForTurnstile();
-    renderCaptcha();
+  onDestroy(() => {
+    if (renderedTurnstileId) {
+      turnstile.remove(renderedTurnstileId);
+    }
   });
 </script>
 
-<div id={elementId} data-sitekey={TURNSTILE_SITE_KEY} class={className}></div>
+<div id={elementId} class={className}></div>

@@ -18,7 +18,7 @@
     /**
      * @bindable
      */
-    inputRef: HTMLInputElement | null;
+    inputRef?: HTMLInputElement | null;
   }
 
   let {

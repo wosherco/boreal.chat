@@ -1,12 +1,7 @@
 <script lang="ts">
   import TurnstileCaptcha from "../TurnstileCaptcha.svelte";
-  import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-  } from "../ui/dialog";
+  import { AlertDialog, AlertDialogContent } from "../ui/alert-dialog";
+  import { AlertDialogHeader, AlertDialogTitle, AlertDialogDescription } from "../ui/alert-dialog";
 
   interface Props {
     /**
@@ -30,12 +25,12 @@
   }
 </script>
 
-<Dialog bind:open {onOpenChange}>
-  <DialogContent showCloseButton={false} class="max-w-md">
-    <DialogHeader>
-      <DialogTitle>Before you continue</DialogTitle>
-      <DialogDescription>We need to verify that you are not a bot.</DialogDescription>
-    </DialogHeader>
-    <TurnstileCaptcha onSuccess={onSuccessMiddleware} />
-  </DialogContent>
-</Dialog>
+<AlertDialog bind:open {onOpenChange}>
+  <AlertDialogContent class="max-w-md">
+    <AlertDialogHeader>
+      <AlertDialogTitle>Before you continue</AlertDialogTitle>
+      <AlertDialogDescription>We need to verify that you are not a bot.</AlertDialogDescription>
+    </AlertDialogHeader>
+    <TurnstileCaptcha class="mx-auto w-fit" onSuccess={onSuccessMiddleware} />
+  </AlertDialogContent>
+</AlertDialog>
