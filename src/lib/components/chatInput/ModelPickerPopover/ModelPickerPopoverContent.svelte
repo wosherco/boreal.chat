@@ -48,9 +48,11 @@
     {#if !BILLING_ENABLED || isSubscribed($currentUser.data?.data ?? null) || byokEnabled}
       {@const viewModels = MODELS.filter((model) => byokEnabled || !MODEL_DETAILS[model].free)}
       {@const highlightedModels = viewModels.filter((model) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         HIGHLIGHTED_MODELS.includes(model as any),
       )}
       {@const experimentalModels = viewModels.filter(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (model) => !HIGHLIGHTED_MODELS.includes(model as any),
       )}
 
@@ -87,8 +89,15 @@
       </Command.Group>
     {:else}
       {@const viewModels = MODELS.filter((model) => !MODEL_DETAILS[model].free)}
-      {@const freeModels = viewModels.filter((model) => FREE_MODELS.includes(model as any))}
-      {@const lockedModels = viewModels.filter((model) => !FREE_MODELS.includes(model as any))}
+      {@const freeModels = viewModels.filter((model) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        FREE_MODELS.includes(model as any),
+      )}
+      {@const lockedModels = viewModels.filter(
+        (model) =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          !FREE_MODELS.includes(model as any),
+      )}
 
       <!-- We just show the free models, and the locked models -->
       <Command.Group heading="Free">

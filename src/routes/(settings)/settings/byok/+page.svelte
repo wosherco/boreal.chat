@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { Alert } from "$lib/components/ui/alert";
   import { Button } from "$lib/components/ui/button";
-  import { AlertCircleIcon, Loader2Icon } from "@lucide/svelte";
+  import { Loader2Icon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
   import { orpcQuery } from "$lib/client/orpc";
   import { toast } from "svelte-sonner";

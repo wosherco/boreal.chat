@@ -40,7 +40,7 @@
   import { gotoWithSeachParams } from "$lib/utils/navigate";
   import { untrack } from "svelte";
   import { PremiumWrapper } from "../ui/premium-badge";
-  import { openCaptchaDialog, verifySession } from "$lib/client/services/turnstile.svelte";
+  import { verifySession } from "$lib/client/services/turnstile.svelte";
   import OptionsMenu from "./OptionsMenu.svelte";
   import { ICON_MAP } from "../icons/iconMap";
 
