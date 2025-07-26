@@ -288,7 +288,6 @@ export const MODEL_DETAILS: Record<ModelId, ModelDetails> = {
   },
   [QWEN_3_CODER]: {
     displayName: "Qwen 3 Coder",
-    reasoning: true,
   },
   [QWEN_3_CODER_FREE]: {
     displayName: "(Free) Qwen 3 Coder",
