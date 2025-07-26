@@ -1,4 +1,4 @@
-import type { ModelId, ReasoningLevel } from "$lib/common/ai/models";
+import { MODEL_DETAILS, type ModelId, type ReasoningLevel } from "$lib/common/ai/models";
 import { createAgent, invokeAgent } from "../ai/agents/main";
 import type { ChatContext } from "../ai/state";
 import { posthog } from "../posthog";
@@ -8,20 +8,22 @@ import { db } from "../db";
 import { RateLimitError } from "openai";
 import { listenForCancelMessage } from "../db/mq/messageCancellation";
 import type { CUResult } from "../ratelimit/cu";
-import { burstCULimiter, localCULimiter } from "../ratelimit";
+import type { TokenBucketRateLimiter } from "pv-ratelimit";
 
-export async function executeAgentSafely(
-  params: {
-    model: ModelId;
-    reasoningLevel: ReasoningLevel;
-    webSearchEnabled: boolean;
-    openRouterKey: string;
-    publicUsage: boolean;
-    ratelimit: undefined | "burst" | "local";
-    estimatedCUs?: CUResult;
-  },
-  context: ChatContext,
-) {
+export interface ModelExecutionParams {
+  model: ModelId;
+  reasoningLevel: ReasoningLevel;
+  webSearchEnabled: boolean;
+  openRouterKey: string;
+  publicUsage: boolean;
+  ratelimiters: {
+    ratelimit: TokenBucketRateLimiter;
+    identifier: string;
+  }[];
+  estimatedCUs?: CUResult;
+}
+
+export async function executeAgentSafely(params: ModelExecutionParams, context: ChatContext) {
   const abortController = new AbortController();
 
   const cancelListener = await listenForCancelMessage(context.currentMessageId, () => {
@@ -32,6 +34,8 @@ export async function executeAgentSafely(
     thinking: params.reasoningLevel,
     webSearchEnabled: params.webSearchEnabled,
     abortSignal: abortController.signal,
+    // Open router limits free models to 2048 tokens.
+    maxTokens: MODEL_DETAILS[params.model].free ? 2048 : undefined,
   });
 
   return invokeAgent(agent, context, params)
@@ -76,9 +80,10 @@ export async function executeAgentSafely(
       console.error("Error invoking agent: ", error);
 
       // We're refunding the estimated CUs.
-      if (params.ratelimit && params.estimatedCUs) {
-        const ratelimiter = params.ratelimit === "burst" ? burstCULimiter : localCULimiter;
-        await ratelimiter.addTokens(context.userId, params.estimatedCUs.total);
+      if (params.ratelimiters.length > 0 && params.estimatedCUs) {
+        for (const ratelimiter of params.ratelimiters) {
+          await ratelimiter.ratelimit.addTokens(ratelimiter.identifier, params.estimatedCUs.total);
+        }
       }
     })
     .finally(() => {

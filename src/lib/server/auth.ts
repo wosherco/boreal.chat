@@ -24,6 +24,8 @@ export async function createSession(token: string, userId: string, twoFactorVeri
     userId,
     expiresAt: new Date(Date.now() + DAY_IN_MS * 30),
     twoFactorVerified,
+    captchaVerifiedAt: null,
+    verifiedClientIp: null,
   };
   await db.insert(sessionTable).values(session);
   return session;

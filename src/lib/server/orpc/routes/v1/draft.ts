@@ -2,7 +2,7 @@ import { osBase } from "../../context";
 import { z } from "zod";
 import { MODELS, REASONING_LEVELS } from "$lib/common/ai/models";
 import { db } from "$lib/server/db";
-import { authenticatedMiddleware } from "../../middlewares";
+import { sessionMiddleware } from "../../middlewares";
 import { draftsTable } from "$lib/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { ORPCError } from "@orpc/client";
@@ -10,7 +10,7 @@ import postgres from "postgres";
 
 export const v1DraftRouter = osBase.router({
   upsert: osBase
-    .use(authenticatedMiddleware)
+    .use(sessionMiddleware)
     .input(
       z.object({
         id: z.string().uuid().optional(),
@@ -69,7 +69,7 @@ export const v1DraftRouter = osBase.router({
     }),
 
   delete: osBase
-    .use(authenticatedMiddleware)
+    .use(sessionMiddleware)
     .input(z.object({ id: z.string().uuid() }))
     .handler(async ({ context, input }) => {
       const [deletedDraft] = await db
@@ -86,7 +86,7 @@ export const v1DraftRouter = osBase.router({
       return { success: true };
     }),
 
-  deleteAll: osBase.use(authenticatedMiddleware).handler(async ({ context }) => {
+  deleteAll: osBase.use(sessionMiddleware).handler(async ({ context }) => {
     await db.delete(draftsTable).where(eq(draftsTable.userId, context.userCtx.user.id));
 
     return { success: true };

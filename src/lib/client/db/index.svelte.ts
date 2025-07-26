@@ -144,13 +144,8 @@ async function startShapesSync() {
   console.log("Starting shapes sync");
 
   try {
-    const response = await orpc.v1.auth.getUser();
-
-    if (!response.authenticated) {
-      console.log("We're not logged in, we're not syncing shapes");
-      await clearLocalDb();
-      return;
-    }
+    // TODO: Check connection better...
+    await orpc.v1.auth.getUser();
   } catch {
     // Server might be down, we won't sync shapes.
     // TODO: Back-off to try to keep in sync with the server.
@@ -171,6 +166,20 @@ async function startShapesSync() {
           },
         },
         table: "user",
+        primaryKey: ["id"],
+      },
+      byok: {
+        shape: {
+          url: `${env.PUBLIC_URL}/api/v1/shape`,
+          params: {
+            table: "byok",
+            columns: getTableColumnNames(schema.byokTable),
+          },
+          headers: {
+            "cache-control": "no-cache",
+          },
+        },
+        table: "byok",
         primaryKey: ["id"],
       },
       chat: {

@@ -1,20 +1,52 @@
 import { db } from "../db";
 import { osBase } from "./context";
-import { chatTable, openRouterKeyTable } from "../db/schema";
+import { chatTable, byokTable } from "../db/schema";
 import { and, eq } from "drizzle-orm";
 import { ORPCError } from "@orpc/client";
 import { isSubscribed } from "$lib/common/utils/subscription";
-import { burstCULimiter, getRatelimitConsumeHeaders, localCULimiter } from "../ratelimit";
-import type { ModelId } from "$lib/common/ai/models";
-import { BILLING_ENABLED } from "$lib/common/constants";
+import {
+  anonymousCULimiter,
+  burstCULimiter,
+  freeCULimiter,
+  getRatelimitConsumeHeaders,
+  ipCULimiter,
+  localCULimiter,
+} from "../ratelimit";
+import { FREE_MODELS, type ModelId } from "$lib/common/ai/models";
+import { ANONYMOUS_ALLOWED, BILLING_ENABLED } from "$lib/common/constants";
 import { env } from "$env/dynamic/private";
 import { approximateTokens, calculateCUs, type CUResult } from "../ratelimit/cu";
 import type { TokenBucketRateLimiter } from "pv-ratelimit";
-import { z } from "zod/v4";
-import { dev } from "$app/environment";
 import { getClientIp } from "../utils/ip";
+import { verifyTurnstileToken } from "../utils/turnstile";
+import { TURNSTILE_SECRET_KEY } from "$env/static/private";
+import { isAnonymousSessionVerified } from "../services/auth/anonymous";
+import { isAnonymousUser } from "$lib/common/utils/anonymous";
 
-export const authenticatedMiddleware = osBase.middleware(async ({ context, next }) => {
+/**
+ * Middleware that checks if the request contains a client IP.
+ */
+export const ipMiddleware = osBase.middleware(({ context, next }) => {
+  const clientIp = getClientIp(context.headers);
+
+  if (!clientIp) {
+    throw new ORPCError("BAD_REQUEST", {
+      message: "Client IP not found",
+    });
+  }
+
+  return next({
+    context: {
+      ...context,
+      clientIp,
+    },
+  });
+});
+
+/**
+ * Middleware that checks if the request contains a session.
+ */
+export const sessionMiddleware = osBase.middleware(({ context, next }) => {
   if (!context.userCtx.user || !context.userCtx.session) {
     throw new ORPCError("UNAUTHORIZED", {
       message: "Unauthorized",
@@ -23,13 +55,54 @@ export const authenticatedMiddleware = osBase.middleware(async ({ context, next 
 
   return next({
     context: {
-      ...context,
       userCtx: {
         user: context.userCtx.user,
         session: context.userCtx.session,
       },
     },
   });
+});
+
+/**
+ * Middleware that checks if the request contains a session, and that the session is verified.
+ */
+export const verifiedSessionMiddleware = ipMiddleware
+  .concat(sessionMiddleware)
+  .concat(({ context, next, errors }) => {
+    if (
+      isAnonymousUser(context.userCtx.user) &&
+      !isAnonymousSessionVerified(context.userCtx.session, context.clientIp)
+    ) {
+      throw errors.SESSION_NOT_VERIFIED();
+    }
+
+    return next();
+  });
+
+/**
+ * Middleware that checks if the request contains a user and a session, and that the user is anonymous.
+ */
+export const anonymousUserMiddleware = sessionMiddleware.concat(({ context, next }) => {
+  if (!isAnonymousUser(context.userCtx.user)) {
+    throw new ORPCError("UNAUTHORIZED", {
+      message: "Unauthorized",
+    });
+  }
+
+  return next();
+});
+
+/**
+ * Middleware that checks if the request contains a user and a session, and that the user is not anonymous.
+ */
+export const authenticatedMiddleware = sessionMiddleware.concat(({ context, next }) => {
+  if (isAnonymousUser(context.userCtx.user)) {
+    throw new ORPCError("UNAUTHORIZED", {
+      message: "Unauthorized",
+    });
+  }
+
+  return next();
 });
 
 export const subscribedMiddleware = authenticatedMiddleware.concat(async ({ context, next }) => {
@@ -48,20 +121,34 @@ export interface ModelExecutionContext {
   estimatedCUs?: CUResult;
 }
 
-export const inferenceMiddleware = authenticatedMiddleware.concat(
-  async ({ context, next }, input: { model: ModelId; message?: string }) => {
-    const [openRouterKey] = await db
-      .select()
-      .from(openRouterKeyTable)
-      .where(eq(openRouterKeyTable.userId, context.userCtx.user.id))
-      .limit(1);
+export const inferenceMiddleware = verifiedSessionMiddleware.concat(
+  async ({ context, next }, input: { model: ModelId; message?: string; byokId?: string }) => {
+    const anonymous = isAnonymousUser(context.userCtx.user);
 
-    if (openRouterKey) {
+    if (anonymous && !ANONYMOUS_ALLOWED) {
+      throw new ORPCError("UNAUTHORIZED", {
+        message: "Please, sign up to use boreal.chat",
+      });
+    }
+
+    if (input.byokId) {
+      const [byok] = await db
+        .select()
+        .from(byokTable)
+        .where(and(eq(byokTable.userId, context.userCtx.user.id), eq(byokTable.id, input.byokId)))
+        .limit(1);
+
+      if (!byok) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "BYOK not found or invalid",
+        });
+      }
+
       return next({
         context: {
           inferenceContext: {
             publicUsage: true,
-            key: openRouterKey.apiKey,
+            key: byok.apiKey,
           },
         },
       });
@@ -86,10 +173,12 @@ export const inferenceMiddleware = authenticatedMiddleware.concat(
       });
     }
 
-    if (!isSubscribed(context.userCtx.user)) {
+    const subscribed = isSubscribed(context.userCtx.user);
+
+    if ((!subscribed || anonymous) && (!ANONYMOUS_ALLOWED || !FREE_MODELS.includes(input.model))) {
       throw new ORPCError("UNAUTHORIZED", {
         message:
-          "You need to be subscribed to atleast Premium plan to use this feature, or bring your own OpenRouter key (in settings).",
+          "You need to be subscribed to use this feature, or bring your own OpenRouter key (in settings).",
       });
     }
 
@@ -100,21 +189,60 @@ export const inferenceMiddleware = authenticatedMiddleware.concat(
       input.model,
     );
 
-    let ratelimit: "local" | "burst" = "local";
-    const localResult = await localCULimiter.consume(context.userCtx.user.id, estimatedCUs.total);
+    let ratelimiters: {
+      ratelimit: TokenBucketRateLimiter;
+      identifier: string;
+    }[] = [];
 
-    if (!localResult.success) {
-      ratelimit = "burst";
-      const burstResult = await burstCULimiter.consume(context.userCtx.user.id, estimatedCUs.total);
+    if (anonymous || !subscribed) {
+      ratelimiters = [{ ratelimit: ipCULimiter, identifier: context.clientIp }];
+      const ipResult = await ipCULimiter.consume(context.clientIp, estimatedCUs.total);
 
-      if (!burstResult.success) {
+      if (!ipResult.success) {
         context.setHeaders?.(
-          getRatelimitConsumeHeaders(burstResult.remainingTokens, burstResult.nextRefillAt),
+          getRatelimitConsumeHeaders(ipResult.remainingTokens, ipResult.nextRefillAt),
         );
 
         throw new ORPCError("RATE_LIMIT_EXCEEDED", {
-          message: "You have reached the rate limit. Please, try again later.",
+          message: `You've sent too many messages. ${anonymous ? "Please, sign up to continue using boreal.chat" : "Please, subscribe to continue using boreal.chat, or wait up to 1 hour."}`,
         });
+      }
+
+      const localRatelimiter = anonymous ? anonymousCULimiter : freeCULimiter;
+      ratelimiters.push({ ratelimit: localRatelimiter, identifier: context.userCtx.user.id });
+      const localResult = await localRatelimiter.consume(
+        context.userCtx.user.id,
+        estimatedCUs.total,
+      );
+
+      if (!localResult.success) {
+        context.setHeaders?.(
+          getRatelimitConsumeHeaders(localResult.remainingTokens, localResult.nextRefillAt),
+        );
+        throw new ORPCError("RATE_LIMIT_EXCEEDED", {
+          message: `You've sent too many messages. ${anonymous ? "Please, sign up to continue using boreal.chat" : "Please, subscribe to continue using boreal.chat, or wait up to 1 hour."}`,
+        });
+      }
+    } else {
+      ratelimiters = [{ ratelimit: localCULimiter, identifier: context.userCtx.user.id }];
+      const localResult = await localCULimiter.consume(context.userCtx.user.id, estimatedCUs.total);
+
+      if (!localResult.success) {
+        ratelimiters = [{ ratelimit: burstCULimiter, identifier: context.userCtx.user.id }];
+        const burstResult = await burstCULimiter.consume(
+          context.userCtx.user.id,
+          estimatedCUs.total,
+        );
+
+        if (!burstResult.success) {
+          context.setHeaders?.(
+            getRatelimitConsumeHeaders(burstResult.remainingTokens, burstResult.nextRefillAt),
+          );
+
+          throw new ORPCError("RATE_LIMIT_EXCEEDED", {
+            message: "You have reached the rate limit. Please, try again later.",
+          });
+        }
       }
     }
 
@@ -124,14 +252,14 @@ export const inferenceMiddleware = authenticatedMiddleware.concat(
           publicUsage: false,
           key: env.OPENROUTER_API_KEY,
           estimatedCUs,
-          ratelimit,
+          ratelimiters,
         },
       },
     });
   },
 );
 
-export const chatOwnerMiddleware = authenticatedMiddleware.concat(
+export const chatOwnerMiddleware = sessionMiddleware.concat(
   async ({ context, next }, input: { chatId: string }) => {
     const [chat] = await db
       .select({
@@ -193,62 +321,22 @@ export const tokenBucketRatelimitMiddleware = (ratelimit: TokenBucketRateLimiter
     return next();
   });
 
-export const ipMiddleware = osBase.middleware(({ context, next }) => {
-  const clientIp = getClientIp(context.headers);
-
-  if (!clientIp) {
-    throw new ORPCError("BAD_REQUEST", {
-      message: "Client IP not found",
-    });
-  }
-
-  return next({
-    context: {
-      ...context,
-      clientIp,
-    },
-  });
-});
-
-const basicTurnstileSchema = z.object({
-  success: z.boolean(),
-});
-
-const TURNSTILE_SECRET_KEY = dev ? "1x0000000000000000000000000000000AA" : env.TURNSTILE_SECRET_KEY;
-
 export const turnstileMiddleware = ipMiddleware.concat(
   async ({ context, next }, input: { turnstileToken?: string }) => {
-    if (TURNSTILE_SECRET_KEY && !input.turnstileToken) {
-      throw new ORPCError("BAD_REQUEST", {
-        message: "Turnstile token is required",
-      });
-    }
+    if (TURNSTILE_SECRET_KEY) {
+      if (!input.turnstileToken) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Turnstile token is required",
+        });
+      }
 
-    const url = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
-    const result = await fetch(url, {
-      body: JSON.stringify({
-        secret: TURNSTILE_SECRET_KEY,
-        response: input.turnstileToken,
-        remoteip: context.clientIp,
-      }),
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+      const verified = await verifyTurnstileToken(input.turnstileToken, context.clientIp);
 
-    const data = await basicTurnstileSchema.safeParseAsync(await result.json());
-
-    if (!data.success) {
-      throw new ORPCError("BAD_REQUEST", {
-        message: "Invalid turnstile token",
-      });
-    }
-
-    if (!data.data.success) {
-      throw new ORPCError("BAD_REQUEST", {
-        message: "Invalid turnstile token",
-      });
+      if (!verified) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Invalid turnstile token",
+        });
+      }
     }
 
     return next();

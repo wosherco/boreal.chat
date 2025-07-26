@@ -1,5 +1,10 @@
 import { osBase } from "../../context";
-import { authenticatedMiddleware, ipMiddleware, turnstileMiddleware } from "../../middlewares";
+import {
+  anonymousUserMiddleware,
+  authenticatedMiddleware,
+  ipMiddleware,
+  turnstileMiddleware,
+} from "../../middlewares";
 import {
   createSession,
   generateSessionToken,
@@ -22,6 +27,7 @@ import { encodeBase64 } from "@oslojs/encoding";
 import z from "zod";
 import {
   createUser,
+  finishLogin,
   getUserByEmail,
   getUserById,
   setUserAsEmailVerifiedIfEmailMatches,
@@ -53,6 +59,9 @@ import {
 import { passwordSchema } from "$lib/common/validators/chat";
 import * as Sentry from "@sentry/sveltekit";
 import { constantTimeEquals } from "$lib/server/services/auth/utils";
+import { verifyAnonymousSession } from "$lib/server/services/auth/anonymous";
+import { isAnonymousUser } from "$lib/common/utils/anonymous";
+import { db } from "$lib/server/db";
 
 export const v1AuthRouter = osBase.router({
   getUser: osBase.handler(async ({ context }) => {
@@ -64,11 +73,12 @@ export const v1AuthRouter = osBase.router({
       };
     }
     return {
-      authenticated: true,
+      authenticated: !isAnonymousUser(user),
       data: {
         id: user.id,
         name: user.name,
         email: user.email,
+        role: user.role,
         profilePicture: user.profilePicture,
         emailVerified: user.emailVerified,
         subscribedUntil: user.subscribedUntil,
@@ -77,6 +87,32 @@ export const v1AuthRouter = osBase.router({
       },
     } satisfies CurrentUserInfo;
   }),
+
+  verifySession: osBase
+    .use(ipMiddleware)
+    .use(anonymousUserMiddleware)
+    .input(
+      z.object({
+        turnstileToken: z.string(),
+      }),
+    )
+    .handler(async ({ context, input }) => {
+      const verified = await verifyAnonymousSession(
+        context.userCtx.session,
+        input.turnstileToken,
+        context.clientIp,
+      );
+
+      if (!verified) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Invalid turnstile token",
+        });
+      }
+
+      return {
+        success: true,
+      };
+    }),
 
   webauthnChallenge: osBase.use(ipMiddleware).handler(async ({ context }) => {
     const { clientIp } = context;
@@ -154,8 +190,14 @@ export const v1AuthRouter = osBase.router({
 
       const sessionToken = generateSessionToken();
       const session = await createSession(sessionToken, user.id, false);
-
       setSessionTokenCookie(context.cookies, sessionToken, session.expiresAt);
+
+      await finishLogin(
+        user.id,
+        context.userCtx.user && isAnonymousUser(context.userCtx.user)
+          ? context.userCtx.user.id
+          : undefined,
+      );
 
       const redirectTo = get2FARedirect(user);
 
@@ -204,7 +246,11 @@ export const v1AuthRouter = osBase.router({
       let user: BackendUser;
 
       try {
-        user = await createUser(input.email, input.name, input.password);
+        user = await createUser(db, {
+          email: input.email,
+          name: input.name,
+          password: input.password,
+        });
       } catch (e) {
         if (e instanceof UserAlreadyExistsError) {
           throw new ORPCError("BAD_REQUEST", {

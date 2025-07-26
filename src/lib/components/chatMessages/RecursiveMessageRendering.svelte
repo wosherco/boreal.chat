@@ -66,6 +66,7 @@
       model: chat?.selectedModel ?? undefined,
       webSearchEnabled: chat?.webSearchEnabled ?? undefined,
       reasoningLevel: chat?.reasoningLevel ?? undefined,
+      byokId: chat?.byokId ?? undefined,
     });
   });
 

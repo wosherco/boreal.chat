@@ -1,38 +1,35 @@
 <script lang="ts">
-  import { Alert } from "$lib/components/ui/alert";
   import { Button } from "$lib/components/ui/button";
-  import { AlertCircleIcon, Loader2Icon } from "@lucide/svelte";
+  import { Loader2Icon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
-  import { orpc } from "$lib/client/orpc";
+  import { orpcQuery } from "$lib/client/orpc";
   import { toast } from "svelte-sonner";
   import { invalidate } from "$app/navigation";
   import { page } from "$app/state";
   import SvelteSeo from "svelte-seo";
   import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "$lib/components/ui/card";
   import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
+  import { useBYOKs } from "$lib/client/hooks/useBYOKs.svelte";
+  import { createMutation } from "@tanstack/svelte-query";
 
   const { data }: PageProps = $props();
 
   const user = useCurrentUser(data.auth.currentUserInfo);
-  const openRouterAccount = $derived(data.byok.openrouter);
+  const byoks = useBYOKs(data.byok.byoks ?? null);
+  const openRouterAccount = $derived($byoks?.data?.find((byok) => byok.platform === "openrouter"));
 
-  let loadingMutation = $state(false);
-
-  async function disconnectOpenRouter() {
-    if (loadingMutation) return;
-    loadingMutation = true;
-
-    try {
-      await orpc.v1.byok.delete();
-      toast.success("OpenRouter disconnected");
-      invalidate(page.url);
-    } catch (error) {
-      console.error(error);
-      toast.error("Error disconnecting OpenRouter");
-    } finally {
-      loadingMutation = false;
-    }
-  }
+  const deleteByokAccountMutation = createMutation(
+    orpcQuery.v1.byok.delete.mutationOptions({
+      onSuccess: () => {
+        toast.success("OpenRouter disconnected");
+        invalidate(page.url);
+      },
+      onError: (error) => {
+        console.error(error);
+        toast.error("Error disconnecting OpenRouter");
+      },
+    }),
+  );
 </script>
 
 <SvelteSeo title="Bring Your Own Key | boreal.chat" />
@@ -52,26 +49,15 @@
         <p class="text-muted-foreground text-sm">
           Please log in to manage your OpenRouter connection.
         </p>
+      {:else if $byoks?.loading || !$byoks?.data}
+        <div class="text-muted-foreground flex items-center text-sm">
+          <Loader2Icon class="mr-2 h-4 w-4 animate-spin" />
+          Checking status...
+        </div>
+      {:else if openRouterAccount}
+        <p class="text-muted-foreground text-sm">Your OpenRouter account is connected.</p>
       {:else}
-        {#await openRouterAccount}
-          <div class="text-muted-foreground flex items-center text-sm">
-            <Loader2Icon class="mr-2 h-4 w-4 animate-spin" />
-            Checking status...
-          </div>
-        {:then value}
-          {#if value}
-            <p class="text-muted-foreground text-sm">Your OpenRouter account is connected.</p>
-          {:else}
-            <p class="text-muted-foreground text-sm">
-              Connect your OpenRouter account to get started.
-            </p>
-          {/if}
-        {:catch}
-          <Alert variant="destructive">
-            <AlertCircleIcon class="h-4 w-4" />
-            <p>Error loading your OpenRouter account</p>
-          </Alert>
-        {/await}
+        <p class="text-muted-foreground text-sm">Connect your OpenRouter account to get started.</p>
       {/if}
     </CardContent>
     <CardFooter class="justify-end">
@@ -86,10 +72,10 @@
               <Button href="/settings/byok/openrouter" variant="outline">Reconnect</Button>
               <Button
                 variant="destructive"
-                onclick={disconnectOpenRouter}
-                disabled={loadingMutation}
+                onclick={() => $deleteByokAccountMutation.mutate({ platform: "openrouter" })}
+                disabled={$deleteByokAccountMutation.isPending}
               >
-                {#if loadingMutation}
+                {#if $deleteByokAccountMutation.isPending}
                   <Loader2Icon class="mr-2 h-4 w-4 animate-spin" />
                 {/if}
                 Disconnect

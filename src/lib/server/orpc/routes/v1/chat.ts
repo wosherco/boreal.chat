@@ -4,9 +4,10 @@ import { GPT_4_1_NANO, LLAMA_3_3_70B_FREE, MODELS, REASONING_LEVELS } from "$lib
 import { db } from "$lib/server/db";
 import {
   activeChatMiddleware,
-  authenticatedMiddleware,
   chatOwnerMiddleware,
   inferenceMiddleware,
+  sessionMiddleware,
+  verifiedSessionMiddleware,
 } from "../../middlewares";
 import {
   createChat,
@@ -24,7 +25,7 @@ import { chatTable, messageTable, draftsTable } from "$lib/server/db/schema";
 import { ORPCError } from "@orpc/client";
 import * as Sentry from "@sentry/sveltekit";
 import { posthog } from "$lib/server/posthog";
-import { executeAgentSafely } from "$lib/server/services/agent";
+import { executeAgentSafely, type ModelExecutionParams } from "$lib/server/services/agent";
 import { sendCancelMessage } from "$lib/server/db/mq/messageCancellation";
 import {
   deleteChat,
@@ -39,7 +40,7 @@ import type { CUResult } from "$lib/server/ratelimit/cu";
 
 export const v1ChatRouter = osBase.router({
   newChat: osBase
-    .use(authenticatedMiddleware)
+    .use(verifiedSessionMiddleware)
     .input(
       z.object({
         model: z.enum(MODELS),
@@ -47,6 +48,7 @@ export const v1ChatRouter = osBase.router({
         webSearchEnabled: z.boolean().optional(),
         reasoningLevel: z.enum(REASONING_LEVELS).optional(),
         draftId: z.string().uuid().optional(),
+        byokId: z.string().uuid().optional(),
       }),
     )
     .use(inferenceMiddleware)
@@ -197,10 +199,10 @@ export const v1ChatRouter = osBase.router({
                 ? (context.inferenceContext.estimatedCUs as CUResult)
                 : undefined,
             // TODO: IDK why the middleware is not picking the types correctly. Maybe updating orpc fixes this.
-            ratelimit:
-              "ratelimit" in context.inferenceContext
-                ? (context.inferenceContext.ratelimit as "local" | "burst")
-                : undefined,
+            ratelimiters:
+              "ratelimiters" in context.inferenceContext
+                ? (context.inferenceContext.ratelimiters as ModelExecutionParams["ratelimiters"])
+                : [],
           },
           chatContext,
         );
@@ -235,7 +237,7 @@ export const v1ChatRouter = osBase.router({
     }),
 
   sendMessage: osBase
-    .use(authenticatedMiddleware)
+    .use(verifiedSessionMiddleware)
     .input(
       z.object({
         chatId: z.string().uuid(),
@@ -245,6 +247,7 @@ export const v1ChatRouter = osBase.router({
         webSearchEnabled: z.boolean().optional(),
         reasoningLevel: z.enum(REASONING_LEVELS).optional(),
         draftId: z.string().uuid().optional(),
+        byokId: z.string().uuid().optional(),
       }),
     )
     .use(activeChatMiddleware)
@@ -362,10 +365,10 @@ export const v1ChatRouter = osBase.router({
                 ? (context.inferenceContext.estimatedCUs as CUResult)
                 : undefined,
             // TODO: IDK why the middleware is not picking the types correctly. Maybe updating orpc fixes this.
-            ratelimit:
-              "ratelimit" in context.inferenceContext
-                ? (context.inferenceContext.ratelimit as "local" | "burst")
-                : undefined,
+            ratelimiters:
+              "ratelimiters" in context.inferenceContext
+                ? (context.inferenceContext.ratelimiters as ModelExecutionParams["ratelimiters"])
+                : [],
           },
           chatContext,
         );
@@ -401,12 +404,13 @@ export const v1ChatRouter = osBase.router({
     }),
 
   regenerateMessage: osBase
-    .use(authenticatedMiddleware)
+    .use(verifiedSessionMiddleware)
     .input(
       z.object({
         chatId: z.string().uuid(),
         model: z.enum(MODELS),
         messageId: z.string().uuid(),
+        byokId: z.string().uuid().optional(),
       }),
     )
     .use(activeChatMiddleware)
@@ -483,10 +487,10 @@ export const v1ChatRouter = osBase.router({
                 ? (context.inferenceContext.estimatedCUs as CUResult)
                 : undefined,
             // TODO: IDK why the middleware is not picking the types correctly. Maybe updating orpc fixes this.
-            ratelimit:
-              "ratelimit" in context.inferenceContext
-                ? (context.inferenceContext.ratelimit as "local" | "burst")
-                : undefined,
+            ratelimiters:
+              "ratelimiters" in context.inferenceContext
+                ? (context.inferenceContext.ratelimiters as ModelExecutionParams["ratelimiters"])
+                : [],
           },
           chatContext,
         );
@@ -520,7 +524,7 @@ export const v1ChatRouter = osBase.router({
     }),
 
   cancelMessage: osBase
-    .use(authenticatedMiddleware)
+    .use(sessionMiddleware)
     .input(z.object({ chatId: z.string().uuid(), messageId: z.string().uuid() }))
     .use(activeChatMiddleware)
     .handler(async ({ context, input }) => {
@@ -557,7 +561,7 @@ export const v1ChatRouter = osBase.router({
     }),
 
   renameChat: osBase
-    .use(authenticatedMiddleware)
+    .use(sessionMiddleware)
     .input(z.object({ chatId: z.string().uuid(), newTitle: chatTitleSchema }))
     .use(activeChatMiddleware)
     .handler(async ({ input }) => {
@@ -570,7 +574,7 @@ export const v1ChatRouter = osBase.router({
     }),
 
   deleteChat: osBase
-    .use(authenticatedMiddleware)
+    .use(sessionMiddleware)
     .input(z.object({ chatId: z.string().uuid() }))
     .use(chatOwnerMiddleware)
     .handler(async ({ input, context }) => {
@@ -588,7 +592,7 @@ export const v1ChatRouter = osBase.router({
     }),
 
   permanentlyDeleteChat: osBase
-    .use(authenticatedMiddleware)
+    .use(sessionMiddleware)
     .input(z.object({ chatId: z.string().uuid() }))
     .use(chatOwnerMiddleware)
     .handler(async ({ input, context }) => {
@@ -606,7 +610,7 @@ export const v1ChatRouter = osBase.router({
     }),
 
   archiveChat: osBase
-    .use(authenticatedMiddleware)
+    .use(sessionMiddleware)
     .input(z.object({ chatId: z.string().uuid() }))
     .use(chatOwnerMiddleware)
     .handler(async ({ input, context }) => {
@@ -631,7 +635,7 @@ export const v1ChatRouter = osBase.router({
     }),
 
   unarchiveChat: osBase
-    .use(authenticatedMiddleware)
+    .use(sessionMiddleware)
     .input(z.object({ chatId: z.string().uuid() }))
     .use(chatOwnerMiddleware)
     .handler(async ({ input, context }) => {
@@ -656,7 +660,7 @@ export const v1ChatRouter = osBase.router({
     }),
 
   restoreChat: osBase
-    .use(authenticatedMiddleware)
+    .use(sessionMiddleware)
     .input(z.object({ chatId: z.string().uuid() }))
     .use(chatOwnerMiddleware)
     .handler(async ({ input, context }) => {
@@ -674,7 +678,7 @@ export const v1ChatRouter = osBase.router({
     }),
 
   pinChat: osBase
-    .use(authenticatedMiddleware)
+    .use(sessionMiddleware)
     .input(z.object({ chatId: z.string().uuid(), pinned: z.boolean() }))
     .use(chatOwnerMiddleware)
     .handler(async ({ input }) => {

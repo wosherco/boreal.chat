@@ -8,6 +8,7 @@ interface CurrentChatState {
   model: ModelId | undefined;
   webSearchEnabled: boolean | undefined;
   reasoningLevel: ReasoningLevel | undefined;
+  byokId: string | undefined;
 }
 
 let currentChatState = $state<CurrentChatState | null>(null);

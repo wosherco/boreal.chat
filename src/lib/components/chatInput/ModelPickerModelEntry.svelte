@@ -1,15 +1,16 @@
 <script lang="ts">
   import { MODEL_DETAILS } from "$lib/common/ai/models";
   import type { ModelId } from "$lib/common/ai/models";
-  import { BrainIcon, DollarSignIcon } from "@lucide/svelte";
+  import { BrainIcon, DollarSignIcon, LockIcon } from "@lucide/svelte";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
   import { ICON_MAP } from "../icons/iconMap";
 
   interface Props {
     model: ModelId;
+    locked?: boolean;
   }
 
-  let { model }: Props = $props();
+  let { model, locked = false }: Props = $props();
 
   const modelDetails = $derived(MODEL_DETAILS[model]);
   const Icon = $derived(ICON_MAP[model]);
@@ -40,6 +41,18 @@
         </TooltipTrigger>
         <TooltipContent>
           <p>This model can be used for free.</p>
+        </TooltipContent>
+      </Tooltip>
+    {/if}
+    {#if locked}
+      <Tooltip>
+        <TooltipTrigger>
+          <span class="flex size-5 items-center justify-center rounded-sm bg-amber-300/70">
+            <LockIcon class="size-3 stroke-amber-800" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>This model can't be used for free.</p>
         </TooltipContent>
       </Tooltip>
     {/if}

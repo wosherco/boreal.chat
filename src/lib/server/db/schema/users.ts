@@ -16,7 +16,7 @@ export const userTable = pgTable("user", {
   name: text().notNull(),
   email: text().notNull().unique(),
   profilePicture: text(),
-  role: varchar({ length: 255, enum: USER_ROLES }).notNull().default("USER"),
+  role: varchar({ length: 255, enum: USER_ROLES }).notNull().default("ANONYMOUS"),
   emailVerified: boolean().notNull().default(false),
   passwordHash: text(),
   recoveryCode: bytea(),
@@ -30,6 +30,8 @@ export const userTable = pgTable("user", {
     length: 255,
     enum: SUBSCRIPTION_STATUS,
   }),
+
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
 
 export const sessionTable = pgTable("session", {
@@ -39,6 +41,21 @@ export const sessionTable = pgTable("session", {
     .references(() => userTable.id),
   expiresAt: timestamp({ withTimezone: true, mode: "date" }).notNull(),
   twoFactorVerified: boolean().notNull().default(false),
+
+  captchaVerifiedAt: timestamp({ withTimezone: true }),
+  verifiedClientIp: text(),
+});
+
+export const anonymousUserConversionTable = pgTable("anonymous_user_conversion", {
+  id: serial().primaryKey(),
+  anonymousUserId: uuid()
+    .notNull()
+    .references(() => userTable.id),
+  newUserId: uuid()
+    .notNull()
+    .references(() => userTable.id),
+  transferContent: boolean().notNull().default(false),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
 
 export const emailVerificationRequestTable = pgTable("email_verification_request", {

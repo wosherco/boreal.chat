@@ -1,7 +1,6 @@
 import type { RequestHandler } from "./$types";
 import { db } from "$lib/server/db";
-import { openRouterKeyTable } from "$lib/server/db/schema";
-import { eq } from "drizzle-orm";
+import { byokTable } from "$lib/server/db/schema";
 
 export const GET: RequestHandler = async (event) => {
   const code = event.url.searchParams.get("code");
@@ -30,23 +29,20 @@ export const GET: RequestHandler = async (event) => {
 
   const data = (await res.json()) as { key: string; user_id: string };
 
-  const [existing] = await db
-    .select()
-    .from(openRouterKeyTable)
-    .where(eq(openRouterKeyTable.userId, user.id));
-
-  if (existing) {
-    await db
-      .update(openRouterKeyTable)
-      .set({ apiKey: data.key, openRouterUserId: data.user_id, updatedAt: new Date() })
-      .where(eq(openRouterKeyTable.userId, user.id));
-  } else {
-    await db.insert(openRouterKeyTable).values({
+  await db
+    .insert(byokTable)
+    .values({
       userId: user.id,
-      openRouterUserId: data.user_id,
+      platform: "openrouter",
       apiKey: data.key,
+    })
+    .onConflictDoUpdate({
+      target: [byokTable.userId, byokTable.platform],
+      set: {
+        apiKey: data.key,
+        platform: "openrouter",
+      },
     });
-  }
 
   return new Response(null, {
     status: 302,

@@ -17,7 +17,7 @@ import { createOpenAIClient } from "../utils/client";
 import { getUsageData } from "$lib/server/services/openapi";
 import * as Sentry from "@sentry/sveltekit";
 import { calculateCUs, type CUResult } from "$lib/server/ratelimit/cu";
-import { burstCULimiter, localCULimiter } from "$lib/server/ratelimit";
+import type { TokenBucketRateLimiter } from "pv-ratelimit";
 
 // Custom context interface that extends beyond just messages
 
@@ -242,7 +242,10 @@ export async function invokeAgent(
     model: ModelId;
     publicUsage: boolean;
     estimatedCUs?: CUResult;
-    ratelimit: undefined | "burst" | "local";
+    ratelimiters: {
+      ratelimit: TokenBucketRateLimiter;
+      identifier: string;
+    }[];
   },
 ) {
   const stream = await agent.streamEvents(context, { version: "v2" });
@@ -293,9 +296,13 @@ export async function invokeAgent(
               });
 
               // We're refunding the estimated CUs.
-              if (params.ratelimit && params.estimatedCUs) {
-                const ratelimiter = params.ratelimit === "burst" ? burstCULimiter : localCULimiter;
-                await ratelimiter.addTokens(context.userId, params.estimatedCUs.total);
+              if (params.ratelimiters.length > 0 && params.estimatedCUs) {
+                for (const ratelimiter of params.ratelimiters) {
+                  await ratelimiter.ratelimit.addTokens(
+                    ratelimiter.identifier,
+                    params.estimatedCUs.total,
+                  );
+                }
               }
 
               // We will keep the estimated CUs, since it's fair most of the times.
@@ -306,7 +313,7 @@ export async function invokeAgent(
             try {
               let actualOutputCUs: number | undefined;
 
-              if (params.ratelimit && params.estimatedCUs) {
+              if (params.ratelimiters.length > 0 && params.estimatedCUs) {
                 const actualCUs = calculateCUs(
                   // The input we'll keep the estimated for now. We're not charging on previous messages for now.
                   0,
@@ -323,11 +330,15 @@ export async function invokeAgent(
                  */
                 const diffOutput = actualCUs.outputCUs - params.estimatedCUs.outputCUs;
 
-                const ratelimiter = params.ratelimit === "burst" ? burstCULimiter : localCULimiter;
-                if (diffOutput > 0) {
-                  await ratelimiter.removeTokens(context.userId, diffOutput);
-                } else {
-                  await ratelimiter.addTokens(context.userId, Math.abs(diffOutput));
+                for (const ratelimiter of params.ratelimiters) {
+                  if (diffOutput > 0) {
+                    await ratelimiter.ratelimit.removeTokens(ratelimiter.identifier, diffOutput);
+                  } else {
+                    await ratelimiter.ratelimit.addTokens(
+                      ratelimiter.identifier,
+                      Math.abs(diffOutput),
+                    );
+                  }
                 }
               }
 

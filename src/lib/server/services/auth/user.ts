@@ -1,4 +1,4 @@
-import { db } from "$lib/server/db";
+import { db, type TransactableDBType } from "$lib/server/db";
 import {
   userTable,
   passkeyCredentialTable,
@@ -9,10 +9,14 @@ import { hashPassword } from "./password";
 import { encryptString, decryptToString } from "./encryption";
 import { eq, and, sql, SQL } from "drizzle-orm";
 import { generateRandomRecoveryCode } from "./utils";
+import { convertAnonymousUser } from "./anonymous";
+import * as Sentry from "@sentry/sveltekit";
 
 export interface BackendUser {
   id: string;
   email: string;
+  name: string;
+  profilePicture?: string;
   passwordHash: string | null;
   emailVerified: boolean;
   registeredTOTP: boolean;
@@ -45,20 +49,28 @@ export class UserAlreadyExistsError extends Error {
  * @returns The created user.
  */
 export async function createUser(
-  email: string,
-  name: string,
-  password: string,
+  tx: TransactableDBType,
+  params: {
+    email: string;
+    name: string;
+    profilePicture?: string;
+    password?: string;
+    anonymousId?: string;
+  },
 ): Promise<BackendUser> {
-  const passwordHash = await hashPassword(password);
+  const { email, name, profilePicture, password, anonymousId } = params;
+  const passwordHash = password ? await hashPassword(password) : null;
   const recoveryCode = generateRandomRecoveryCode();
   const encryptedRecoveryCode = encryptString(recoveryCode);
 
-  const [user] = await db
+  const [user] = await tx
     .insert(userTable)
     .values({
       email,
       name,
+      profilePicture,
       passwordHash,
+      role: "USER",
       recoveryCode: Buffer.from(encryptedRecoveryCode),
     })
     .onConflictDoNothing()
@@ -68,9 +80,25 @@ export async function createUser(
     throw new UserAlreadyExistsError();
   }
 
+  if (anonymousId) {
+    try {
+      await convertAnonymousUser(anonymousId, user.id, true);
+    } catch (e) {
+      Sentry.captureException(e, {
+        tags: {
+          anonymousId,
+          userId: user.id,
+        },
+      });
+      console.error("Failed to convert anonymous user when creating user", e);
+    }
+  }
+
   return {
     id: user.id,
     email: user.email,
+    profilePicture: user.profilePicture ?? undefined,
+    name: user.name,
     passwordHash: user.passwordHash,
     emailVerified: user.emailVerified,
     registeredTOTP: false,
@@ -78,6 +106,22 @@ export async function createUser(
     registeredSecurityKey: false,
     registered2FA: false,
   };
+}
+
+export async function finishLogin(userId: string, anonymousId?: string) {
+  if (anonymousId) {
+    try {
+      await convertAnonymousUser(anonymousId, userId, true);
+    } catch (e) {
+      Sentry.captureException(e, {
+        tags: {
+          anonymousId,
+          userId,
+        },
+      });
+      console.error("Failed to convert anonymous user when finishing login", e);
+    }
+  }
 }
 
 /**
@@ -151,6 +195,8 @@ async function getUser(where: SQL<unknown>): Promise<BackendUser | null> {
     .select({
       id: userTable.id,
       email: userTable.email,
+      name: userTable.name,
+      profilePicture: userTable.profilePicture,
       passwordHash: userTable.passwordHash,
       emailVerified: userTable.emailVerified,
       totpCredential: sql<boolean>`${totpCredentialTable.id} IS NOT NULL`,
@@ -171,6 +217,8 @@ async function getUser(where: SQL<unknown>): Promise<BackendUser | null> {
   return {
     id: user.id,
     email: user.email,
+    name: user.name,
+    profilePicture: user.profilePicture ?? undefined,
     passwordHash: user.passwordHash,
     emailVerified: user.emailVerified,
     registeredTOTP: user.totpCredential,

@@ -1,6 +1,6 @@
 import type Stripe from "stripe";
 
-export const USER_ROLES = ["USER", "ADMIN"] as const;
+export const USER_ROLES = ["ANONYMOUS", "USER", "ADMIN"] as const;
 
 export type UserRole = (typeof USER_ROLES)[number];
 
@@ -46,3 +46,6 @@ export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUS)[number];
 export const UNLIMITED_PLAN_NAME = "unlimited";
 export const SUBSCRIPTION_PLANS = [UNLIMITED_PLAN_NAME] as const;
 export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number];
+
+export const BYOK_PLATFORMS = ["openrouter"] as const;
+export type ByokPlatform = (typeof BYOK_PLATFORMS)[number];

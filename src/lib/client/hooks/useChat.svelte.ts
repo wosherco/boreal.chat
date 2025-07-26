@@ -20,6 +20,7 @@ export const useChat = (chatId: string, serverData: ServerData<ChatWithSettings>
             selectedModel: chatTable.selectedModel,
             webSearchEnabled: chatTable.webSearchEnabled,
             reasoningLevel: chatTable.reasoningLevel,
+            byokId: chatTable.byokId,
           })
           .from(chatTable)
           .where(eq(chatTable.id, chatId))

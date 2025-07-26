@@ -1,4 +1,5 @@
 import type { CurrentUserInfo, ServerData, UserInfo } from "$lib/common/sharedTypes";
+import { isAnonymousUser } from "$lib/common/utils/anonymous";
 import { clientDb } from "../db/index.svelte";
 import { userTable } from "../db/schema";
 import { createHydratableData } from "./localDbHook";
@@ -14,6 +15,7 @@ export const useCurrentUser = (serverData: ServerData<CurrentUserInfo>) =>
             id: userTable.id,
             name: userTable.name,
             email: userTable.email,
+            role: userTable.role,
             profilePicture: userTable.profilePicture,
             emailVerified: userTable.emailVerified,
             subscribedUntil: userTable.subscribedUntil,
@@ -24,7 +26,7 @@ export const useCurrentUser = (serverData: ServerData<CurrentUserInfo>) =>
           .limit(1)
           .toSQL(),
       transform: ([userData]) => ({
-        authenticated: userData ? true : false,
+        authenticated: userData ? !isAnonymousUser(userData as UserInfo) : false,
         data: userData
           ? (transformKeyToCamelCaseRecursive(
               userData as Record<string, unknown>,

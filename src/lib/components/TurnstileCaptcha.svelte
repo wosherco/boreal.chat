@@ -1,46 +1,52 @@
 <script lang="ts">
+  import { waitForTurnstile } from "$lib/client/services/turnstile.svelte";
   import { TURNSTILE_SITE_KEY } from "$lib/common/turnstile";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
+  import { toast } from "svelte-sonner";
 
   interface Props {
+    id?: string;
     /**
      * @bindable overriding won't do anything, just shoot urself in the foot
      */
     turnstileToken?: string;
     class?: string;
+    onSuccess?: (token: string) => void;
   }
 
-  let { turnstileToken = $bindable(), class: className }: Props = $props();
+  let {
+    id = Math.random().toString(36).substring(2, 15),
+    turnstileToken = $bindable(),
+    class: className,
+    onSuccess,
+  }: Props = $props();
 
-  const randomId = Math.random().toString(36).substring(2, 15);
-  const id = `captcha-${randomId}`;
+  const elementId = `captcha-${id}`;
 
-  onMount(() => {
-    const renderCaptcha = () =>
-      turnstile.render(`#${id}`, {
-        sitekey: TURNSTILE_SITE_KEY,
+  let renderedTurnstileId = $state<string | undefined | null>(undefined);
 
-        callback: (token: string) => {
-          turnstileToken = token;
-        },
-      });
+  onMount(async () => {
+    await waitForTurnstile();
 
-    try {
-      renderCaptcha();
-    } catch {
-      // @ts-expect-error - Turnstile callback is not typed
-      window.onloadTurnstileCallback = () => {
-        renderCaptcha();
-      };
+    renderedTurnstileId = turnstile.render(`#${elementId}`, {
+      sitekey: TURNSTILE_SITE_KEY,
+
+      callback: (token: string) => {
+        turnstileToken = token;
+        onSuccess?.(token);
+      },
+      "error-callback": (e) => {
+        toast.error("Failed to render captcha");
+        console.error("Turnstile error", e);
+      },
+    });
+  });
+
+  onDestroy(() => {
+    if (renderedTurnstileId) {
+      turnstile.remove(renderedTurnstileId);
     }
   });
 </script>
 
-<svelte:head>
-  <script
-    src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback"
-    defer
-  ></script>
-</svelte:head>
-
-<div {id} data-sitekey={TURNSTILE_SITE_KEY} class={className}></div>
+<div id={elementId} class={className}></div>

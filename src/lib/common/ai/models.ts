@@ -38,6 +38,8 @@ export const LLAMA_4_SCOUT_FREE = "meta-llama/llama-4-scout:free";
 
 // From qwen
 export const QWEN_3_30B_A3B = "qwen/qwen3-30b-a3b";
+export const QWEN_3_CODER = "qwen/qwen3-coder";
+export const QWEN_3_CODER_FREE = "qwen/qwen3-coder:free";
 
 // From xAi
 export const GROK_3_BETA = "x-ai/grok-3-beta";
@@ -85,6 +87,8 @@ export const MODELS = [
 
   // From qwen
   QWEN_3_30B_A3B,
+  QWEN_3_CODER,
+  QWEN_3_CODER_FREE,
 
   // From xAi
   GROK_3_BETA,
@@ -117,6 +121,9 @@ export const HIGHLIGHTED_MODELS = [
   DEEPSEEK_R1,
   DEEPSEEK_V3,
 
+  // Qwen
+  QWEN_3_CODER,
+
   // Grok
   GROK_3_MINI_BETA,
   GROK_4,
@@ -124,6 +131,26 @@ export const HIGHLIGHTED_MODELS = [
   // Moonshot
   KIMI_K2,
 ] as const;
+
+export const FREE_MODELS = [
+  // Gemini
+  GEMINI_FLASH_2_5,
+  GEMINI_FLASH_2_0,
+
+  // Meta
+  LLAMA_4_MAVERICK,
+  LLAMA_4_SCOUT,
+
+  // Deepseek
+  DEEPSEEK_R1,
+  DEEPSEEK_V3,
+
+  // Grok
+  GROK_3_MINI_BETA,
+
+  // Moonshot
+  KIMI_K2,
+];
 
 export interface ModelDetails {
   displayName: string;
@@ -258,6 +285,13 @@ export const MODEL_DETAILS: Record<ModelId, ModelDetails> = {
   [QWEN_3_30B_A3B]: {
     displayName: "Qwen 3.30B A3B",
     reasoning: true,
+  },
+  [QWEN_3_CODER]: {
+    displayName: "Qwen 3 Coder",
+  },
+  [QWEN_3_CODER_FREE]: {
+    displayName: "(Free) Qwen 3 Coder",
+    free: true,
   },
 
   // From xAi

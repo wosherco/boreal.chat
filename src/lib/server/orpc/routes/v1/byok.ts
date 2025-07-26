@@ -1,39 +1,37 @@
 import { db } from "$lib/server/db";
-import { openRouterKeyTable } from "$lib/server/db/schema";
-import { eq } from "drizzle-orm";
+import { byokTable } from "$lib/server/db/schema";
+import { and, eq } from "drizzle-orm";
 import { osBase } from "../../context";
 import { authenticatedMiddleware } from "../../middlewares";
 import { ORPCError } from "@orpc/client";
+import { z } from "zod";
+import { BYOK_PLATFORMS } from "$lib/common";
 
 export const v1ByokRouter = osBase.router({
-  get: osBase.use(authenticatedMiddleware).handler(async ({ context }) => {
-    const [openrouterAccount] = await db
-      .select({
-        createdAt: openRouterKeyTable.createdAt,
-        updatedAt: openRouterKeyTable.updatedAt,
-      })
-      .from(openRouterKeyTable)
-      .where(eq(openRouterKeyTable.userId, context.userCtx.user.id));
+  delete: osBase
+    .use(authenticatedMiddleware)
+    .input(z.object({ platform: z.enum(BYOK_PLATFORMS) }))
+    .handler(async ({ context, input }) => {
+      const [byokAccount] = await db
+        .delete(byokTable)
+        .where(
+          and(
+            eq(byokTable.userId, context.userCtx.user.id),
+            eq(byokTable.platform, input.platform),
+          ),
+        )
+        .returning({
+          id: byokTable.id,
+        });
 
-    return openrouterAccount ?? null;
-  }),
+      if (!byokAccount) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "No BYOK account found",
+        });
+      }
 
-  delete: osBase.use(authenticatedMiddleware).handler(async ({ context }) => {
-    const [openrouterAccount] = await db
-      .delete(openRouterKeyTable)
-      .where(eq(openRouterKeyTable.userId, context.userCtx.user.id))
-      .returning({
-        id: openRouterKeyTable.id,
-      });
-
-    if (!openrouterAccount) {
-      throw new ORPCError("NOT_FOUND", {
-        message: "No OpenRouter account found",
-      });
-    }
-
-    return {
-      success: true,
-    };
-  }),
+      return {
+        success: true,
+      };
+    }),
 });

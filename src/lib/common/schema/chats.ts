@@ -31,6 +31,7 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
         .notNull()
         .default(REASONING_NONE),
       webSearchEnabled: boolean().notNull().default(false),
+      byokId: uuid(),
       pinned: boolean().notNull().default(false),
       archived: boolean().notNull().default(false),
       deletedAt: timestamp({ withTimezone: true }),

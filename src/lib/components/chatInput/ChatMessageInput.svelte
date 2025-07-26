@@ -17,13 +17,12 @@
   } from "@lucide/svelte";
   import { Button } from "../ui/button";
   import KeyboardShortcuts from "../utils/KeyboardShortcuts.svelte";
-  import ModelPickerPopover from "./ModelPickerPopover.svelte";
   import { afterNavigate, goto, onNavigate } from "$app/navigation";
   import { syncStreams } from "$lib/client/db/index.svelte";
   import { getCurrentChatState } from "$lib/client/state/currentChatState.svelte";
   import { Toggle } from "../ui/toggle";
   import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
-  import { ORPCError } from "@orpc/client";
+  import { safe, ORPCError } from "@orpc/client";
   import { browser } from "$app/environment";
   import { toast } from "svelte-sonner";
   import { page } from "$app/state";
@@ -41,6 +40,9 @@
   import { gotoWithSeachParams } from "$lib/utils/navigate";
   import { untrack } from "svelte";
   import { PremiumWrapper } from "../ui/premium-badge";
+  import { verifySession } from "$lib/client/services/turnstile.svelte";
+  import OptionsMenu from "./OptionsMenu.svelte";
+  import { ICON_MAP } from "../icons/iconMap";
 
   interface Props {
     /**
@@ -60,10 +62,12 @@
   const defaultSelectedModel = browser ? getLastSelectedModel() : GEMINI_FLASH_2_5;
   const defaultWebSearchEnabled = false;
   const defaultReasoningLevel = "low";
+  const defaultByokId = undefined;
 
   let selectedModel = $state<ModelId | undefined>(undefined);
   let webSearchEnabled = $state<boolean | undefined>(undefined);
   let reasoningLevel = $state<ReasoningLevel | undefined>(undefined);
+  let byokId = $state<string | undefined>(undefined);
 
   const actualSelectedModel = $derived(
     selectedModel ?? getCurrentChatState()?.model ?? defaultSelectedModel,
@@ -74,6 +78,7 @@
   const actualReasoningLevel = $derived(
     reasoningLevel ?? getCurrentChatState()?.reasoningLevel ?? defaultReasoningLevel,
   );
+  const actualByokId = $derived(byokId ?? getCurrentChatState()?.byokId ?? defaultByokId);
 
   // Reactive statement to adjust textarea height
   new TextareaAutosize({
@@ -86,67 +91,104 @@
     if (loading || !isLastMessageFinished) return;
     loading = true;
 
+    const currentChatState = getCurrentChatState();
+    const isNewChat = !currentChatState;
+    const genericErrorMessage = isNewChat ? "Failed to create chat" : "Failed to send message";
+
+    // Cancel any pending draft saves
+    debouncedSaveDraft.cancel();
+
     try {
-      const currentChatState = getCurrentChatState();
-      // Cancel any pending draft saves
-      debouncedSaveDraft.cancel();
+      const sendRequest = () =>
+        safe(
+          currentChatState
+            ? orpc.v1.chat.sendMessage({
+                chatId: currentChatState.chatId,
+                model: actualSelectedModel,
+                parentMessageId: currentChatState.lastMessageId,
+                message: value,
+                reasoningLevel: actualReasoningLevel,
+                webSearchEnabled: actualWebSearchEnabled,
+                draftId: draft?.id,
+                byokId: actualByokId,
+              })
+            : orpc.v1.chat.newChat({
+                model: actualSelectedModel,
+                message: value,
+                reasoningLevel: actualReasoningLevel,
+                webSearchEnabled: actualWebSearchEnabled,
+                draftId: draft?.id,
+                byokId: actualByokId,
+              }),
+        );
 
-      if (currentChatState) {
-        // We're replying to a message
-        try {
-          await orpc.v1.chat.sendMessage({
-            chatId: currentChatState.chatId,
-            model: actualSelectedModel,
-            parentMessageId: currentChatState.lastMessageId,
-            message: value,
-            reasoningLevel: actualReasoningLevel,
-            webSearchEnabled: actualWebSearchEnabled,
-            draftId: draft?.id,
-          });
+      const onSuccess = async (
+        data: NonNullable<Awaited<ReturnType<typeof sendRequest>>["data"]>,
+      ) => {
+        value = "";
 
-          value = "";
-        } catch (e) {
-          if (e instanceof ORPCError) {
-            toast.error(e.message);
-          } else {
-            toast.error("Failed to send message");
-          }
-        }
-      } else {
-        try {
-          const chatDetails = await orpc.v1.chat.newChat({
-            model: actualSelectedModel,
-            message: value,
-            reasoningLevel: actualReasoningLevel,
-            webSearchEnabled: actualWebSearchEnabled,
-            draftId: draft?.id,
-          });
-          value = "";
-
+        if (isNewChat) {
           const chatStream = syncStreams()?.streams.chat;
           const messagesStream = syncStreams()?.streams.message;
           if (chatStream && messagesStream) {
             try {
               await Promise.all([
-                waitForInsert(chatTable, chatDetails.chatId, 5000),
-                waitForInsert(messageTable, chatDetails.userMessageId, 5000),
+                waitForInsert(chatTable, data.chatId, 5000),
+                waitForInsert(messageTable, data.userMessageId, 5000),
               ]);
             } catch (err) {
               console.error("Waiting for chat sync failed", err);
             }
           }
 
-          await goto(`/chat/${chatDetails.chatId}`);
-        } catch (e) {
-          if (e instanceof ORPCError) {
-            toast.error(e.message);
-          } else {
-            toast.error("Failed to create chat");
-          }
+          await goto(`/chat/${data.chatId}`);
         }
+      };
+
+      const res = await sendRequest();
+      const { error, isDefined, isSuccess } = res;
+
+      if (isSuccess) {
+        await onSuccess(res.data);
+        return;
+      }
+
+      if (!isDefined) {
+        if (error instanceof ORPCError) {
+          if (error.status === 401) {
+            toast.error("You need to be logged in to use this model");
+            return;
+          }
+          toast.error(error.message);
+        } else {
+          toast.error(genericErrorMessage);
+        }
+        return;
+      }
+
+      if (error.code === "SESSION_NOT_VERIFIED") {
+        const verified = await verifySession();
+
+        if (!verified) {
+          toast.error("Failed to verify session");
+          return;
+        }
+
+        const retryRes = await sendRequest();
+        const { error, isDefined, isSuccess } = retryRes;
+
+        if (isSuccess) {
+          await onSuccess(retryRes.data);
+          return;
+        }
+
+        toast.error(isDefined ? error.message : genericErrorMessage);
+      } else {
+        toast.error(error.message);
       }
     } catch (error) {
       console.error(error);
+      toast.error(genericErrorMessage);
     } finally {
       loading = false;
     }
@@ -382,19 +424,23 @@
             </Button>
           </DraftManager>
 
-          <ModelPickerPopover
+          <OptionsMenu
             selectedModel={actualSelectedModel}
-            onSelect={(newModel) => {
+            onSelectModel={(newModel) => {
               selectedModel = newModel;
               setLastSelectedModel(newModel);
             }}
             bind:open={modelPickerOpen}
+            byokId={actualByokId}
+            onSelectByok={(newByokId) => (byokId = newByokId)}
           >
             <Button variant="ghost">
+              {@const ModelIcon = ICON_MAP[actualSelectedModel]}
+              <ModelIcon class="size-4" />
               {MODEL_DETAILS[actualSelectedModel].displayName}
               <ChevronDownIcon class="h-4 w-4" />
             </Button>
-          </ModelPickerPopover>
+          </OptionsMenu>
 
           <Toggle
             pressed={actualWebSearchEnabled}
