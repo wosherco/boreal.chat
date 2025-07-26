@@ -49,9 +49,10 @@
 
   $effect(() => {
     if (inputRef) {
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         inputRef?.focus();
       }, 100);
+      return () => clearTimeout(timeout);
     }
   });
 
