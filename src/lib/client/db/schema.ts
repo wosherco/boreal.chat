@@ -9,7 +9,7 @@ export const userTable = pgTable("user", {
   name: text().notNull(),
   email: text().notNull().unique(),
   profilePicture: text(),
-  role: varchar({ length: 255, enum: USER_ROLES }).notNull().default("USER"),
+  role: varchar({ length: 255, enum: USER_ROLES }).notNull().default("ANONYMOUS"),
   emailVerified: boolean().notNull().default(false),
 
   // Payment stuff

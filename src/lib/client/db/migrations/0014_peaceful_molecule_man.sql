@@ -7,5 +7,6 @@ CREATE TABLE "byok" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+ALTER TABLE "user" ALTER COLUMN "role" SET DEFAULT 'ANONYMOUS';--> statement-breakpoint
 ALTER TABLE "chats" ADD COLUMN "byok_id" uuid;--> statement-breakpoint
 ALTER TABLE "byok" ADD CONSTRAINT "byok_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;

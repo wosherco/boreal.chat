@@ -30,6 +30,8 @@ export const userTable = pgTable("user", {
     length: 255,
     enum: SUBSCRIPTION_STATUS,
   }),
+
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
 
 export const sessionTable = pgTable("session", {

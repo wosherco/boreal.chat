@@ -1,5 +1,5 @@
 {
-  "id": "f3d4f5ef-7448-44cc-8a78-0c2b77acd221",
+  "id": "a98eab73-7e6a-4166-884c-71e446699b9c",
   "prevId": "29375021-d77a-410b-8f28-ed7a526baff9",
   "version": "7",
   "dialect": "postgresql",
@@ -739,7 +739,7 @@
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
-          "default": "'USER'"
+          "default": "'ANONYMOUS'"
         },
         "email_verified": {
           "name": "email_verified",

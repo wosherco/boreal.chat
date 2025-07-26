@@ -1,5 +1,5 @@
 {
-  "id": "1c036607-6977-4105-af5b-7a883c5693f0",
+  "id": "c154d64e-e2b2-4014-8b2e-0f4d34989ddd",
   "prevId": "c7dc220a-229b-4c80-8c92-938839e5d461",
   "version": "7",
   "dialect": "postgresql",
@@ -59,6 +59,70 @@
           "columns": ["platform_id"]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.anonymous_user_conversion": {
+      "name": "anonymous_user_conversion",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "anonymous_user_id": {
+          "name": "anonymous_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "new_user_id": {
+          "name": "new_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transfer_content": {
+          "name": "transfer_content",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "anonymous_user_conversion_anonymous_user_id_user_id_fk": {
+          "name": "anonymous_user_conversion_anonymous_user_id_user_id_fk",
+          "tableFrom": "anonymous_user_conversion",
+          "tableTo": "user",
+          "columnsFrom": ["anonymous_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "anonymous_user_conversion_new_user_id_user_id_fk": {
+          "name": "anonymous_user_conversion_new_user_id_user_id_fk",
+          "tableFrom": "anonymous_user_conversion",
+          "tableTo": "user",
+          "columnsFrom": ["new_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -480,6 +544,13 @@
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -599,6 +670,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
+        },
+        "byok_id": {
+          "name": "byok_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         },
         "pinned": {
           "name": "pinned",
@@ -1180,8 +1257,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.openrouter_key": {
-      "name": "openrouter_key",
+    "public.byok": {
+      "name": "byok",
       "schema": "",
       "columns": {
         "id": {
@@ -1197,15 +1274,15 @@
           "primaryKey": false,
           "notNull": true
         },
-        "open_router_user_id": {
-          "name": "open_router_user_id",
+        "api_key": {
+          "name": "api_key",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "api_key": {
-          "name": "api_key",
-          "type": "text",
+        "platform": {
+          "name": "platform",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
         },
@@ -1226,9 +1303,9 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "openrouter_key_user_id_user_id_fk": {
-          "name": "openrouter_key_user_id_user_id_fk",
-          "tableFrom": "openrouter_key",
+        "byok_user_id_user_id_fk": {
+          "name": "byok_user_id_user_id_fk",
+          "tableFrom": "byok",
           "tableTo": "user",
           "columnsFrom": ["user_id"],
           "columnsTo": ["id"],
@@ -1238,10 +1315,10 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "openrouter_key_userId_unique": {
-          "name": "openrouter_key_userId_unique",
+        "byok_userId_platform_unique": {
+          "name": "byok_userId_platform_unique",
           "nullsNotDistinct": false,
-          "columns": ["user_id"]
+          "columns": ["user_id", "platform"]
         }
       },
       "policies": {},
