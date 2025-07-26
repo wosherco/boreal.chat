@@ -25,7 +25,7 @@ import { chatTable, messageTable, draftsTable } from "$lib/server/db/schema";
 import { ORPCError } from "@orpc/client";
 import * as Sentry from "@sentry/sveltekit";
 import { posthog } from "$lib/server/posthog";
-import { executeAgentSafely } from "$lib/server/services/agent";
+import { executeAgentSafely, type ModelExecutionParams } from "$lib/server/services/agent";
 import { sendCancelMessage } from "$lib/server/db/mq/messageCancellation";
 import {
   deleteChat,
@@ -37,7 +37,6 @@ import {
 } from "$lib/server/services/chat";
 import { chatTitleSchema } from "$lib/common/validators/chat";
 import type { CUResult } from "$lib/server/ratelimit/cu";
-import type { TokenBucketRateLimiter } from "pv-ratelimit";
 
 export const v1ChatRouter = osBase.router({
   newChat: osBase
@@ -202,7 +201,7 @@ export const v1ChatRouter = osBase.router({
             // TODO: IDK why the middleware is not picking the types correctly. Maybe updating orpc fixes this.
             ratelimiters:
               "ratelimiters" in context.inferenceContext
-                ? (context.inferenceContext.ratelimiters as TokenBucketRateLimiter[])
+                ? (context.inferenceContext.ratelimiters as ModelExecutionParams["ratelimiters"])
                 : [],
           },
           chatContext,
@@ -368,7 +367,7 @@ export const v1ChatRouter = osBase.router({
             // TODO: IDK why the middleware is not picking the types correctly. Maybe updating orpc fixes this.
             ratelimiters:
               "ratelimiters" in context.inferenceContext
-                ? (context.inferenceContext.ratelimiters as TokenBucketRateLimiter[])
+                ? (context.inferenceContext.ratelimiters as ModelExecutionParams["ratelimiters"])
                 : [],
           },
           chatContext,
@@ -490,7 +489,7 @@ export const v1ChatRouter = osBase.router({
             // TODO: IDK why the middleware is not picking the types correctly. Maybe updating orpc fixes this.
             ratelimiters:
               "ratelimiters" in context.inferenceContext
-                ? (context.inferenceContext.ratelimiters as TokenBucketRateLimiter[])
+                ? (context.inferenceContext.ratelimiters as ModelExecutionParams["ratelimiters"])
                 : [],
           },
           chatContext,

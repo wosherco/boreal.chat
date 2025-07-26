@@ -10,18 +10,20 @@ import { listenForCancelMessage } from "../db/mq/messageCancellation";
 import type { CUResult } from "../ratelimit/cu";
 import type { TokenBucketRateLimiter } from "pv-ratelimit";
 
-export async function executeAgentSafely(
-  params: {
-    model: ModelId;
-    reasoningLevel: ReasoningLevel;
-    webSearchEnabled: boolean;
-    openRouterKey: string;
-    publicUsage: boolean;
-    ratelimiters: TokenBucketRateLimiter[];
-    estimatedCUs?: CUResult;
-  },
-  context: ChatContext,
-) {
+export interface ModelExecutionParams {
+  model: ModelId;
+  reasoningLevel: ReasoningLevel;
+  webSearchEnabled: boolean;
+  openRouterKey: string;
+  publicUsage: boolean;
+  ratelimiters: {
+    ratelimit: TokenBucketRateLimiter;
+    identifier: string;
+  }[];
+  estimatedCUs?: CUResult;
+}
+
+export async function executeAgentSafely(params: ModelExecutionParams, context: ChatContext) {
   const abortController = new AbortController();
 
   const cancelListener = await listenForCancelMessage(context.currentMessageId, () => {
@@ -80,7 +82,7 @@ export async function executeAgentSafely(
       // We're refunding the estimated CUs.
       if (params.ratelimiters.length > 0 && params.estimatedCUs) {
         for (const ratelimiter of params.ratelimiters) {
-          await ratelimiter.addTokens(context.userId, params.estimatedCUs.total);
+          await ratelimiter.ratelimit.addTokens(ratelimiter.identifier, params.estimatedCUs.total);
         }
       }
     })

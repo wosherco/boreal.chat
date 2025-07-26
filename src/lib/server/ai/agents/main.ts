@@ -242,7 +242,10 @@ export async function invokeAgent(
     model: ModelId;
     publicUsage: boolean;
     estimatedCUs?: CUResult;
-    ratelimiters: TokenBucketRateLimiter[];
+    ratelimiters: {
+      ratelimit: TokenBucketRateLimiter;
+      identifier: string;
+    }[];
   },
 ) {
   const stream = await agent.streamEvents(context, { version: "v2" });
@@ -295,7 +298,10 @@ export async function invokeAgent(
               // We're refunding the estimated CUs.
               if (params.ratelimiters.length > 0 && params.estimatedCUs) {
                 for (const ratelimiter of params.ratelimiters) {
-                  await ratelimiter.addTokens(context.userId, params.estimatedCUs.total);
+                  await ratelimiter.ratelimit.addTokens(
+                    ratelimiter.identifier,
+                    params.estimatedCUs.total,
+                  );
                 }
               }
 
@@ -326,9 +332,12 @@ export async function invokeAgent(
 
                 for (const ratelimiter of params.ratelimiters) {
                   if (diffOutput > 0) {
-                    await ratelimiter.removeTokens(context.userId, diffOutput);
+                    await ratelimiter.ratelimit.removeTokens(ratelimiter.identifier, diffOutput);
                   } else {
-                    await ratelimiter.addTokens(context.userId, Math.abs(diffOutput));
+                    await ratelimiter.ratelimit.addTokens(
+                      ratelimiter.identifier,
+                      Math.abs(diffOutput),
+                    );
                   }
                 }
               }

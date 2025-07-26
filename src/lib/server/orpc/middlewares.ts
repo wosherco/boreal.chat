@@ -189,10 +189,13 @@ export const inferenceMiddleware = verifiedSessionMiddleware.concat(
       input.model,
     );
 
-    let ratelimiters: TokenBucketRateLimiter[] = [];
+    let ratelimiters: {
+      ratelimit: TokenBucketRateLimiter;
+      identifier: string;
+    }[] = [];
 
     if (anonymous || !subscribed) {
-      ratelimiters = [ipCULimiter];
+      ratelimiters = [{ ratelimit: ipCULimiter, identifier: context.clientIp }];
       const ipResult = await ipCULimiter.consume(context.clientIp, estimatedCUs.total);
 
       if (!ipResult.success) {
@@ -206,7 +209,7 @@ export const inferenceMiddleware = verifiedSessionMiddleware.concat(
       }
 
       const localRatelimiter = anonymous ? anonymousCULimiter : freeCULimiter;
-      ratelimiters.push(localRatelimiter);
+      ratelimiters.push({ ratelimit: localRatelimiter, identifier: context.userCtx.user.id });
       const localResult = await localRatelimiter.consume(
         context.userCtx.user.id,
         estimatedCUs.total,
@@ -221,11 +224,11 @@ export const inferenceMiddleware = verifiedSessionMiddleware.concat(
         });
       }
     } else {
-      ratelimiters = [localCULimiter];
+      ratelimiters = [{ ratelimit: localCULimiter, identifier: context.userCtx.user.id }];
       const localResult = await localCULimiter.consume(context.userCtx.user.id, estimatedCUs.total);
 
       if (!localResult.success) {
-        ratelimiters = [burstCULimiter];
+        ratelimiters = [{ ratelimit: burstCULimiter, identifier: context.userCtx.user.id }];
         const burstResult = await burstCULimiter.consume(
           context.userCtx.user.id,
           estimatedCUs.total,
