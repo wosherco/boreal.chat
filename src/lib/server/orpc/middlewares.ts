@@ -256,7 +256,7 @@ export const inferenceMiddleware = verifiedSessionMiddleware.concat(
   },
 );
 
-export const chatOwnerMiddleware = authenticatedMiddleware.concat(
+export const chatOwnerMiddleware = sessionMiddleware.concat(
   async ({ context, next }, input: { chatId: string }) => {
     const [chat] = await db
       .select({

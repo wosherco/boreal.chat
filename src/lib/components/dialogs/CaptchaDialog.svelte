@@ -23,6 +23,11 @@
       onSuccess(undefined);
     }
   }
+
+  function onSuccessMiddleware(token: string | undefined) {
+    onSuccess(token);
+    open = false;
+  }
 </script>
 
 <Dialog bind:open {onOpenChange}>
@@ -31,6 +36,6 @@
       <DialogTitle>Before you continue</DialogTitle>
       <DialogDescription>We need to verify that you are not a bot.</DialogDescription>
     </DialogHeader>
-    <TurnstileCaptcha {onSuccess} />
+    <TurnstileCaptcha onSuccess={onSuccessMiddleware} />
   </DialogContent>
 </Dialog>

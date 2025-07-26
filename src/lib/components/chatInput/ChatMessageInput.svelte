@@ -154,12 +154,19 @@
       }
 
       if (!isDefined) {
-        toast.error("Failed to send message");
+        if (error instanceof ORPCError) {
+          if (error.status === 401) {
+            toast.error("You need to be logged in to use this model");
+            return;
+          }
+          toast.error(error.message);
+        } else {
+          toast.error(genericErrorMessage);
+        }
         return;
       }
 
       if (error.code === "SESSION_NOT_VERIFIED") {
-        await waitForTurnstile();
         const token = await openCaptchaDialog();
 
         if (!token) {

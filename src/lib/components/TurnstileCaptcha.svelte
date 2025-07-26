@@ -4,6 +4,7 @@
   import { onMount } from "svelte";
 
   interface Props {
+    id?: string;
     /**
      * @bindable overriding won't do anything, just shoot urself in the foot
      */
@@ -12,13 +13,18 @@
     onSuccess?: (token: string) => void;
   }
 
-  let { turnstileToken = $bindable(), class: className, onSuccess }: Props = $props();
+  let {
+    id = Math.random().toString(36).substring(2, 15),
+    turnstileToken = $bindable(),
+    class: className,
+    onSuccess,
+  }: Props = $props();
 
-  const randomId = Math.random().toString(36).substring(2, 15);
-  const id = `captcha-${randomId}`;
+  const elementId = `captcha-${id}`;
 
   function renderCaptcha() {
-    turnstile.render(`#${id}`, {
+    console.log("Rendering captcha", elementId);
+    turnstile.render(`#${elementId}`, {
       sitekey: TURNSTILE_SITE_KEY,
 
       callback: (token: string) => {
@@ -34,4 +40,4 @@
   });
 </script>
 
-<div {id} data-sitekey={TURNSTILE_SITE_KEY} class={className}></div>
+<div id={elementId} data-sitekey={TURNSTILE_SITE_KEY} class={className}></div>
