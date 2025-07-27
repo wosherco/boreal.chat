@@ -1,5 +1,21 @@
 # boreal.chat
 
+## 0.3.1
+
+### Patch Changes
+
+- 8940763: fixes wrong migration if you had existing data
+
+## 0.3.0
+
+### Minor Changes
+
+- c3a1a82: Added anonymous users with free usage
+
+### Patch Changes
+
+- c3a1a82: Started creating a better popover for models
+
 ## 0.2.2
 
 ### Patch Changes
