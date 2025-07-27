@@ -2,7 +2,7 @@
  * Simple file hashing that uses the arrayBuffer approach.
  * This is the fallback method for browsers that don't support streaming crypto operations.
  */
-export async function hashFile(file: File) {
+export async function hashFile(file: File | Blob) {
   const content = await file.arrayBuffer();
   const hash = await crypto.subtle.digest("SHA-256", content);
   return Array.from(new Uint8Array(hash))
@@ -17,7 +17,7 @@ export async function hashFile(file: File) {
  * For true streaming, we'd need a Web Crypto API that supports incremental hashing.
  */
 export async function hashFileStream(
-  file: File,
+  file: File | Blob,
   onProgress?: (progress: number) => void,
 ): Promise<string> {
   const totalSize = file.size;
@@ -68,7 +68,7 @@ export async function hashFileStream(
  * Uses the original arrayBuffer approach but with progress feedback.
  */
 export async function hashFileFallback(
-  file: File,
+  file: File | Blob,
   onProgress?: (progress: number) => void,
 ): Promise<string> {
   const content = await file.arrayBuffer();
@@ -89,7 +89,7 @@ export async function hashFileFallback(
  * For large files, uses streaming if supported, otherwise falls back to the original method.
  */
 export async function hashFileSmart(
-  file: File,
+  file: File | Blob,
   onProgress?: (progress: number) => void,
 ): Promise<string> {
   const LARGE_FILE_THRESHOLD = 1024 * 1024; // 1MB
@@ -124,32 +124,19 @@ export async function hashFileSmart(
  * @returns Object containing chunk hashes, composite hash, and metadata
  */
 export async function hashFileChunked(
-  file: File,
+  chunks: Blob[],
   onProgress?: (progress: number) => void,
 ): Promise<{
   chunkHashes: string[];
   compositeHash: string;
-  totalChunks: number;
-  chunkSize: number;
-  fileSize: number;
 }> {
-  const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB chunks
-  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
   const chunkHashes: string[] = [];
 
   // Hash chunks in parallel for better performance
   const chunkPromises = [];
 
-  for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-    const start = chunkIndex * CHUNK_SIZE;
-    const end = Math.min(start + CHUNK_SIZE, file.size);
-
-    // Create a File object from the chunk to leverage existing hash methods
-    const chunkBlob = file.slice(start, end);
-    const chunkFile = new File([chunkBlob], `chunk-${chunkIndex}`, { type: file.type });
-
-    // Use the existing smart hashing method for optimal performance
-    chunkPromises.push(hashFileSmart(chunkFile));
+  for (const chunk of chunks) {
+    chunkPromises.push(hashFileSmart(chunk));
   }
 
   // Wait for all chunks to be hashed
@@ -180,9 +167,6 @@ export async function hashFileChunked(
   return {
     chunkHashes,
     compositeHash,
-    totalChunks,
-    chunkSize: CHUNK_SIZE,
-    fileSize: file.size,
   };
 }
 

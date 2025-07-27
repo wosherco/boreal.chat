@@ -21,6 +21,16 @@ describe("crypto utilities", () => {
     return createMockFile(content, name);
   }
 
+  // Helper function to chunk a file into 8MB pieces
+  function chunkFile(file: File, chunkSize: number = 8 * 1024 * 1024): Blob[] {
+    const chunks: Blob[] = [];
+    for (let start = 0; start < file.size; start += chunkSize) {
+      const end = Math.min(start + chunkSize, file.size);
+      chunks.push(file.slice(start, end));
+    }
+    return chunks;
+  }
+
   describe("hashFile", () => {
     it("should hash a simple text file correctly", async () => {
       const file = createMockFile("Hello, World!");
@@ -240,12 +250,11 @@ describe("crypto utilities", () => {
   describe("hashFileChunked", () => {
     it("should hash a small file as a single chunk", async () => {
       const file = createMockFile("Hello, World!");
-      const result = await hashFileChunked(file);
+      const chunks = chunkFile(file);
+      const result = await hashFileChunked(chunks);
 
-      expect(result.totalChunks).toBe(1);
+      expect(chunks).toHaveLength(1);
       expect(result.chunkHashes).toHaveLength(1);
-      expect(result.chunkSize).toBe(8 * 1024 * 1024); // 8MB
-      expect(result.fileSize).toBe(file.size);
       expect(result.chunkHashes[0]).toBeTruthy();
       expect(result.compositeHash).toBeTruthy();
     });
@@ -253,11 +262,11 @@ describe("crypto utilities", () => {
     it("should hash a large file in multiple chunks", async () => {
       // Create a file larger than 8MB (use 20MB)
       const file = createLargeMockFile(20 * 1024 * 1024);
-      const result = await hashFileChunked(file);
+      const chunks = chunkFile(file);
+      const result = await hashFileChunked(chunks);
 
-      expect(result.totalChunks).toBe(3); // 20MB / 8MB = 2.5, rounded up to 3
+      expect(chunks).toHaveLength(3); // 20MB / 8MB = 2.5, rounded up to 3
       expect(result.chunkHashes).toHaveLength(3);
-      expect(result.fileSize).toBe(file.size);
 
       // All chunk hashes should be valid
       result.chunkHashes.forEach((hash) => {
@@ -271,10 +280,11 @@ describe("crypto utilities", () => {
 
     it("should call progress callback", async () => {
       const file = createLargeMockFile(10 * 1024 * 1024); // 10MB
+      const chunks = chunkFile(file);
       let progressCalled = false;
       let finalProgress = 0;
 
-      const result = await hashFileChunked(file, (progress) => {
+      const result = await hashFileChunked(chunks, (progress) => {
         progressCalled = true;
         finalProgress = progress;
       });
@@ -286,51 +296,53 @@ describe("crypto utilities", () => {
 
     it("should work without progress callback", async () => {
       const file = createMockFile("Test content");
-      const result = await hashFileChunked(file);
+      const chunks = chunkFile(file);
+      const result = await hashFileChunked(chunks);
 
       expect(result).toBeTruthy();
-      expect(result.totalChunks).toBe(1);
+      expect(chunks).toHaveLength(1);
       expect(result.chunkHashes).toHaveLength(1);
     });
 
     it("should produce consistent results for the same file", async () => {
       const file = createMockFile("Consistent test content");
+      const chunks1 = chunkFile(file);
+      const chunks2 = chunkFile(file);
 
-      const result1 = await hashFileChunked(file);
-      const result2 = await hashFileChunked(file);
+      const result1 = await hashFileChunked(chunks1);
+      const result2 = await hashFileChunked(chunks2);
 
       expect(result1.chunkHashes).toEqual(result2.chunkHashes);
       expect(result1.compositeHash).toBe(result2.compositeHash);
-      expect(result1.totalChunks).toBe(result2.totalChunks);
     });
 
     it("should handle files exactly at chunk boundary", async () => {
       // Create a file exactly 8MB
       const file = createLargeMockFile(8 * 1024 * 1024);
-      const result = await hashFileChunked(file);
+      const chunks = chunkFile(file);
+      const result = await hashFileChunked(chunks);
 
-      expect(result.totalChunks).toBe(1);
+      expect(chunks).toHaveLength(1);
       expect(result.chunkHashes).toHaveLength(1);
-      expect(result.fileSize).toBe(8 * 1024 * 1024);
     });
 
     it("should handle files just over chunk boundary", async () => {
       // Create a file just over 8MB
       const file = createLargeMockFile(8 * 1024 * 1024 + 1);
-      const result = await hashFileChunked(file);
+      const chunks = chunkFile(file);
+      const result = await hashFileChunked(chunks);
 
-      expect(result.totalChunks).toBe(2);
+      expect(chunks).toHaveLength(2);
       expect(result.chunkHashes).toHaveLength(2);
-      expect(result.fileSize).toBe(8 * 1024 * 1024 + 1);
     });
 
     it("should handle empty files", async () => {
       const file = createMockFile("");
-      const result = await hashFileChunked(file);
+      const chunks = chunkFile(file);
+      const result = await hashFileChunked(chunks);
 
-      expect(result.totalChunks).toBe(0);
+      expect(chunks).toHaveLength(0);
       expect(result.chunkHashes).toHaveLength(0);
-      expect(result.fileSize).toBe(0);
 
       // Composite hash of empty chunks should still be valid
       expect(result.compositeHash).toBeTruthy();
@@ -341,8 +353,11 @@ describe("crypto utilities", () => {
       const file1 = createMockFile("File content 1");
       const file2 = createMockFile("File content 2");
 
-      const result1 = await hashFileChunked(file1);
-      const result2 = await hashFileChunked(file2);
+      const chunks1 = chunkFile(file1);
+      const chunks2 = chunkFile(file2);
+
+      const result1 = await hashFileChunked(chunks1);
+      const result2 = await hashFileChunked(chunks2);
 
       expect(result1.compositeHash).not.toBe(result2.compositeHash);
       expect(result1.chunkHashes[0]).not.toBe(result2.chunkHashes[0]);
@@ -351,12 +366,13 @@ describe("crypto utilities", () => {
     it("should be performant for large files", async () => {
       // Test with moderately large file (25MB = 4 chunks)
       const file = createLargeMockFile(25 * 1024 * 1024);
+      const chunks = chunkFile(file);
 
       const startTime = Date.now();
-      const result = await hashFileChunked(file);
+      const result = await hashFileChunked(chunks);
       const endTime = Date.now();
 
-      expect(result.totalChunks).toBe(4);
+      expect(chunks).toHaveLength(4);
       expect(result.chunkHashes).toHaveLength(4);
 
       // Should complete within reasonable time (parallel processing should be fast)
@@ -367,8 +383,9 @@ describe("crypto utilities", () => {
   describe("createS3ETag", () => {
     it("should create proper S3-style ETag for single chunk", async () => {
       const file = createMockFile("Small file");
-      const result = await hashFileChunked(file);
-      const etag = createS3ETag(result);
+      const chunks = chunkFile(file);
+      const result = await hashFileChunked(chunks);
+      const etag = createS3ETag({ ...result, totalChunks: chunks.length });
 
       expect(etag).toBe(`${result.compositeHash}-1`);
       expect(etag).toMatch(/^[a-f0-9]{64}-1$/);
@@ -376,8 +393,9 @@ describe("crypto utilities", () => {
 
     it("should create proper S3-style ETag for multiple chunks", async () => {
       const file = createLargeMockFile(20 * 1024 * 1024); // 20MB = 3 chunks
-      const result = await hashFileChunked(file);
-      const etag = createS3ETag(result);
+      const chunks = chunkFile(file);
+      const result = await hashFileChunked(chunks);
+      const etag = createS3ETag({ ...result, totalChunks: chunks.length });
 
       expect(etag).toBe(`${result.compositeHash}-3`);
       expect(etag).toMatch(/^[a-f0-9]{64}-3$/);
@@ -385,8 +403,9 @@ describe("crypto utilities", () => {
 
     it("should handle zero chunks gracefully", async () => {
       const file = createMockFile("");
-      const result = await hashFileChunked(file);
-      const etag = createS3ETag(result);
+      const chunks = chunkFile(file);
+      const result = await hashFileChunked(chunks);
+      const etag = createS3ETag({ ...result, totalChunks: chunks.length });
 
       expect(etag).toBe(`${result.compositeHash}-0`);
       expect(etag).toMatch(/^[a-f0-9]{64}-0$/);
@@ -394,12 +413,14 @@ describe("crypto utilities", () => {
 
     it("should produce consistent ETags for the same file", async () => {
       const file = createMockFile("Consistent content");
+      const chunks1 = chunkFile(file);
+      const chunks2 = chunkFile(file);
 
-      const result1 = await hashFileChunked(file);
-      const result2 = await hashFileChunked(file);
+      const result1 = await hashFileChunked(chunks1);
+      const result2 = await hashFileChunked(chunks2);
 
-      const etag1 = createS3ETag(result1);
-      const etag2 = createS3ETag(result2);
+      const etag1 = createS3ETag({ ...result1, totalChunks: chunks1.length });
+      const etag2 = createS3ETag({ ...result2, totalChunks: chunks2.length });
 
       expect(etag1).toBe(etag2);
     });
@@ -408,11 +429,14 @@ describe("crypto utilities", () => {
       const file1 = createMockFile("Content 1");
       const file2 = createMockFile("Content 2");
 
-      const result1 = await hashFileChunked(file1);
-      const result2 = await hashFileChunked(file2);
+      const chunks1 = chunkFile(file1);
+      const chunks2 = chunkFile(file2);
 
-      const etag1 = createS3ETag(result1);
-      const etag2 = createS3ETag(result2);
+      const result1 = await hashFileChunked(chunks1);
+      const result2 = await hashFileChunked(chunks2);
+
+      const etag1 = createS3ETag({ ...result1, totalChunks: chunks1.length });
+      const etag2 = createS3ETag({ ...result2, totalChunks: chunks2.length });
 
       expect(etag1).not.toBe(etag2);
     });

@@ -1,5 +1,5 @@
 import { env } from "$env/dynamic/private";
-import { CHUNK_SIZE, type MultiPartUploadParams } from "$lib/common/utils/files";
+import { CHUNK_SIZE, getPartCount, type MultiPartUploadParams } from "$lib/common/utils/files";
 import { db } from "$lib/server/db";
 import { assetTable, s3FileTable } from "$lib/server/db/schema";
 import {
@@ -15,9 +15,11 @@ import {
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { mapLimit } from "async";
+import { asyncMap } from "modern-async";
 import { eq } from "drizzle-orm";
 import { Readable } from "stream";
+import { z } from "zod/v4";
+import { signJwt, verifyJwt } from "$lib/server/jwt";
 
 export class FileAttachmentsNotEnabledError extends Error {
   constructor() {
@@ -74,6 +76,16 @@ export async function createS3BucketIfNotExists() {
   }
 }
 
+export function createFileIdentifier(userId: string, fileName: string) {
+  const id = crypto.randomUUID();
+  const key = `${userId}/${id}-${fileName}`;
+
+  return {
+    id,
+    key,
+  };
+}
+
 export async function createFile(
   userId: string,
   params: {
@@ -83,8 +95,7 @@ export async function createFile(
     hash?: string | null;
   },
 ) {
-  const id = crypto.randomUUID();
-  const key = `${userId}/${id}-${params.fileName}`;
+  const { id, key } = createFileIdentifier(userId, params.fileName);
 
   const [s3File] = await db
     .insert(s3FileTable)
@@ -102,13 +113,37 @@ export async function createFile(
   return s3File;
 }
 
+export const s3FileMetadata = z.object({
+  fileId: z.string(),
+  key: z.string(),
+  userId: z.string(),
+  uploadStartedAt: z.string(),
+  size: z.coerce.number().int().positive(),
+  contentType: z.string(),
+  hash: z.string(),
+  fileName: z.string(),
+});
+
 export async function generateSinglePartUploadParams(
-  key: string,
+  userId: string,
+  fileName: string,
   contentType: string,
   size: number,
   hash: string,
 ) {
   const client = getS3Client();
+  const { key, id } = createFileIdentifier(userId, fileName);
+
+  const uploadToken = await signJwt({
+    fileId: id,
+    key,
+    userId,
+    uploadStartedAt: new Date().toISOString(),
+    size,
+    contentType,
+    hash,
+    fileName,
+  });
 
   const command = new PutObjectCommand({
     Bucket: env.MINIO_BUCKET,
@@ -117,6 +152,9 @@ export async function generateSinglePartUploadParams(
     ContentLength: size,
     ChecksumAlgorithm: "SHA256",
     ChecksumSHA256: hash,
+    Metadata: {
+      uploadToken,
+    },
   });
 
   const presignedUrl = await getSignedUrl(client, command, {
@@ -125,15 +163,35 @@ export async function generateSinglePartUploadParams(
 
   return {
     presignedUrl,
+    uploadToken,
   };
 }
 
 export async function generateMultiPartUploadParams(
-  key: string,
+  userId: string,
+  fileName: string,
   contentType: string,
   size: number,
+  hashParts: {
+    partNumber: number;
+    hash: string;
+  }[],
+  compositeHash: string,
 ) {
   const client = getS3Client();
+
+  const { key, id } = createFileIdentifier(userId, fileName);
+
+  const uploadToken = await signJwt({
+    fileId: id,
+    key,
+    userId,
+    uploadStartedAt: new Date().toISOString(),
+    size,
+    contentType,
+    hash: compositeHash,
+    fileName,
+  });
 
   const command = new CreateMultipartUploadCommand({
     Bucket: env.MINIO_BUCKET,
@@ -142,27 +200,36 @@ export async function generateMultiPartUploadParams(
     ChecksumAlgorithm: "SHA256",
     ChecksumType: "COMPOSITE",
     Expires: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+    Metadata: {
+      uploadToken,
+    },
   });
 
   const result = await client.send(command);
 
-  const partCount = Math.ceil(size / CHUNK_SIZE);
+  const partCount = getPartCount(size);
+
+  if (hashParts.length !== partCount) {
+    throw new Error("Invalid number of hash parts");
+  }
+
   const danglingSize = size % CHUNK_SIZE;
 
-  const parts: MultiPartUploadParams["parts"] = await mapLimit<
-    number,
-    MultiPartUploadParams["parts"][number]
-  >(
-    new Array(partCount).fill(0).map((_, i) => i + 1),
-    10,
-    async (partNumber: number) => {
-      const isLastPart = partNumber === partCount;
+  const parts: MultiPartUploadParams["parts"] = await asyncMap(
+    hashParts,
+    async (part, index) => {
+      if (part.partNumber !== index + 1) {
+        throw new Error("Invalid part number");
+      }
+
+      const isLastPart = part.partNumber === partCount;
       const command = new UploadPartCommand({
         Bucket: env.MINIO_BUCKET,
         Key: key,
-        PartNumber: partNumber,
+        PartNumber: part.partNumber,
         UploadId: result.UploadId,
         ChecksumAlgorithm: "SHA256",
+        ChecksumSHA256: part.hash,
         ContentLength: isLastPart ? danglingSize : CHUNK_SIZE,
       });
 
@@ -171,84 +238,119 @@ export async function generateMultiPartUploadParams(
       });
 
       return {
-        partNumber,
+        partNumber: part.partNumber,
         presignedUrl,
       };
     },
+    10,
   );
 
   return {
     parts,
-    key,
     uploadId: result.UploadId,
+    uploadToken,
   };
 }
 
-export async function finishFileUpload(key: string) {
-  const [file] = await db
-    .update(s3FileTable)
-    .set({
-      status: "uploaded",
-    })
-    .where(eq(s3FileTable.key, key))
-    .returning();
+export async function finishFileUpload(fileMetadata: z.infer<typeof s3FileMetadata>) {
+  await db.transaction(async (tx) => {
+    const [existingFile] = await tx
+      .select()
+      .from(s3FileTable)
+      .where(eq(s3FileTable.key, fileMetadata.key))
+      .for("update");
 
-  if (!file) {
-    throw new Error("File not found");
-  }
+    if (existingFile) {
+      // Maybe there's a race condition here, so if we're calling fininsh uploading again, we return the existing file and asset
+      const asset = await tx.select().from(assetTable).where(eq(assetTable.id, existingFile.id));
 
-  const [asset] = await db
-    .insert(assetTable)
-    .values({
-      id: file.id,
-      userId: file.userId,
-      assetType: "s3_file",
-      assetId: file.id,
-      name: file.fileName,
-    })
-    .returning();
+      if (!asset) {
+        throw new Error("Asset not found");
+      }
 
-  try {
-    // Generating alternative files
-  } catch (error) {
-    console.error(error);
-  }
+      return {
+        file: existingFile,
+        asset,
+      };
+    }
 
-  return {
-    file,
-    asset,
-  };
+    const [file] = await tx
+      .insert(s3FileTable)
+      .values({
+        id: fileMetadata.fileId,
+        key: fileMetadata.key,
+        userId: fileMetadata.userId,
+        fileName: fileMetadata.fileName,
+        size: fileMetadata.size,
+        contentType: fileMetadata.contentType,
+        hash: fileMetadata.hash,
+      })
+      .returning();
+
+    if (!file) {
+      throw new Error("File not found");
+    }
+
+    const [asset] = await tx
+      .insert(assetTable)
+      .values({
+        id: file.id,
+        userId: file.userId,
+        assetType: "s3_file",
+        assetId: file.id,
+        name: file.fileName,
+      })
+      .returning();
+
+    try {
+      // Generating alternative files
+    } catch (error) {
+      console.error(error);
+    }
+
+    return {
+      file,
+      asset,
+    };
+  });
 }
 
-export async function confirmMultiPartUpload(key: string, uploadId: string, hash: string) {
+export async function confirmMultiPartUpload(
+  uploadId: string,
+  fileMetadata: z.infer<typeof s3FileMetadata>,
+) {
   const client = getS3Client();
 
   const command = new CompleteMultipartUploadCommand({
     Bucket: env.MINIO_BUCKET,
-    Key: key,
+    Key: fileMetadata.key,
     UploadId: uploadId,
-    ChecksumSHA256: hash,
+    ChecksumSHA256: fileMetadata.hash,
     ChecksumType: "COMPOSITE",
   });
 
-  await client.send(command);
+  const res = await client.send(command);
 
-  return await finishFileUpload(key);
+  console.log(res);
+
+  return await finishFileUpload(fileMetadata);
 }
 
-export async function abortMultiPartUpload(key: string, uploadId: string) {
+export async function abortMultiPartUpload(
+  uploadId: string,
+  fileMetadata: z.infer<typeof s3FileMetadata>,
+) {
   const client = getS3Client();
 
   const command = new AbortMultipartUploadCommand({
     Bucket: env.MINIO_BUCKET,
-    Key: key,
+    Key: fileMetadata.key,
     UploadId: uploadId,
   });
 
   await client.send(command);
 
   return {
-    key,
     uploadId,
   };
 }

@@ -50,8 +50,5 @@ export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number];
 export const BYOK_PLATFORMS = ["openrouter"] as const;
 export type ByokPlatform = (typeof BYOK_PLATFORMS)[number];
 
-export const S3_FILE_STATUS = ["pending", "uploaded"] as const;
-export type S3FileStatus = (typeof S3_FILE_STATUS)[number];
-
 export const ASSET_TYPES = ["s3_file"] as const;
 export type AssetType = (typeof ASSET_TYPES)[number];

@@ -46,6 +46,7 @@ export function createApi({ ctx, cookies, setHeaders }: CreateApiParams = {}) {
           const bucketName = record.s3?.bucket?.name;
           const objectKey = record.s3?.object?.key;
           const objectSize = record.s3?.object?.size;
+          console.log(record);
 
           console.log(
             `S3 Event: ${eventName} - Bucket: ${bucketName}, Object: ${objectKey}, Size: ${objectSize}`,
