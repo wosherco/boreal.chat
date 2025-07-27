@@ -65,6 +65,7 @@
     "@tailwindcss/vite": "^4.0.0",
     "@testcontainers/postgresql": "^11.2.1",
     "@testcontainers/redis": "^11.2.1",
+    "@types/async": "^3.2.24",
     "@types/async-lock": "^1.4.2",
     "@types/bun": "^1.2.17",
     "@types/cloudflare-turnstile": "^0.2.2",
@@ -120,6 +121,8 @@
     "zod": "^3.25.64"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.850.0",
+    "@aws-sdk/s3-request-presigner": "^3.850.0",
     "@electric-sql/pglite": "^0.3.5",
     "@electric-sql/pglite-sync": "^0.3.8",
     "@inlang/paraglide-js": "^2.0.0",
@@ -136,6 +139,7 @@
     "@tanstack/svelte-query-devtools": "^5.81.5",
     "@tanstack/svelte-query-persist-client": "^5.81.5",
     "arctic": "^3.7.0",
+    "async": "^3.2.6",
     "async-lock": "^1.4.1",
     "drizzle-orm": "^0.44.2",
     "fast-tree-builder": "^2.0.1",
@@ -144,6 +148,7 @@
     "is-promise": "^4.0.0",
     "js-cookie": "^3.0.5",
     "katex": "^0.16.22",
+    "magika": "^0.3.2",
     "nanoid": "^5.1.5",
     "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.5",
@@ -154,6 +159,7 @@
     "rehype-katex": "^7.0.1",
     "remark-math": "^6.0.0",
     "runed": "^0.30.0",
+    "sharp": "^0.34.3",
     "shiki": "^3.6.0",
     "svelte-exmarkdown": "^5.0.1",
     "svelty-email": "^0.1.1"

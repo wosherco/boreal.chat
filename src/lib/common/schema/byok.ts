@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, varchar, unique } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, varchar, unique, foreignKey } from "drizzle-orm/pg-core";
 import type { userTable } from "../../client/db/schema";
 import { BYOK_PLATFORMS } from "..";
 
@@ -7,9 +7,7 @@ export const createByokTable = (userTableFromSchema: typeof userTable, isClient:
     "byok",
     {
       id: uuid().defaultRandom().primaryKey(),
-      userId: uuid()
-        .notNull()
-        .references(() => userTableFromSchema.id),
+      userId: uuid().notNull(),
       apiKey: text().notNull(),
       platform: varchar({ length: 255, enum: BYOK_PLATFORMS }).notNull(),
       createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -18,7 +16,14 @@ export const createByokTable = (userTableFromSchema: typeof userTable, isClient:
         .defaultNow()
         .$onUpdate(() => new Date()),
     },
-    (t) => [!isClient && unique().on(t.userId, t.platform)],
+    (t) => [
+      !isClient && unique().on(t.userId, t.platform),
+      !isClient &&
+        foreignKey({
+          columns: [t.userId],
+          foreignColumns: [userTableFromSchema.id],
+        }).onDelete("cascade"),
+    ],
   );
 
   return {

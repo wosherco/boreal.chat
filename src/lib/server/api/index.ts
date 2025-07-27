@@ -32,6 +32,47 @@ export function createApi({ ctx, cookies, setHeaders }: CreateApiParams = {}) {
     return handleStripeWebhook(c.req.raw);
   });
 
+  api.post("/api/webhook/s3", async (c) => {
+    try {
+      const payload = await c.req.json();
+
+      // Log the S3 event for debugging
+      console.log("S3 Webhook received:", JSON.stringify(payload, null, 2));
+
+      // Handle different S3 event types
+      if (payload.Records && Array.isArray(payload.Records)) {
+        for (const record of payload.Records) {
+          const eventName = record.eventName;
+          const bucketName = record.s3?.bucket?.name;
+          const objectKey = record.s3?.object?.key;
+          const objectSize = record.s3?.object?.size;
+
+          console.log(
+            `S3 Event: ${eventName} - Bucket: ${bucketName}, Object: ${objectKey}, Size: ${objectSize}`,
+          );
+
+          // You can add specific handling logic here based on the event type
+          if (eventName?.startsWith("s3:ObjectCreated:")) {
+            // Handle file upload events
+            console.log(`File uploaded: ${objectKey} (${objectSize} bytes)`);
+
+            // TODO: Add your custom logic here
+            // For example:
+            // - Update database with file metadata
+            // - Trigger post-processing
+            // - Send notifications to users
+            // - etc.
+          }
+        }
+      }
+
+      return c.json({ success: true });
+    } catch (error) {
+      console.error("Error processing S3 webhook:", error);
+      return c.json({ error: "Failed to process webhook" }, 500);
+    }
+  });
+
   api.use(
     "*",
     cors({

@@ -53,7 +53,52 @@ services:
       MP_SMTP_AUTH_ACCEPT_ANY: "1"
       MP_SMTP_AUTH_ALLOW_INSECURE: "1"
 
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_REGION_NAME: us-east-1
+      # Webhook notification configuration
+      MINIO_NOTIFY_WEBHOOK_ENABLE_primary: "on"
+      MINIO_NOTIFY_WEBHOOK_ENDPOINT_primary: "http://host.docker.internal:5173/api/webhook/s3"
+      MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_primary: ""
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  minio-setup:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Configuring MinIO webhook notifications...';
+      mc alias set local http://minio:9000 minioadmin minioadmin;
+      echo 'Creating bucket if it does not exist...';
+      mc mb local/files --ignore-existing;
+      echo 'Setting up webhook notification...';
+      mc event add local/files arn:minio:sqs::primary:webhook --event put,post;
+      echo 'Webhook notification setup complete!';
+      echo 'Configuration:';
+      echo '- Bucket: files';
+      echo '- Webhook: http://host.docker.internal:5173/api/webhook/s3';
+      echo '- Events: s3:ObjectCreated:Put, s3:ObjectCreated:Post';
+      mc event list local/files;
+      "
+    restart: "no"
+
 volumes:
   postgres-data:
   redis-data:
   mailpit-data:
+  minio-data:
