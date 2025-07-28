@@ -1,19 +1,28 @@
 import { CHUNK_SIZE, getPartCount, isMultiPart } from "$lib/common/utils/files";
 import { orpc } from "../orpc";
-import { hashFileChunked, hashFileSmart } from "../utils/crypto";
-import { asyncForEach } from "modern-async";
+import { hashFileSmart } from "../utils/crypto";
+import Aigle from "aigle";
 
-async function uploadPart(url: string, part: ReadableStream<Uint8Array>) {
+async function uploadPart(url: string, part: Blob | File): Promise<{ etag: string }> {
+  const data = await part.arrayBuffer();
   const res = await fetch(url, {
     method: "PUT",
-    body: part,
+    body: data,
   });
 
   if (!res.ok) {
     throw new Error("Failed to upload part");
   }
 
-  return res;
+  const etag = res.headers.get("ETag") ?? "";
+
+  if (etag === "") {
+    throw new Error("Failed to upload part");
+  }
+
+  return {
+    etag,
+  };
 }
 
 async function chunkFile(file: File) {
@@ -30,56 +39,72 @@ async function chunkFile(file: File) {
   return chunks;
 }
 
-export async function uploadFile(file: File) {
+export async function uploadFile(file: File): Promise<{ assetId: string }> {
   const multipart = isMultiPart(file.size);
-  let hash: string | undefined;
 
   if (!multipart) {
-    hash = await hashFileSmart(file);
+    const hash = await hashFileSmart(file);
 
-    const presignedData = await orpc.v1.files.uploadSinglePartFile({
+    const singleFileUploadPayload = await orpc.v1.files.uploadSinglePartFile({
       fileName: file.name,
       contentType: file.type,
       size: file.size,
       hash,
     });
 
-    const { presignedUrl } = presignedData;
+    if (singleFileUploadPayload.existing) {
+      return {
+        assetId: singleFileUploadPayload.data.assetId,
+      };
+    }
 
-    await uploadPart(presignedUrl, file.stream());
+    const { presignedUrl, uploadToken } = singleFileUploadPayload.data;
+
+    await uploadPart(presignedUrl, file);
+
+    const finishUploadPayload = await orpc.v1.files.finishSinglePartFile({
+      uploadToken,
+    });
 
     return {
-      uploadToken: presignedData.uploadToken,
+      assetId: finishUploadPayload.assetId,
     };
   }
 
-  const chunks = await chunkFile(file);
-  const { chunkHashes, compositeHash } = await hashFileChunked(chunks);
+  const [chunks, hash] = await Promise.all([chunkFile(file), hashFileSmart(file)]);
 
   const presignedData = await orpc.v1.files.uploadMultiPartFile({
     fileName: file.name,
     contentType: file.type,
     size: file.size,
-    parts: chunkHashes.map((hash, index) => ({
-      partNumber: index + 1,
-      hash,
-    })),
-    hash: compositeHash,
+    hash,
   });
 
-  await asyncForEach(
-    presignedData.parts,
-    async (part, index) => {
-      const chunk = chunks[index];
-      const res = await uploadPart(part.presignedUrl, chunk.stream());
+  if (presignedData.existing) {
+    return {
+      assetId: presignedData.data.assetId,
+    };
+  }
 
-      if (!res.ok) {
-        throw new Error("Failed to upload part");
-      }
-    },
-    4,
-  );
+  const parts = await Aigle.mapLimit(presignedData.data.parts, 1, async (part) => {
+    const chunk = chunks[part.partNumber - 1];
+
+    const { etag } = await uploadPart(part.presignedUrl, chunk);
+
+    return {
+      etag,
+      partNumber: part.partNumber,
+    };
+  });
 
   // Finishing the upload
-  console.log("FINISHED");
+  const finishUploadPayload = await orpc.v1.files.finishMultiPartUpload({
+    uploadId: presignedData.data.uploadId,
+    uploadToken: presignedData.data.uploadToken,
+    parts: parts,
+  });
+
+  return {
+    assetId: finishUploadPayload.assetId,
+  };
 }

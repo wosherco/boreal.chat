@@ -4,7 +4,7 @@
  */
 export async function hashFile(file: File | Blob) {
   const content = await file.arrayBuffer();
-  const hash = await crypto.subtle.digest("SHA-256", content);
+  const hash = await crypto.subtle.digest("SHA-512", content);
   return Array.from(new Uint8Array(hash))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
@@ -52,7 +52,7 @@ export async function hashFileStream(
       offset += chunk.length;
     }
 
-    const hash = await crypto.subtle.digest("SHA-256", combined);
+    const hash = await crypto.subtle.digest("SHA-512", combined);
 
     // Convert to hex string
     return Array.from(new Uint8Array(hash))
@@ -77,7 +77,7 @@ export async function hashFileFallback(
     onProgress(1.0); // 100% complete
   }
 
-  const hash = await crypto.subtle.digest("SHA-256", content);
+  const hash = await crypto.subtle.digest("SHA-512", content);
   return Array.from(new Uint8Array(hash))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
@@ -112,71 +112,4 @@ export async function hashFileSmart(
     console.warn("Streaming hash failed, falling back to arrayBuffer method:", error);
     return await hashFileFallback(file, onProgress);
   }
-}
-
-/**
- * Hash a file in chunks for S3 composite hashes.
- * Splits the file into 8MB chunks, calculates SHA-256 hash for each chunk using existing methods,
- * and creates a composite hash similar to S3's multipart upload ETags.
- *
- * @param file - The file to hash
- * @param onProgress - Optional progress callback (0-1)
- * @returns Object containing chunk hashes, composite hash, and metadata
- */
-export async function hashFileChunked(
-  chunks: Blob[],
-  onProgress?: (progress: number) => void,
-): Promise<{
-  chunkHashes: string[];
-  compositeHash: string;
-}> {
-  const chunkHashes: string[] = [];
-
-  // Hash chunks in parallel for better performance
-  const chunkPromises = [];
-
-  for (const chunk of chunks) {
-    chunkPromises.push(hashFileSmart(chunk));
-  }
-
-  // Wait for all chunks to be hashed
-  const results = await Promise.all(chunkPromises);
-  chunkHashes.push(...results);
-
-  // Report progress as complete
-  if (onProgress) {
-    onProgress(1.0);
-  }
-
-  // Create composite hash from chunk hashes
-  // Convert hex strings to bytes and concatenate them
-  const hashBytes = chunkHashes.flatMap((hash) => {
-    const bytes = [];
-    for (let i = 0; i < hash.length; i += 2) {
-      bytes.push(parseInt(hash.substr(i, 2), 16));
-    }
-    return bytes;
-  });
-
-  const concatenatedHashes = new Uint8Array(hashBytes);
-
-  // Hash the concatenated chunk hashes using existing method
-  const compositeFile = new File([concatenatedHashes], "composite-hash");
-  const compositeHash = await hashFile(compositeFile);
-
-  return {
-    chunkHashes,
-    compositeHash,
-  };
-}
-
-/**
- * Create an S3-style ETag from chunked hash results.
- * Returns a string in the format "compositeHash-numberOfChunks"
- *
- * @param result - Result from hashFileChunked
- * @returns S3-style ETag string
- */
-export function createS3ETag(result: { compositeHash: string; totalChunks: number }): string {
-  return `${result.compositeHash}-${result.totalChunks}`;
 }

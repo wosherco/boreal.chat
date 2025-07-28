@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 import { jwtVerify, SignJWT } from "jose";
 
 export function signJwt(payload: z.infer<typeof s3FileMetadata>) {
-  return new SignJWT({ payload })
+  return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("15min")
     .sign(new TextEncoder().encode(env.AUTH_ENCRYPTION_KEY));

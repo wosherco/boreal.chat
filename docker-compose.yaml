@@ -64,15 +64,15 @@ services:
       MINIO_REGION_NAME: us-east-1
       # Webhook notification configuration
       MINIO_NOTIFY_WEBHOOK_ENABLE_primary: "on"
-      MINIO_NOTIFY_WEBHOOK_ENDPOINT_primary: "http://host.docker.internal:5173/api/webhook/s3"
+      MINIO_NOTIFY_WEBHOOK_ENDPOINT_primary: "http://172.17.0.1:5173/api/webhook/s3"
       MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_primary: ""
     volumes:
       - minio-data:/data
     command: server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
+      interval: 5s
+      timeout: 30s
       retries: 3
 
   minio-setup:
@@ -85,15 +85,15 @@ services:
       echo 'Configuring MinIO webhook notifications...';
       mc alias set local http://minio:9000 minioadmin minioadmin;
       echo 'Creating bucket if it does not exist...';
-      mc mb local/files --ignore-existing;
+      mc mb local/borealchat-files --ignore-existing;
       echo 'Setting up webhook notification...';
-      mc event add local/files arn:minio:sqs::primary:webhook --event put,post;
+      mc event add local/borealchat-files arn:minio:sqs::primary:webhook --event put;
       echo 'Webhook notification setup complete!';
       echo 'Configuration:';
-      echo '- Bucket: files';
-      echo '- Webhook: http://host.docker.internal:5173/api/webhook/s3';
-      echo '- Events: s3:ObjectCreated:Put, s3:ObjectCreated:Post';
-      mc event list local/files;
+      echo '- Bucket: borealchat-files';
+      echo '- Webhook: http://172.17.0.1:5173/api/webhook/s3';
+      echo '- Events: s3:ObjectCreated:Put';
+      mc event list local/borealchat-files;
       "
     restart: "no"
 

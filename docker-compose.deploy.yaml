@@ -88,15 +88,15 @@ services:
       echo 'Configuring MinIO webhook notifications...';
       mc alias set local http://minio:9000 minioadmin minioadmin;
       echo 'Creating bucket if it does not exist...';
-      mc mb local/files --ignore-existing;
+      mc mb local/borealchat-files --ignore-existing;
       echo 'Setting up webhook notification...';
-      mc event add local/files arn:minio:sqs::primary:webhook --event put,post;
+      mc event add local/borealchat-files arn:minio:sqs::primary:webhook --event put;
       echo 'Webhook notification setup complete!';
       echo 'Configuration:';
-      echo '- Bucket: files';
+      echo '- Bucket: borealchat-files';
       echo '- Webhook: http://boreal.chat:3000/api/webhook/s3';
-      echo '- Events: s3:ObjectCreated:Put, s3:ObjectCreated:Post';
-      mc event list local/files;
+      echo '- Events: s3:ObjectCreated:Put';
+      mc event list local/borealchat-files;
       "
     restart: "no"
 

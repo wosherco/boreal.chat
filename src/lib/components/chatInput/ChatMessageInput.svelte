@@ -43,6 +43,7 @@
   import { verifySession } from "$lib/client/services/turnstile.svelte";
   import OptionsMenu from "./OptionsMenu.svelte";
   import { ICON_MAP } from "../icons/iconMap";
+  import UploadFileButton from "./UploadFileButton.svelte";
 
   interface Props {
     /**
@@ -423,6 +424,8 @@
               <FileTextIcon class="h-4 w-4" />
             </Button>
           </DraftManager>
+
+          <UploadFileButton />
 
           <OptionsMenu
             selectedModel={actualSelectedModel}
