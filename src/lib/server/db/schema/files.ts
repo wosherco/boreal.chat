@@ -1,6 +1,6 @@
 import { userTable } from "./users";
 import { createFilesTable } from "../../../common/schema/files";
-import { pgTable, uuid, text, integer, timestamp, unique } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, integer, timestamp, unique, index } from "drizzle-orm/pg-core";
 
 const { assetTable, draftAttachmentTable, messageAttachmentTable } = createFilesTable(
   userTable,
@@ -30,5 +30,5 @@ export const s3FileTable = pgTable(
 
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [unique().on(t.hash, t.userId)],
+  (t) => [unique().on(t.hash, t.userId), index().on(t.userId)],
 );

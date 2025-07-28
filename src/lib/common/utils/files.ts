@@ -41,3 +41,5 @@ export const IMAGE_MIME_TYPES = [
   "image/dcm",
   "image/svg",
 ];
+
+export const isImage = (contentType: string) => IMAGE_MIME_TYPES.includes(contentType);

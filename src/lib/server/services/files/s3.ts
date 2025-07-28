@@ -13,12 +13,13 @@ import {
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sum } from "drizzle-orm";
 import { Readable } from "stream";
 import { z } from "zod/v4";
 import { signJwt } from "$lib/server/jwt";
 import { generateStreamHash } from "$lib/server/utils/crypto";
 import Aigle from "aigle";
+import { cleanFileName } from "$lib/server/utils/files";
 
 export class FileAttachmentsNotEnabledError extends Error {
   constructor() {
@@ -48,7 +49,7 @@ function getS3Client() {
 
 export function createFileIdentifier(userId: string, fileName: string) {
   const id = crypto.randomUUID();
-  const key = `${userId}/${id}-${fileName}`;
+  const key = `${userId}/${id}-${cleanFileName(fileName)}`;
 
   return {
     id,
@@ -411,4 +412,15 @@ export async function getFileWithHash(userId: string, fileHash: string) {
   }
 
   return row;
+}
+
+export async function getTotalFileUsage(userId: string): Promise<number> {
+  const [result] = await db
+    .select({ totalSize: sum(s3FileTable.size) })
+    .from(s3FileTable)
+    .where(eq(s3FileTable.userId, userId));
+
+  const parsed = Number(result?.totalSize ?? -1);
+
+  return isNaN(parsed) ? -1 : parsed;
 }

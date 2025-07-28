@@ -44,6 +44,11 @@
   import OptionsMenu from "./OptionsMenu.svelte";
   import { ICON_MAP } from "../icons/iconMap";
   import UploadFileButton from "./UploadFileButton.svelte";
+  import {
+    FILES_FEATURE_FLAG,
+    getFeatureFlag,
+    getFlagsmithContext,
+  } from "$lib/common/featureFlags";
 
   interface Props {
     /**
@@ -55,6 +60,8 @@
   }
 
   let { textAreaElement = $bindable(), draft, isUserSubscribed }: Props = $props();
+
+  const flagsmith = getFlagsmithContext();
 
   let value = $state(page.url.searchParams.get("prompt") ?? "");
   let loading = $state(false);
@@ -425,7 +432,9 @@
             </Button>
           </DraftManager>
 
-          <UploadFileButton />
+          {#if getFeatureFlag(FILES_FEATURE_FLAG).enabled}
+            <UploadFileButton />
+          {/if}
 
           <OptionsMenu
             selectedModel={actualSelectedModel}

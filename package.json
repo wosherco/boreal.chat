@@ -144,6 +144,7 @@
     "drizzle-orm": "^0.44.2",
     "fast-tree-builder": "^2.0.1",
     "flagsmith": "^9.3.0",
+    "flagsmith-nodejs": "^6.1.0",
     "ioredis": "^5.6.1",
     "is-promise": "^4.0.0",
     "jose": "^6.0.12",

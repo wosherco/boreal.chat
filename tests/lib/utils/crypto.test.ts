@@ -24,8 +24,9 @@ describe("crypto utilities", () => {
       const file = createMockFile("Hello, World!");
       const hash = await hashFile(file);
 
-      // SHA-256 hash of "Hello, World!"
-      const expectedHash = "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f";
+      // SHA-512 hash of "Hello, World!"
+      const expectedHash =
+        "374d794a95cdcfd8b35993185fef9ba368f160d8daf432d08ba9f1ed1e5abe6cc69291e0fa2fe0006a52570ef18c19def4e617c33ce52ef0a6e5fbe318cb0387";
       expect(hash).toBe(expectedHash);
     });
 
@@ -33,8 +34,9 @@ describe("crypto utilities", () => {
       const file = createMockFile("");
       const hash = await hashFile(file);
 
-      // SHA-256 hash of empty string
-      const expectedHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+      // SHA-512 hash of empty string
+      const expectedHash =
+        "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e";
       expect(hash).toBe(expectedHash);
     });
 
@@ -65,7 +67,8 @@ describe("crypto utilities", () => {
       const hash = await hashFileStream(file);
 
       // Should produce the same hash as the original method
-      const expectedHash = "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f";
+      const expectedHash =
+        "374d794a95cdcfd8b35993185fef9ba368f160d8daf432d08ba9f1ed1e5abe6cc69291e0fa2fe0006a52570ef18c19def4e617c33ce52ef0a6e5fbe318cb0387";
       expect(hash).toBe(expectedHash);
     });
 
@@ -88,7 +91,7 @@ describe("crypto utilities", () => {
       const hash = await hashFileStream(file);
 
       expect(hash).toBeTruthy();
-      expect(hash.length).toBe(64); // SHA-256 hex string length
+      expect(hash.length).toBe(128); // SHA-512 hex string length
     });
 
     it("should produce consistent results with original method", async () => {
@@ -108,7 +111,8 @@ describe("crypto utilities", () => {
       const hash = await hashFileFallback(file);
 
       // Should produce the same hash as the original method
-      const expectedHash = "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f";
+      const expectedHash =
+        "374d794a95cdcfd8b35993185fef9ba368f160d8daf432d08ba9f1ed1e5abe6cc69291e0fa2fe0006a52570ef18c19def4e617c33ce52ef0a6e5fbe318cb0387";
       expect(hash).toBe(expectedHash);
     });
 
@@ -129,7 +133,7 @@ describe("crypto utilities", () => {
       const hash = await hashFileFallback(file);
 
       expect(hash).toBeTruthy();
-      expect(hash.length).toBe(64);
+      expect(hash.length).toBe(128);
     });
   });
 
@@ -152,7 +156,7 @@ describe("crypto utilities", () => {
       });
 
       expect(hash).toBeTruthy();
-      expect(hash.length).toBe(64);
+      expect(hash.length).toBe(128);
 
       // Should have called progress callback if streaming was used
       if (progressCalls.length > 0) {
@@ -166,7 +170,7 @@ describe("crypto utilities", () => {
       const hash = await hashFileSmart(file);
 
       expect(hash).toBeTruthy();
-      expect(hash.length).toBe(64);
+      expect(hash.length).toBe(128);
     });
 
     it("should produce consistent results across all methods", async () => {
@@ -185,7 +189,7 @@ describe("crypto utilities", () => {
       const hash = await hashFileSmart(file);
 
       expect(hash).toBeTruthy();
-      expect(hash.length).toBe(64);
+      expect(hash.length).toBe(128);
     });
   });
 
@@ -209,7 +213,7 @@ describe("crypto utilities", () => {
       const endTime = Date.now();
 
       expect(hash).toBeTruthy();
-      expect(hash.length).toBe(64);
+      expect(hash.length).toBe(128);
 
       // Should complete within reasonable time (less than 10 seconds)
       expect(endTime - startTime).toBeLessThan(10000);
@@ -227,7 +231,7 @@ describe("crypto utilities", () => {
       expect(hashes).toHaveLength(5);
       hashes.forEach((hash) => {
         expect(hash).toBeTruthy();
-        expect(hash.length).toBe(64);
+        expect(hash.length).toBe(128);
       });
 
       // Should complete within reasonable time

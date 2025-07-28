@@ -22,6 +22,10 @@ import { verifyTurnstileToken } from "../utils/turnstile";
 import { TURNSTILE_SECRET_KEY } from "$env/static/private";
 import { isAnonymousSessionVerified } from "../services/auth/anonymous";
 import { isAnonymousUser } from "$lib/common/utils/anonymous";
+import { getServerSideUserFeatureFlag } from "../utils/featureFlags";
+import { FILES_FEATURE_FLAG } from "$lib/common/featureFlags";
+import { isImage } from "$lib/common/utils/files";
+import { getTotalFileUsage } from "../services/files/s3";
 
 /**
  * Middleware that checks if the request contains a client IP.
@@ -337,6 +341,52 @@ export const turnstileMiddleware = ipMiddleware.concat(
           message: "Invalid turnstile token",
         });
       }
+    }
+
+    return next();
+  },
+);
+
+export const filesMiddleware = authenticatedMiddleware.concat(
+  async ({ context, next }, input: { contentType: string; size: number }) => {
+    if (!env.PUBLIC_FILE_ATTACHMENTS) {
+      throw new ORPCError("FORBIDDEN", {
+        message: "File attachments are not enabled",
+      });
+    }
+
+    const { enabled } = await getServerSideUserFeatureFlag(
+      context.userCtx.user.id,
+      FILES_FEATURE_FLAG,
+    );
+
+    if (!enabled) {
+      throw new ORPCError("FORBIDDEN", {
+        message: "You don't have access to this feature",
+      });
+    }
+
+    // TODO: For now we'll just support images.
+    if (!isImage(input.contentType)) {
+      throw new ORPCError("FORBIDDEN", {
+        message: "You can only upload images",
+      });
+    }
+
+    if (!env.PUBLIC_BILLING_ENABLED) {
+      return next();
+    }
+
+    const totalFileUsage = await getTotalFileUsage(context.userCtx.user.id);
+
+    const MAX_SIZE = !isSubscribed(context.userCtx.user)
+      ? 1024 * 1024 * 1024 // 1 GB for free users
+      : 1024 * 1024 * 1024 * 10; // 10 GB (soft limited, it should be unlimited in the future)
+
+    if (totalFileUsage + input.size >= MAX_SIZE) {
+      throw new ORPCError("FORBIDDEN", {
+        message: "You have reached the file size limit",
+      });
     }
 
     return next();
