@@ -1,5 +1,11 @@
 # boreal.chat
 
+## 0.3.2
+
+### Patch Changes
+
+- 8aa44e3: Started with file uploads
+
 ## 0.3.1
 
 ### Patch Changes
