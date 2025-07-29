@@ -3,13 +3,13 @@ import { getContext, setContext } from "svelte";
 
 const FLAGSMITH_CONTEXT_KEY = {};
 
-interface FeatureFlag {
+export interface FeatureFlag {
   name: string;
   defaultToggle: boolean;
 }
 
-export const BILLING_FEATURE_FLAG: FeatureFlag = {
-  name: "billing",
+export const FILES_FEATURE_FLAG: FeatureFlag = {
+  name: "files",
   defaultToggle: false,
 };
 

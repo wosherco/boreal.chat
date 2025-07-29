@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import { sessionCookieName, validateSessionToken } from "../auth";
-import type { Session, User } from "../db/schema";
+import { type Session, type User } from "../db/schema";
 import { env } from "$env/dynamic/private";
 import { cors } from "hono/cors";
 import { appRouter } from "$lib/server/orpc/router";
@@ -10,6 +10,9 @@ import type { StatusCode } from "hono/utils/http-status";
 import type { Cookies } from "@sveltejs/kit";
 import { handleStripeWebhook } from "../stripe";
 import * as Sentry from "@sentry/sveltekit";
+import { verifyJwt } from "../jwt";
+import type { z } from "zod/v4";
+import { finishFileUpload, type s3FileMetadata } from "../services/files/s3";
 
 export interface UserContext {
   user: User | null;
@@ -30,6 +33,57 @@ export function createApi({ ctx, cookies, setHeaders }: CreateApiParams = {}) {
 
   api.post("/api/webhook/stripe", (c) => {
     return handleStripeWebhook(c.req.raw);
+  });
+
+  api.post("/api/webhook/s3", async (c) => {
+    try {
+      const payload = await c.req.json();
+
+      // Log the S3 event for debugging
+      // console.log("S3 Webhook received:", JSON.stringify(payload, null, 2));
+
+      // Handle different S3 event types
+      if (payload.Records && Array.isArray(payload.Records)) {
+        for (const record of payload.Records) {
+          const eventName = record.eventName;
+          // const bucketName = record.s3?.bucket?.name;
+          // const objectKey = record.s3?.object?.key;
+          // const objectSize = record.s3?.object?.size;
+
+          // console.log(
+          //   `S3 Event: ${eventName} - Bucket: ${bucketName}, Object: ${objectKey}, Size: ${objectSize}`,
+          // );
+
+          // You can add specific handling logic here based on the event type
+          if (eventName?.startsWith("s3:ObjectCreated:")) {
+            const token = record.s3?.object?.userMetadata?.["x-amz-meta-uploadtoken"] as
+              | string
+              | undefined;
+
+            if (!token) {
+              console.error("No upload token found");
+              continue;
+            }
+
+            let fileMetadata: z.infer<typeof s3FileMetadata> | undefined;
+
+            try {
+              fileMetadata = await verifyJwt(token);
+            } catch (error) {
+              console.error("Invalid upload token", error);
+              continue;
+            }
+
+            await finishFileUpload(fileMetadata);
+          }
+        }
+      }
+
+      return c.json({ success: true });
+    } catch (error) {
+      console.error("Error processing S3 webhook:", error);
+      return c.json({ error: "Failed to process webhook" }, 500);
+    }
   });
 
   api.use(

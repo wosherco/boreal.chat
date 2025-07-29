@@ -11,6 +11,7 @@ services:
       GOOGLE_AUTH_REDIRECT_URI: "https://boreal.chat/auth/google/callback"
       DATABASE_URL: "postgres://postgres:password@postgres:5432/borealchat"
       ELECTRIC_SQL_URL: "http://electric:3000"
+      REDIS_URL: "redis://redis:6379"
     volumes:
       - .env:/app/.env
 
@@ -48,5 +49,58 @@ services:
       postgres:
         condition: service_healthy
 
+  redis:
+    image: redis:latest
+    ports:
+      - 6379
+    volumes:
+      - redis-data:/data
+
+  minio:
+    image: minio/minio:latest
+    ports:
+      - 9000
+      - 9001
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_REGION_NAME: us-east-1
+      # Webhook notification configuration
+      MINIO_NOTIFY_WEBHOOK_ENABLE_primary: "on"
+      MINIO_NOTIFY_WEBHOOK_ENDPOINT_primary: "http://boreal.chat:3000/api/webhook/s3"
+      MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_primary: ""
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  minio-setup:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Configuring MinIO webhook notifications...';
+      mc alias set local http://minio:9000 minioadmin minioadmin;
+      echo 'Creating bucket if it does not exist...';
+      mc mb local/borealchat-files --ignore-existing;
+      echo 'Setting up webhook notification...';
+      mc event add local/borealchat-files arn:minio:sqs::primary:webhook --event put;
+      echo 'Webhook notification setup complete!';
+      echo 'Configuration:';
+      echo '- Bucket: borealchat-files';
+      echo '- Webhook: http://boreal.chat:3000/api/webhook/s3';
+      echo '- Events: s3:ObjectCreated:Put';
+      mc event list local/borealchat-files;
+      "
+    restart: "no"
+
 volumes:
   postgres-data:
+  redis-data:
+  minio-data:

@@ -43,6 +43,8 @@
   import { verifySession } from "$lib/client/services/turnstile.svelte";
   import OptionsMenu from "./OptionsMenu.svelte";
   import { ICON_MAP } from "../icons/iconMap";
+  import UploadFileButton from "./UploadFileButton.svelte";
+  import { FILES_FEATURE_FLAG, getFeatureFlag } from "$lib/common/featureFlags";
 
   interface Props {
     /**
@@ -423,6 +425,10 @@
               <FileTextIcon class="h-4 w-4" />
             </Button>
           </DraftManager>
+
+          {#if getFeatureFlag(FILES_FEATURE_FLAG).enabled}
+            <UploadFileButton />
+          {/if}
 
           <OptionsMenu
             selectedModel={actualSelectedModel}

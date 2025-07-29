@@ -120,6 +120,13 @@
       "when": 1753559626055,
       "tag": "0016_far_next_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1753819784434,
+      "tag": "0017_dark_tarantula",
+      "breakpoints": true
     }
   ]
 }

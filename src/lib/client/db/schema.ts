@@ -3,6 +3,7 @@ import { SUBSCRIPTION_PLANS, SUBSCRIPTION_STATUS, USER_ROLES } from "../../commo
 import { createChatTables } from "../../common/schema/chats";
 import { createDraftsTable } from "../../common/schema/drafts";
 import { createByokTable } from "../../common/schema/byok";
+import { createFilesTable } from "../../common/schema/files";
 
 export const userTable = pgTable("user", {
   id: uuid().defaultRandom().primaryKey(),
@@ -28,6 +29,12 @@ const { chatTable, threadTable, messageTable, messageSegmentsTable, messageSegme
 
 const { draftsTable } = createDraftsTable(userTable, true);
 
+const { assetTable, draftAttachmentTable, messageAttachmentTable } = createFilesTable(
+  messageTable,
+  draftsTable,
+  true,
+);
+
 export {
   byokTable,
   chatTable,
@@ -36,4 +43,7 @@ export {
   messageSegmentsTable,
   messageSegmentUsageTable,
   draftsTable,
+  assetTable,
+  draftAttachmentTable,
+  messageAttachmentTable,
 };

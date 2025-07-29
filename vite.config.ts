@@ -13,6 +13,11 @@ const dirname =
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      external: ["sharp"],
+    },
+  },
   plugins: [
     sentrySvelteKit({
       sourceMapsUploadOptions: {

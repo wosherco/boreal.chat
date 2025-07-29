@@ -56,7 +56,7 @@ import {
   setPasswordResetSessionTokenCookie,
   validatePasswordResetSessionRequest,
 } from "$lib/server/services/auth/passwordReset";
-import { passwordSchema } from "$lib/common/validators/chat";
+import { passwordSchema } from "$lib/common/validators/auth";
 import * as Sentry from "@sentry/sveltekit";
 import { constantTimeEquals } from "$lib/server/services/auth/utils";
 import { verifyAnonymousSession } from "$lib/server/services/auth/anonymous";

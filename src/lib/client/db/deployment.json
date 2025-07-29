@@ -148,5 +148,18 @@
       "ALTER TABLE \"chats\" ADD COLUMN \"byok_id\" uuid;",
       "ALTER TABLE \"byok\" ADD CONSTRAINT \"byok_user_id_user_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"user\"(\"id\") ON DELETE no action ON UPDATE no action;"
     ]
+  },
+  {
+    "idx": 15,
+    "when": 1753819787586,
+    "tag": "0015_talented_ser_duncan",
+    "hash": "a0b20530016a188fb1e3a129f9b2cd6dee4d18242ef8bd36649755f90280d735",
+    "sql": [
+      "CREATE TABLE \"assets\" (\"id\" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,\"user_id\" uuid NOT NULL,\"asset_type\" varchar(50) NOT NULL,\"asset_id\" uuid NOT NULL,\"name\" text NOT NULL,CONSTRAINT \"assets_assetId_assetType_unique\" UNIQUE(\"asset_id\",\"asset_type\"));",
+      "CREATE TABLE \"draft_attachments\" (\"id\" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,\"draft_id\" uuid NOT NULL,\"asset_id\" uuid NOT NULL);",
+      "CREATE TABLE \"message_attachments\" (\"id\" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,\"message_id\" uuid NOT NULL,\"asset_id\" uuid NOT NULL);",
+      "ALTER TABLE \"byok\" DROP CONSTRAINT \"byok_user_id_user_id_fk\";",
+      "CREATE INDEX \"assets_asset_id_index\" ON \"assets\" USING btree (\"asset_id\");"
+    ]
   }
 ]

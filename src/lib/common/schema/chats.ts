@@ -116,7 +116,7 @@ export const createChatTables = (userTableFromSchema: typeof userTable, isClient
         foreignKey({
           columns: [t.parentMessageId],
           foreignColumns: [t.id],
-        }).onDelete("cascade"),
+        }).onDelete("set null"),
     ],
   );
 
