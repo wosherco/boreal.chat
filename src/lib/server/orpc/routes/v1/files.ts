@@ -21,10 +21,7 @@ export const v1FilesRouter = osBase.router({
       z.object({
         fileName: z.string(),
         contentType: z.string(),
-        size: z
-          .number()
-          .min(1)
-          .max(MINIMUM_SIZE_FOR_MULTIPART + 1),
+        size: z.number().min(1).max(MINIMUM_SIZE_FOR_MULTIPART),
         hash: hashStringSchema,
       }),
     )
