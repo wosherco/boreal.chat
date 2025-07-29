@@ -35,3 +35,5 @@ export const s3FileTable = pgTable(
   },
   (t) => [unique().on(t.hash, t.userId), index().on(t.userId)],
 );
+
+export type DBS3File = typeof s3FileTable.$inferSelect;

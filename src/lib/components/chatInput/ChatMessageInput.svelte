@@ -44,11 +44,7 @@
   import OptionsMenu from "./OptionsMenu.svelte";
   import { ICON_MAP } from "../icons/iconMap";
   import UploadFileButton from "./UploadFileButton.svelte";
-  import {
-    FILES_FEATURE_FLAG,
-    getFeatureFlag,
-    getFlagsmithContext,
-  } from "$lib/common/featureFlags";
+  import { FILES_FEATURE_FLAG, getFeatureFlag } from "$lib/common/featureFlags";
 
   interface Props {
     /**

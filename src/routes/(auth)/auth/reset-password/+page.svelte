@@ -1,5 +1,6 @@
 <script lang="ts" module>
   import { z } from "zod";
+  import { passwordSchema } from "$lib/common/validators/auth";
 
   const formSchema = z.object({
     password: passwordSchema,
@@ -19,7 +20,6 @@
   import { orpcQuery } from "$lib/client/orpc";
   import { toast } from "svelte-sonner";
   import AuthBackArrow from "$lib/components/auth/AuthBackArrow.svelte";
-  import { passwordSchema } from "$lib/common/validators/chat";
 
   onMount(() => {
     const passwordInput = document.querySelector("input[name='password']") as HTMLInputElement;

@@ -1,4 +1,4 @@
-import type { DBS3File } from "$lib/common/schema/files";
+import type { DBS3File } from "$lib/server/db/schema/files";
 import { IMAGE_MIME_TYPES } from "$lib/common/utils/files";
 import { db } from "$lib/server/db";
 import { s3FileTable } from "$lib/server/db/schema";

@@ -1,6 +1,6 @@
 <script lang="ts" module>
   import { z } from "zod";
-  import { passwordSchema } from "$lib/common/validators/chat";
+  import { passwordSchema } from "$lib/common/validators/auth";
 
   const formSchema = z.object({
     name: z.string().min(1).max(255),
