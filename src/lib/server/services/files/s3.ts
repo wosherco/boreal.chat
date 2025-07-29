@@ -332,9 +332,11 @@ export async function deleteFile(fileId: string) {
       throw new Error("File not found");
     }
 
-    await deleteS3File(file.key);
+    await tx
+      .delete(assetTable)
+      .where(and(eq(assetTable.id, file.id), eq(assetTable.assetType, "s3_file")));
 
-    await tx.delete(assetTable).where(eq(assetTable.id, file.id));
+    await deleteS3File(file.key);
   });
 }
 
