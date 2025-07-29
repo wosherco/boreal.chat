@@ -23,7 +23,6 @@ import { z } from "zod/v4";
 import { signJwt } from "$lib/server/jwt";
 import { generateStreamHash } from "$lib/server/utils/crypto";
 import Aigle from "aigle";
-import { cleanFileName } from "$lib/server/utils/files";
 
 export class FileAttachmentsNotEnabledError extends Error {
   constructor() {
@@ -51,9 +50,9 @@ function getS3Client() {
   return clientCache;
 }
 
-export function createFileIdentifier(userId: string, fileName: string) {
+export function createFileIdentifier(userId: string) {
   const id = crypto.randomUUID();
-  const key = `${userId}/${id}-${cleanFileName(fileName)}`;
+  const key = `${userId}/${id}`;
 
   return {
     id,
@@ -70,7 +69,7 @@ export async function createFile(
     hash?: string | null;
   },
 ) {
-  const { id, key } = createFileIdentifier(userId, params.fileName);
+  const { id, key } = createFileIdentifier(userId);
 
   const [s3File] = await db
     .insert(s3FileTable)
@@ -107,7 +106,7 @@ export async function generateSinglePartUploadParams(
   hash: string,
 ) {
   const client = getS3Client();
-  const { key, id } = createFileIdentifier(userId, fileName);
+  const { key, id } = createFileIdentifier(userId);
 
   const uploadToken = await signJwt({
     fileId: id,
@@ -149,7 +148,7 @@ export async function generateMultiPartUploadParams(
 ) {
   const client = getS3Client();
 
-  const { key, id } = createFileIdentifier(userId, fileName);
+  const { key, id } = createFileIdentifier(userId);
 
   const uploadToken = await signJwt({
     fileId: id,
