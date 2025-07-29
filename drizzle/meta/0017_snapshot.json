@@ -1,5 +1,5 @@
 {
-  "id": "02b02900-1f68-4727-8890-8a4aec5e17f3",
+  "id": "d0793cf5-aca8-4d75-affa-7a934d3e37a5",
   "prevId": "c154d64e-e2b2-4014-8b2e-0f4d34989ddd",
   "version": "7",
   "dialect": "postgresql",
@@ -1931,7 +1931,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "s3_file_user_id_index": {
+          "name": "s3_file_user_id_index",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "s3_file_user_id_user_id_fk": {
           "name": "s3_file_user_id_user_id_fk",

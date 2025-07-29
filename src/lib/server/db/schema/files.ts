@@ -18,7 +18,7 @@ export const s3FileTable = pgTable(
     id: uuid().defaultRandom().primaryKey(),
     userId: uuid()
       .notNull()
-      .references(() => userTable.id, { onDelete: "cascade" }),
+      .references(() => userTable.id, { onDelete: "no action" }), // We don't want to delete the file if the user is deleted, we should know dangling files
 
     // S3 Details
     key: text().notNull().unique(),

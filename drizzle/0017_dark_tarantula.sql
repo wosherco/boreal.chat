@@ -44,5 +44,6 @@ ALTER TABLE "message_attachments" ADD CONSTRAINT "message_attachments_message_id
 ALTER TABLE "message_attachments" ADD CONSTRAINT "message_attachments_asset_id_assets_id_fk" FOREIGN KEY ("asset_id") REFERENCES "public"."assets"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "s3_file" ADD CONSTRAINT "s3_file_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "assets_asset_id_index" ON "assets" USING btree ("asset_id");--> statement-breakpoint
+CREATE INDEX "s3_file_user_id_index" ON "s3_file" USING btree ("user_id");--> statement-breakpoint
 ALTER TABLE "messages" ADD CONSTRAINT "messages_parent_message_id_messages_id_fk" FOREIGN KEY ("parent_message_id") REFERENCES "public"."messages"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "byok" ADD CONSTRAINT "byok_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
