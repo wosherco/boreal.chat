@@ -423,7 +423,7 @@ export async function getTotalFileUsage(userId: string): Promise<number> {
     .from(s3FileTable)
     .where(eq(s3FileTable.userId, userId));
 
-  const parsed = Number(result?.totalSize ?? -1);
+  const parsed = Number(result?.totalSize ?? 0);
 
-  return isNaN(parsed) ? -1 : parsed;
+  return isNaN(parsed) ? 0 : parsed;
 }
