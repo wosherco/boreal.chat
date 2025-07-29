@@ -1,4 +1,5 @@
-import { CHUNK_SIZE, getPartCount, isMultiPart } from "$lib/common/utils/files";
+import { CHUNK_SIZE, getPartCount, isMultiPart, MAX_FILE_SIZE } from "$lib/common/utils/files";
+import { backOff } from "exponential-backoff";
 import { orpc } from "../orpc";
 import { hashFileSmart } from "../utils/crypto";
 import Aigle from "aigle";
@@ -39,12 +40,19 @@ async function chunkFile(file: File) {
   return chunks;
 }
 
-export async function uploadFile(file: File): Promise<{ assetId: string }> {
-  const multipart = isMultiPart(file.size);
+async function uploadSinglePartFile(file: File): Promise<{ assetId: string }> {
+  let hash: string;
+  try {
+    hash = await hashFileSmart(file);
+  } catch (e) {
+    console.error(e);
+    throw new Error("Failed to hash file");
+  }
 
-  if (!multipart) {
-    const hash = await hashFileSmart(file);
+  let presignedUrl: string;
+  let uploadToken: string;
 
+  try {
     const singleFileUploadPayload = await orpc.v1.files.uploadSinglePartFile({
       fileName: file.name,
       contentType: file.type,
@@ -58,10 +66,31 @@ export async function uploadFile(file: File): Promise<{ assetId: string }> {
       };
     }
 
-    const { presignedUrl, uploadToken } = singleFileUploadPayload.data;
+    presignedUrl = singleFileUploadPayload.data.presignedUrl;
+    uploadToken = singleFileUploadPayload.data.uploadToken;
+  } catch (e) {
+    console.error(e);
+    throw new Error("Failed to prepare upload");
+  }
 
-    await uploadPart(presignedUrl, file);
+  try {
+    await backOff(() => uploadPart(presignedUrl, file), {
+      numOfAttempts: 3,
+      timeMultiple: 2,
+      jitter: "full",
+      retry(e, attemptNumber) {
+        console.warn(`[${file.name}] Failed to upload part`, e);
+        console.warn(`[${file.name}] Failed in attempt ${attemptNumber}, Retrying...`);
 
+        return true;
+      },
+    });
+  } catch (e) {
+    console.error(e);
+    throw new Error("Failed to upload file");
+  }
+
+  try {
     const finishUploadPayload = await orpc.v1.files.finishSinglePartFile({
       uploadToken,
     });
@@ -69,42 +98,115 @@ export async function uploadFile(file: File): Promise<{ assetId: string }> {
     return {
       assetId: finishUploadPayload.assetId,
     };
+  } catch (e) {
+    console.error(e);
+    throw new Error("Failed to finish upload");
+    // Maybe here we can assumed it finished, but we need to retrieve the asset id anyways
+  }
+}
+
+export async function uploadFile(file: File): Promise<{ assetId: string }> {
+  if (file.size <= 0) {
+    throw new Error("Invalid file size");
   }
 
-  const [chunks, hash] = await Promise.all([chunkFile(file), hashFileSmart(file)]);
-
-  const presignedData = await orpc.v1.files.uploadMultiPartFile({
-    fileName: file.name,
-    contentType: file.type,
-    size: file.size,
-    hash,
-  });
-
-  if (presignedData.existing) {
-    return {
-      assetId: presignedData.data.assetId,
-    };
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error("File is too big");
   }
 
-  const parts = await Aigle.mapLimit(presignedData.data.parts, 1, async (part) => {
-    const chunk = chunks[part.partNumber - 1];
+  const multipart = isMultiPart(file.size);
 
-    const { etag } = await uploadPart(part.presignedUrl, chunk);
+  if (!multipart) {
+    return uploadSinglePartFile(file);
+  }
 
-    return {
-      etag,
-      partNumber: part.partNumber,
-    };
-  });
+  let chunks: Blob[];
+  let hash: string;
+
+  try {
+    [chunks, hash] = await Promise.all([chunkFile(file), hashFileSmart(file)]);
+  } catch (e) {
+    console.error(e);
+    throw new Error("Failed to hash or chunk file");
+  }
+
+  let parts: {
+    partNumber: number;
+    presignedUrl: string;
+  }[];
+  let uploadId: string;
+  let uploadToken: string;
+
+  try {
+    const presignedData = await orpc.v1.files.uploadMultiPartFile({
+      fileName: file.name,
+      contentType: file.type,
+      size: file.size,
+      hash,
+    });
+
+    if (presignedData.existing) {
+      return {
+        assetId: presignedData.data.assetId,
+      };
+    }
+
+    uploadId = presignedData.data.uploadId;
+    uploadToken = presignedData.data.uploadToken;
+    parts = presignedData.data.parts;
+  } catch (e) {
+    console.error(e);
+    throw new Error("Failed to prepare upload");
+  }
+
+  let uploadedParts: { etag: string; partNumber: number }[];
+
+  try {
+    uploadedParts = await Aigle.mapLimit(parts, 4, async (part) => {
+      const chunk = chunks[part.partNumber - 1];
+
+      try {
+        const { etag } = await backOff(() => uploadPart(part.presignedUrl, chunk), {
+          numOfAttempts: 3,
+          timeMultiple: 2,
+          jitter: "full",
+          retry(e, attemptNumber) {
+            console.warn(`[${file.name}-${part.partNumber}] Failed to upload part`, e);
+            console.warn(
+              `[${file.name}-${part.partNumber}] Failed in attempt ${attemptNumber}, Retrying...`,
+            );
+
+            return true;
+          },
+        });
+
+        return {
+          etag,
+          partNumber: part.partNumber,
+        };
+      } catch (e) {
+        console.error(e);
+        throw new Error("Failed to upload part");
+      }
+    });
+  } catch (e) {
+    console.error(e);
+    throw new Error("Failed to upload parts");
+  }
 
   // Finishing the upload
-  const finishUploadPayload = await orpc.v1.files.finishMultiPartUpload({
-    uploadId: presignedData.data.uploadId,
-    uploadToken: presignedData.data.uploadToken,
-    parts: parts,
-  });
+  try {
+    const finishUploadPayload = await orpc.v1.files.finishMultiPartUpload({
+      uploadId,
+      uploadToken,
+      parts: uploadedParts,
+    });
 
-  return {
-    assetId: finishUploadPayload.assetId,
-  };
+    return {
+      assetId: finishUploadPayload.assetId,
+    };
+  } catch (e) {
+    console.error(e);
+    throw new Error("Failed to finish upload");
+  }
 }
