@@ -1,9 +1,12 @@
 import { userTable } from "./users";
 import { createFilesTable } from "../../../common/schema/files";
 import { pgTable, uuid, text, integer, timestamp, unique, index } from "drizzle-orm/pg-core";
+import { messageTable } from "./chats";
+import { draftsTable } from "./drafts";
 
 const { assetTable, draftAttachmentTable, messageAttachmentTable } = createFilesTable(
-  userTable,
+  messageTable,
+  draftsTable,
   false,
 );
 

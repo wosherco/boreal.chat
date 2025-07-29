@@ -30,7 +30,8 @@ const { chatTable, threadTable, messageTable, messageSegmentsTable, messageSegme
 const { draftsTable } = createDraftsTable(userTable, true);
 
 const { assetTable, draftAttachmentTable, messageAttachmentTable } = createFilesTable(
-  userTable,
+  messageTable,
+  draftsTable,
   true,
 );
 

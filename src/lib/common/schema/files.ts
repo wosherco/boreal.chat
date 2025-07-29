@@ -1,10 +1,12 @@
 import { pgTable, uuid, text, foreignKey, varchar, unique, index } from "drizzle-orm/pg-core";
-import type { userTable } from "../../client/db/schema";
+import type { draftsTable, messageTable } from "../../client/db/schema";
 import { ASSET_TYPES } from "..";
-import { createDraftsTable } from "./drafts";
-import { createChatTables } from "./chats";
 
-export const createFilesTable = (userTableFromSchema: typeof userTable, isClient: boolean) => {
+export const createFilesTable = (
+  messageTableFromSchema: typeof messageTable,
+  draftsTableFromSchema: typeof draftsTable,
+  isClient: boolean,
+) => {
   const assetTable = pgTable(
     "assets",
     {
@@ -30,7 +32,7 @@ export const createFilesTable = (userTableFromSchema: typeof userTable, isClient
       !isClient &&
         foreignKey({
           columns: [t.draftId],
-          foreignColumns: [createDraftsTable(userTableFromSchema, isClient).draftsTable.id],
+          foreignColumns: [draftsTableFromSchema.id],
         }).onDelete("cascade"),
       !isClient &&
         foreignKey({
@@ -51,7 +53,7 @@ export const createFilesTable = (userTableFromSchema: typeof userTable, isClient
       !isClient &&
         foreignKey({
           columns: [t.messageId],
-          foreignColumns: [createChatTables(userTableFromSchema, isClient).messageTable.id],
+          foreignColumns: [messageTableFromSchema.id],
         }).onDelete("cascade"),
       !isClient &&
         foreignKey({
