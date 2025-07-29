@@ -1,5 +1,9 @@
 import { env } from "$env/dynamic/private";
-import { CHUNK_SIZE, getPartCount, type MultiPartUploadParams } from "$lib/common/utils/files";
+import {
+  getPartCount,
+  calculateChunkContentLength,
+  type MultiPartUploadParams,
+} from "$lib/common/utils/files";
 import { db } from "$lib/server/db";
 import { assetTable, s3FileTable } from "$lib/server/db/schema";
 import {
@@ -176,8 +180,6 @@ export async function generateMultiPartUploadParams(
 
   const partCount = getPartCount(size);
 
-  const danglingSize = size % CHUNK_SIZE;
-
   const parts: MultiPartUploadParams["parts"] = await Aigle.mapLimit(
     new Array(partCount).fill(0),
     10,
@@ -190,7 +192,7 @@ export async function generateMultiPartUploadParams(
         Key: key,
         PartNumber: partNumber,
         UploadId: result.UploadId,
-        ContentLength: isLastPart ? danglingSize : CHUNK_SIZE,
+        ContentLength: calculateChunkContentLength(isLastPart, size),
       });
 
       const presignedUrl = await getSignedUrl(client, command, {

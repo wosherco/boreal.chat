@@ -64,6 +64,7 @@ services:
       MINIO_REGION_NAME: us-east-1
       # Webhook notification configuration
       MINIO_NOTIFY_WEBHOOK_ENABLE_primary: "on"
+      # If webhook doesn't work (you're on windows or mac), you might need to switch to the hostname host.docker.internal
       MINIO_NOTIFY_WEBHOOK_ENDPOINT_primary: "http://172.17.0.1:5173/api/webhook/s3"
       MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_primary: ""
     volumes:
@@ -82,12 +83,13 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
+      set -e;
       echo 'Configuring MinIO webhook notifications...';
       mc alias set local http://minio:9000 minioadmin minioadmin;
       echo 'Creating bucket if it does not exist...';
       mc mb local/borealchat-files --ignore-existing;
       echo 'Setting up webhook notification...';
-      mc event add local/borealchat-files arn:minio:sqs::primary:webhook --event put;
+      mc event add local/borealchat-files arn:minio:sqs::primary:webhook --event put || echo 'Webhook already configured';
       echo 'Webhook notification setup complete!';
       echo 'Configuration:';
       echo '- Bucket: borealchat-files';

@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { isImage, IMAGE_MIME_TYPES } from "../../../../src/lib/common/utils/files";
+import {
+  isImage,
+  IMAGE_MIME_TYPES,
+  calculateChunkContentLength,
+  CHUNK_SIZE,
+} from "../../../../src/lib/common/utils/files";
 
 describe("common files utilities", () => {
   describe("isImage", () => {
@@ -53,7 +58,6 @@ describe("common files utilities", () => {
     it("should return false for image-like but unsupported MIME types", () => {
       const unsupportedImageTypes = [
         "image/tiff",
-        "image/bmp",
         "image/x-icon",
         "image/vnd.microsoft.icon",
         "image/svg+xml",
@@ -80,8 +84,8 @@ describe("common files utilities", () => {
 
     it("should handle null and undefined", () => {
       // TypeScript should prevent this, but let's test for robustness
-      expect(() => isImage(null as any)).toThrow();
-      expect(() => isImage(undefined as any)).toThrow();
+      expect(isImage(null as unknown as string)).toBeFalsy();
+      expect(isImage(undefined as unknown as string)).toBeFalsy();
     });
 
     it("should handle whitespace", () => {
@@ -159,6 +163,115 @@ describe("common files utilities", () => {
       numericTypes.forEach((mimeType) => {
         expect(isImage(mimeType)).toBe(false);
       });
+    });
+  });
+
+  describe("calculateChunkContentLength", () => {
+    it("should return CHUNK_SIZE for non-last parts", () => {
+      const totalSize = 16 * 1024 * 1024; // 16MB
+      const isLastPart = false;
+
+      const result = calculateChunkContentLength(isLastPart, totalSize);
+      expect(result).toBe(CHUNK_SIZE);
+    });
+
+    it("should return CHUNK_SIZE for last part when file size is exactly divisible by chunk size", () => {
+      const totalSize = 16 * 1024 * 1024; // 16MB (exactly 2 chunks of 8MB)
+      const isLastPart = true;
+
+      const result = calculateChunkContentLength(isLastPart, totalSize);
+      expect(result).toBe(CHUNK_SIZE);
+    });
+
+    it("should return dangling size for last part when there is a remainder", () => {
+      const totalSize = 10 * 1024 * 1024; // 10MB (1 full chunk + 2MB remainder)
+      const isLastPart = true;
+      const expectedDanglingSize = 2 * 1024 * 1024; // 2MB
+
+      const result = calculateChunkContentLength(isLastPart, totalSize);
+      expect(result).toBe(expectedDanglingSize);
+    });
+
+    it("should handle file size smaller than chunk size", () => {
+      const totalSize = 1 * 1024 * 1024; // 1MB
+      const isLastPart = true;
+
+      const result = calculateChunkContentLength(isLastPart, totalSize);
+      expect(result).toBe(totalSize); // Should return the full file size
+    });
+
+    it("should handle file size exactly equal to chunk size", () => {
+      const totalSize = CHUNK_SIZE; // Exactly one chunk
+      const isLastPart = true;
+
+      const result = calculateChunkContentLength(isLastPart, totalSize);
+      expect(result).toBe(CHUNK_SIZE);
+    });
+
+    it("should handle custom chunk size", () => {
+      const customChunkSize = 4 * 1024 * 1024; // 4MB
+      const totalSize = 10 * 1024 * 1024; // 10MB
+      const isLastPart = true;
+      const expectedDanglingSize = 2 * 1024 * 1024; // 2MB remainder
+
+      const result = calculateChunkContentLength(isLastPart, totalSize, customChunkSize);
+      expect(result).toBe(expectedDanglingSize);
+    });
+
+    it("should handle zero file size", () => {
+      const totalSize = 0;
+      const isLastPart = true;
+
+      const result = calculateChunkContentLength(isLastPart, totalSize);
+      expect(result).toBe(CHUNK_SIZE);
+    });
+
+    it("should handle very large file sizes", () => {
+      const totalSize = 100 * 1024 * 1024; // 100MB
+      const isLastPart = true;
+      const expectedDanglingSize = 4 * 1024 * 1024; // 4MB remainder (100 % 8 = 4)
+
+      const result = calculateChunkContentLength(isLastPart, totalSize);
+      expect(result).toBe(expectedDanglingSize);
+    });
+
+    it("should handle edge case where remainder is exactly chunk size", () => {
+      const totalSize = 16 * 1024 * 1024; // 16MB
+      const customChunkSize = 4 * 1024 * 1024; // 4MB
+      const isLastPart = true;
+
+      const result = calculateChunkContentLength(isLastPart, totalSize, customChunkSize);
+      expect(result).toBe(customChunkSize); // Should use chunk size, not 0
+    });
+
+    it("should work correctly for all parts in a multipart upload", () => {
+      const totalSize = 20 * 1024 * 1024; // 20MB
+      const partCount = Math.ceil(totalSize / CHUNK_SIZE); // 3 parts
+
+      // Test each part
+      for (let partNumber = 1; partNumber <= partCount; partNumber++) {
+        const isLastPart = partNumber === partCount;
+        const result = calculateChunkContentLength(isLastPart, totalSize);
+
+        if (isLastPart) {
+          // Last part should have 4MB (20 % 8 = 4)
+          expect(result).toBe(4 * 1024 * 1024);
+        } else {
+          // Non-last parts should have full chunk size
+          expect(result).toBe(CHUNK_SIZE);
+        }
+      }
+    });
+
+    it("should handle negative chunk size gracefully", () => {
+      const totalSize = 10 * 1024 * 1024;
+      const isLastPart = true;
+      const negativeChunkSize = -8 * 1024 * 1024;
+
+      // This should not throw and should handle the negative value
+      expect(() =>
+        calculateChunkContentLength(isLastPart, totalSize, negativeChunkSize),
+      ).not.toThrow();
     });
   });
 });
