@@ -18,7 +18,7 @@ export const s3FileTable = pgTable(
     id: uuid().defaultRandom().primaryKey(),
     userId: uuid()
       .notNull()
-      .references(() => userTable.id),
+      .references(() => userTable.id, { onDelete: "cascade" }),
 
     // S3 Details
     key: text().notNull().unique(),

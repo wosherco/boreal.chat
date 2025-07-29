@@ -61,8 +61,6 @@
 
   let { textAreaElement = $bindable(), draft, isUserSubscribed }: Props = $props();
 
-  const flagsmith = getFlagsmithContext();
-
   let value = $state(page.url.searchParams.get("prompt") ?? "");
   let loading = $state(false);
   let prevDraftId = $state<string | undefined>(undefined);
