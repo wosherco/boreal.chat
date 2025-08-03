@@ -10,7 +10,6 @@
   import { fade } from "svelte/transition";
   import { onMount } from "svelte";
   import { afterNavigate } from "$app/navigation";
-  import type { Draft } from "$lib/common/sharedTypes";
 
   const { data, children }: LayoutProps = $props();
 

@@ -9,12 +9,6 @@ export const setPossiblySPAData = <T>(data: PossiblySPAData<T>): PossiblySPAData
 export type ServerData<T> = T | Promise<T> | null;
 export type ServerDataGetter<T> = () => ServerData<T>;
 
-export interface HydratableDataResult<T> {
-  loading: boolean;
-  ssr: boolean;
-  data: T | null;
-}
-
 export type CurrentUserInfo = {
   authenticated: boolean;
   data: UserInfo | null;

@@ -32,7 +32,7 @@
   import { orpc } from "$lib/client/orpc";
   import { toast } from "svelte-sonner";
   import { mode, setMode } from "mode-watcher";
-  import type { Chat, CurrentUserInfo, HydratableDataResult } from "$lib/common/sharedTypes";
+  import type { Chat, CurrentUserInfo } from "$lib/common/sharedTypes";
   import VirtualizedChatList from "./chatList/VirtualizedChatList.svelte";
   import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
   import BetaBadge from "./BetaBadge.svelte";
