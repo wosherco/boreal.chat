@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
+  import { createCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import {
     BrainIcon,
     CalculatorIcon,
@@ -24,7 +24,7 @@
 
   const { data }: PageProps = $props();
 
-  const currentUser = useCurrentUser(data.auth.currentUserInfo);
+  const currentUser = createCurrentUser(() => data.auth.currentUserInfo);
 
   interface PrewrittenPrompt {
     prompt: string;
@@ -75,8 +75,8 @@
 {/snippet}
 
 <div class="flex h-full w-full flex-col items-center justify-center px-4 pb-24">
-  {#if $currentUser.data?.authenticated && $currentUser.data?.data}
-    <h1 class="text-2xl font-bold">👋 Welcome back, {$currentUser.data.data.name}!</h1>
+  {#if currentUser.data?.authenticated && currentUser.data?.data}
+    <h1 class="text-2xl font-bold">👋 Welcome back, {currentUser.data.data.name}!</h1>
     <h2 class="text-muted-foreground text-lg">What do you want to do?</h2>
 
     <div class="flex flex-col items-start gap-1 py-4">

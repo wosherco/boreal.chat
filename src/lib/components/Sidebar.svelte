@@ -43,7 +43,7 @@
   interface Props {
     loading: boolean;
     user: CurrentUserInfo | null;
-    chats: HydratableDataResult<Chat[]>;
+    chats: HydratableQuery<Chat[]>;
     onNewChat?: () => void;
     isPhone?: boolean;
   }
@@ -55,6 +55,7 @@
   import ShortcutsCheatsheetDialog from "./ShortcutsCheatsheetDialog.svelte";
   import SheetClosableOnlyOnPhone from "./utils/SheetClosableOnlyOnPhone.svelte";
   import { isSubscribed } from "$lib/common/utils/subscription";
+  import type { HydratableQuery } from "$lib/client/db/HydratableQuery.svelte";
 
   let shortcutsCheatsheetOpen = $state(false);
 

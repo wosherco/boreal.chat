@@ -14,13 +14,13 @@
   import { toast } from "svelte-sonner";
   import { goto } from "$app/navigation";
   import { groupByDate, currentDate } from "$lib/utils/dates.svelte";
-  import { useArchivedChats } from "$lib/client/hooks/useArchivedChats.svelte";
+  import { createArchivedChats } from "$lib/client/hooks/useArchivedChats.svelte";
   import type { Chat } from "$lib/common/sharedTypes";
 
   const { data }: { data: PageData } = $props();
 
-  const archivedChats = useArchivedChats(data.archivedChats ?? null);
-  const sortedChats = $derived(groupByDate($archivedChats.data ?? [], currentDate()));
+  const archivedChats = createArchivedChats(() => data.archivedChats ?? null);
+  const sortedChats = $derived(groupByDate(archivedChats.data ?? [], currentDate()));
 
   const unarchiveMutation = createMutation(
     orpcQuery.v1.chat.unarchiveChat.mutationOptions({
@@ -113,7 +113,7 @@
   </div>
 {/snippet}
 
-{#if $archivedChats.loading || !$archivedChats.data}
+{#if archivedChats.loading || !archivedChats.data}
   <div class="flex h-full items-center justify-center">
     <Loader2Icon class="h-10 w-10 animate-spin" />
   </div>
@@ -128,7 +128,7 @@
         <div>
           <h1 class="text-2xl font-bold">Archived Chats</h1>
           <p class="text-muted-foreground text-sm">
-            {$archivedChats.data.length} archived {$archivedChats.data.length === 1
+            {archivedChats.data.length} archived {archivedChats.data.length === 1
               ? "chat"
               : "chats"}
           </p>
@@ -136,7 +136,7 @@
       </div>
 
       <!-- Content -->
-      {#if $archivedChats.data.length === 0}
+      {#if archivedChats.data.length === 0}
         <div
           class="text-muted-foreground flex flex-col items-center justify-center py-16 text-center"
         >

@@ -24,7 +24,7 @@
     threadedChat.length > 0 ? threadedChat[threadedChat.length - 1].value : null,
   );
   const latestMessage = $derived(
-    messages.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0],
+    [...messages].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0],
   );
 
   $effect(() => {
@@ -55,7 +55,6 @@
   });
 
   const updateGlobalState = $derived(() => {
-    console.log("UPDATING GLOBAL STATE", lastMessage);
     if (!lastMessage) {
       return;
     }

@@ -1,28 +1,24 @@
-import type { ServerData, BYOKInfo } from "$lib/common/sharedTypes";
+import type { BYOKInfo, ServerDataGetter } from "$lib/common/sharedTypes";
 import { byokTable } from "../db/schema";
-import { createHydratableData } from "./localDbHook";
 import { transformKeyToCamelCaseRecursive } from "./utils";
+import { HydratableQuery } from "../db/HydratableQuery.svelte";
 
-export const useBYOKs = (serverData: ServerData<BYOKInfo[]>) =>
-  createHydratableData<BYOKInfo[], void>(
-    {
-      key: "byoks",
-      query: (db) =>
-        db
-          .select({
-            id: byokTable.id,
-            apiKey: byokTable.apiKey,
-            platform: byokTable.platform,
-            createdAt: byokTable.createdAt,
-            updatedAt: byokTable.updatedAt,
-          })
-          .from(byokTable)
-          .toSQL(),
-      transform: (byokData) =>
-        byokData.map(
-          (byok) => transformKeyToCamelCaseRecursive(byok as Record<string, unknown>) as BYOKInfo,
-        ),
-    },
-    serverData ?? null,
-    () => undefined,
+export const createBYOKs = (serverData: ServerDataGetter<BYOKInfo[]>) =>
+  new HydratableQuery(
+    (db) =>
+      db
+        .select({
+          id: byokTable.id,
+          apiKey: byokTable.apiKey,
+          platform: byokTable.platform,
+          createdAt: byokTable.createdAt,
+          updatedAt: byokTable.updatedAt,
+        })
+        .from(byokTable)
+        .toSQL(),
+    (byokData) =>
+      byokData.map(
+        (byok) => transformKeyToCamelCaseRecursive(byok as Record<string, unknown>) as BYOKInfo,
+      ),
+    serverData,
   );

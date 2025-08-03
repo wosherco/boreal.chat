@@ -8,15 +8,15 @@
   import { page } from "$app/state";
   import SvelteSeo from "svelte-seo";
   import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "$lib/components/ui/card";
-  import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
-  import { useBYOKs } from "$lib/client/hooks/useBYOKs.svelte";
+  import { createCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
+  import { createBYOKs } from "$lib/client/hooks/useBYOKs.svelte";
   import { createMutation } from "@tanstack/svelte-query";
 
   const { data }: PageProps = $props();
 
-  const user = useCurrentUser(data.auth.currentUserInfo);
-  const byoks = useBYOKs(data.byok.byoks ?? null);
-  const openRouterAccount = $derived($byoks?.data?.find((byok) => byok.platform === "openrouter"));
+  const user = createCurrentUser(() => data.auth.currentUserInfo);
+  const byoks = createBYOKs(() => data.byok.byoks ?? null);
+  const openRouterAccount = $derived(byoks.data?.find((byok) => byok.platform === "openrouter"));
 
   const deleteByokAccountMutation = createMutation(
     orpcQuery.v1.byok.delete.mutationOptions({
@@ -45,11 +45,11 @@
       <CardTitle>OpenRouter</CardTitle>
     </CardHeader>
     <CardContent>
-      {#if !$user.data?.authenticated}
+      {#if !user.data?.authenticated}
         <p class="text-muted-foreground text-sm">
           Please log in to manage your OpenRouter connection.
         </p>
-      {:else if $byoks?.loading || !$byoks?.data}
+      {:else if byoks.loading || !byoks.data}
         <div class="text-muted-foreground flex items-center text-sm">
           <Loader2Icon class="mr-2 h-4 w-4 animate-spin" />
           Checking status...
@@ -61,7 +61,7 @@
       {/if}
     </CardContent>
     <CardFooter class="justify-end">
-      {#if !$user.data?.authenticated}
+      {#if !user.data?.authenticated}
         <Button href="/auth">Log In</Button>
       {:else}
         {#await openRouterAccount}

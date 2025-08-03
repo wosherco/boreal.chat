@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
+  import { createCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { ArrowRightIcon, Loader2Icon } from "@lucide/svelte";
   import { Card, CardContent, CardHeader, CardTitle } from "$lib/components/ui/card";
   import SvelteSeo from "svelte-seo";
@@ -9,7 +9,7 @@
 
   const { data }: PageProps = $props();
 
-  const user = useCurrentUser(data.auth.currentUserInfo);
+  const user = createCurrentUser(() => data.auth.currentUserInfo);
 </script>
 
 <SvelteSeo title="Settings | boreal.chat" />
@@ -17,20 +17,20 @@
 <h1 class="text-2xl font-semibold">Account Overview</h1>
 
 <div class="flex flex-col gap-2 pt-4">
-  {#if $user.loading}
+  {#if user.loading}
     <div class="flex items-center justify-center">
       <Loader2Icon class="size-4 animate-spin" />
     </div>
-  {:else if !$user.data?.authenticated || !$user.data?.data}
+  {:else if !user.data?.authenticated || !user.data?.data}
     <Button variant="link" href="/auth" class="w-fit"
       >Please, log in first <ArrowRightIcon /></Button
     >
   {:else}
-    {#if $user.data?.authenticated && !$user.data?.data?.emailVerified}
+    {#if user.data?.authenticated && !user.data?.data?.emailVerified}
       <EmailVerificationAlert />
     {/if}
 
-    <p>👋 Welcome back, {$user.data.data.name}!</p>
+    <p>👋 Welcome back, {user.data.data.name}!</p>
 
     <Card class="w-fit">
       <CardHeader>
@@ -40,13 +40,13 @@
         <div class="flex flex-row items-center gap-4">
           <!-- svelte-ignore a11y_img_redundant_alt -->
           <img
-            src={$user.data.data.profilePicture}
+            src={user.data.data.profilePicture}
             alt="Profile Picture"
             class="size-16 rounded-full"
           />
           <div class="flex flex-col gap-1">
-            <p class="font-semibold">{$user.data.data.name}</p>
-            <p class="text-muted-foreground text-sm">{$user.data.data.email}</p>
+            <p class="font-semibold">{user.data.data.name}</p>
+            <p class="text-muted-foreground text-sm">{user.data.data.email}</p>
           </div>
         </div>
       </CardContent>

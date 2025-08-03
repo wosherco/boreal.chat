@@ -14,10 +14,10 @@
   import { createMutation } from "@tanstack/svelte-query";
   import { toast } from "svelte-sonner";
   import { goto } from "$app/navigation";
-  import { useDeletedChats } from "$lib/client/hooks/useDeletedChats.svelte";
+  import { createDeletedChats } from "$lib/client/hooks/useDeletedChats.svelte";
   const { data }: { data: PageData } = $props();
 
-  const deletedChats = useDeletedChats(data.deletedChats ?? null);
+  const deletedChats = createDeletedChats(() => data.deletedChats ?? null);
 
   const restoreMutation = createMutation(
     orpcQuery.v1.chat.restoreChat.mutationOptions({
@@ -68,7 +68,7 @@
   <title>Deleted Chats | boreal.chat</title>
 </svelte:head>
 
-{#if $deletedChats.loading || !$deletedChats.data}
+{#if deletedChats.loading || !deletedChats.data}
   <div class="flex h-full items-center justify-center">
     <Loader2Icon class="h-10 w-10 animate-spin" />
   </div>
@@ -83,13 +83,13 @@
         <div>
           <h1 class="text-2xl font-bold">Deleted Chats</h1>
           <p class="text-muted-foreground text-sm">
-            {$deletedChats.data.length} deleted {$deletedChats.data.length === 1 ? "chat" : "chats"}
+            {deletedChats.data.length} deleted {deletedChats.data.length === 1 ? "chat" : "chats"}
           </p>
         </div>
       </div>
 
       <!-- Warning -->
-      {#if $deletedChats.data.length > 0}
+      {#if deletedChats.data.length > 0}
         <div class="bg-destructive/10 border-destructive/20 mb-6 rounded-lg border p-4">
           <div class="flex gap-3">
             <AlertTriangleIcon class="text-destructive size-5 flex-shrink-0" />
@@ -105,7 +105,7 @@
       {/if}
 
       <!-- Content -->
-      {#if $deletedChats.data.length === 0}
+      {#if deletedChats.data.length === 0}
         <div
           class="text-muted-foreground flex flex-col items-center justify-center py-16 text-center"
         >
@@ -117,7 +117,7 @@
         </div>
       {:else}
         <div class="grid gap-3">
-          {#each $deletedChats.data as chat (chat.id)}
+          {#each deletedChats.data as chat (chat.id)}
             {@const daysLeft = chat.deletedAt ? getDaysUntilDeletion(chat.deletedAt) : 0}
             <div class="bg-card hover:bg-accent/50 rounded-lg border p-4 transition-colors">
               <div class="flex items-start justify-between gap-4">

@@ -6,7 +6,7 @@
   import type { LayoutProps } from "./$types";
   import posthog from "posthog-js";
   import SearchCommand from "$lib/components/SearchCommand.svelte";
-  import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
+  import { createCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
   import { browser, dev } from "$app/environment";
   import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools";
@@ -54,17 +54,17 @@
     });
   });
 
-  const currentUser = useCurrentUser(data.auth.currentUserInfo);
+  const currentUser = createCurrentUser(() => data.auth.currentUserInfo);
 
   $effect(() => {
-    if ($currentUser.loading || !$currentUser.data) {
+    if (currentUser.loading || !currentUser.data) {
       return;
     }
 
-    if ($currentUser.data.authenticated && $currentUser.data.data) {
-      posthog.identify($currentUser.data.data.id, {
-        email: $currentUser.data.data.email,
-        name: $currentUser.data.data.name,
+    if (currentUser.data.authenticated && currentUser.data.data) {
+      posthog.identify(currentUser.data.data.id, {
+        email: currentUser.data.data.email,
+        name: currentUser.data.data.name,
       });
     } else {
       posthog.reset();

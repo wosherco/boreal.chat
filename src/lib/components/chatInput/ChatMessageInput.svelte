@@ -70,7 +70,6 @@
   let webSearchEnabled = $state<boolean | undefined>(undefined);
   let reasoningLevel = $state<ReasoningLevel | undefined>(undefined);
   let byokId = $state<string | undefined>(undefined);
-  $effect(() => console.log("CURRENT CHAT", getCurrentChatState()));
 
   const actualSelectedModel = $derived(
     selectedModel ?? getCurrentChatState()?.model ?? defaultSelectedModel,

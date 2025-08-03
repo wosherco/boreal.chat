@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
+  import { createCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import SvelteSeo from "svelte-seo";
   import type { PageProps } from "./$types";
   import EmailVerificationAlert from "$lib/components/alerts/EmailVerificationAlert.svelte";
@@ -7,7 +7,7 @@
 
   const { data }: PageProps = $props();
 
-  const currentUser = useCurrentUser(data.auth.currentUserInfo);
+  const currentUser = createCurrentUser(() => data.auth.currentUserInfo);
 </script>
 
 <SvelteSeo title="Authentication | boreal.chat" />
@@ -15,7 +15,7 @@
 <h1 class="text-2xl font-semibold">Authentication</h1>
 <h2 class="text-muted-foreground">Manage your authentication settings.</h2>
 
-{#if $currentUser.data?.authenticated && !$currentUser.data?.data?.emailVerified}
+{#if currentUser.data?.authenticated && !currentUser.data?.data?.emailVerified}
   <EmailVerificationAlert />
 {/if}
 

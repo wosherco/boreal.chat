@@ -9,7 +9,6 @@ import * as schema from "./schema";
 import { drizzle } from "drizzle-orm/pglite";
 import { env } from "$env/dynamic/public";
 import { getTableColumnNames } from "./utils";
-import { getAllCacheValues } from "../hooks/localDbHook";
 import { orpc } from "../orpc";
 import type { ServerCurrentUserInfo } from "$lib/common/sharedTypes";
 import { resetDatabaseInstance } from "./index.svelte";
@@ -245,8 +244,7 @@ export class LocalDatabase {
       },
       key: "boreal-chat-sync-v1",
       onInitialSync: async () => {
-        console.log("Sync done. Refreshing all stores...");
-        getAllCacheValues().forEach((store) => store.refreshQuery());
+        console.log("Sync done");
       },
     });
 
