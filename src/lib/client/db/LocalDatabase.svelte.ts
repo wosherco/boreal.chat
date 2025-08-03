@@ -88,7 +88,7 @@ export class LocalDatabase {
       clearInterval(this.connectionCheckInterval);
     }
 
-    this.connectionCheckInterval = setInterval(async () => {
+    const checkConnection = async () => {
       if (!this.ready) {
         console.log("PGlite is not initialized yet");
         return;
@@ -117,7 +117,9 @@ export class LocalDatabase {
 
       this.offlineState = false;
       this.startShapesSync();
-    }, 5000);
+    };
+
+    this.connectionCheckInterval = setInterval(checkConnection, 5000);
   }
 
   private async startShapesSync() {

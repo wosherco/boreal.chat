@@ -90,6 +90,10 @@ export class HydratableQuery<T, TArgs = void> {
           },
         });
       });
+
+      return () => {
+        abortController.abort();
+      };
     });
   }
 

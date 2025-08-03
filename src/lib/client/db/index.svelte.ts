@@ -20,6 +20,7 @@ export async function resetDatabaseInstance() {
   }
 
   currentDbInstance = new LocalDatabase();
+  await currentDbInstance.waitForReady;
 
   await invalidateAll();
 }
