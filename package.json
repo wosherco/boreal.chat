@@ -141,6 +141,7 @@
     "aigle": "^1.14.1",
     "arctic": "^3.7.0",
     "async-lock": "^1.4.1",
+    "bottleneck": "^2.19.5",
     "drizzle-orm": "^0.44.2",
     "fast-tree-builder": "^2.0.1",
     "flagsmith": "^9.3.0",
