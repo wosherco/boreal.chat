@@ -119,6 +119,8 @@ export class LocalDatabase {
       this.startShapesSync();
     };
 
+    void checkConnection();
+
     this.connectionCheckInterval = setInterval(checkConnection, 5000);
   }
 
