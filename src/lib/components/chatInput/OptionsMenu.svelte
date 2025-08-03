@@ -15,7 +15,7 @@
   import { MODEL_DETAILS, type ModelId } from "$lib/common/ai/models";
   import Button from "../ui/button/button.svelte";
   import ModelPickerContent from "./ModelPickerPopover/ModelPickerPopoverContent.svelte";
-  import { useBYOKs } from "$lib/client/hooks/useBYOKs.svelte";
+  import { createBYOKs } from "$lib/client/hooks/useBYOKs.svelte";
   import { Switch } from "../ui/switch";
 
   interface Props {
@@ -56,10 +56,10 @@
     }
   });
 
-  const byoks = useBYOKs(null);
+  const byoks = createBYOKs(() => null);
 
   // For now we just a single byok, openrouter. In the future we need to add a menu.
-  const openRouterByok = $derived($byoks?.data?.find((byok) => byok.platform === "openrouter"));
+  const openRouterByok = $derived(byoks.data?.find((byok) => byok.platform === "openrouter"));
   const hasBYOKs = $derived(!!openRouterByok);
 
   function toggleBYOK() {

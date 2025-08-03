@@ -111,7 +111,7 @@ export async function createUser(
 export async function finishLogin(userId: string, anonymousId?: string) {
   if (anonymousId) {
     try {
-      await convertAnonymousUser(anonymousId, userId, true);
+      await convertAnonymousUser(anonymousId, userId, false);
     } catch (e) {
       Sentry.captureException(e, {
         tags: {

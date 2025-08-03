@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
-  import { useDraft } from "$lib/client/hooks/useDraft.svelte";
+  import { createCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
+  import { createDraft } from "$lib/client/hooks/useDraft.svelte";
   import { isSubscribed } from "$lib/common/utils/subscription";
   import ChatMessageInput from "$lib/components/chatInput/ChatMessageInput.svelte";
   import { getDraftIdFromUrl } from "$lib/utils/drafts";
@@ -75,9 +75,12 @@
 
   // Draft functionality
   const currentDraftId = $derived(getDraftIdFromUrl(page.url));
-  const currentDraft = $derived(useDraft(currentDraftId, data.draft ?? null));
+  const currentDraft = createDraft(
+    () => data.draft ?? null,
+    () => currentDraftId,
+  );
 
-  const currentUser = useCurrentUser(data.auth.currentUserInfo);
+  const currentUser = createCurrentUser(() => data.auth.currentUserInfo);
 </script>
 
 <main class="relative h-full overflow-y-auto" bind:this={chatContainer} onscroll={handleScroll}>
@@ -97,7 +100,7 @@
     </button>
   {/if}
   <ChatMessageInput
-    draft={currentDraft ? ($currentDraft?.data ?? null) : null}
-    isUserSubscribed={isSubscribed($currentUser.data?.data ?? null)}
+    draft={currentDraft.data ?? null}
+    isUserSubscribed={isSubscribed(currentUser.data?.data ?? null)}
   />
 </div>

@@ -7,16 +7,15 @@ export type PossiblySPAData<T> = T | undefined;
 export const setPossiblySPAData = <T>(data: PossiblySPAData<T>): PossiblySPAData<T> => data;
 
 export type ServerData<T> = T | Promise<T> | null;
-
-export interface HydratableDataResult<T> {
-  loading: boolean;
-  ssr: boolean;
-  data: T | null;
-}
+export type ServerDataGetter<T> = () => ServerData<T>;
 
 export type CurrentUserInfo = {
   authenticated: boolean;
   data: UserInfo | null;
+};
+
+export type ServerCurrentUserInfo = CurrentUserInfo & {
+  canSync: boolean;
 };
 
 export type UserInfo = {

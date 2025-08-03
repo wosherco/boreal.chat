@@ -1,6 +1,6 @@
 import type { AnyPgTable, PgTableWithColumns, TableConfig } from "drizzle-orm/pg-core";
-import { clientDb, initializeClientDbPromise, pglite } from "../db/index.svelte";
 import { eq } from "drizzle-orm";
+import { getDbInstance } from "../db/index.svelte";
 
 /**
  * Waits for an insert to be committed to the database.
@@ -26,8 +26,14 @@ export function waitForInsert<T extends TableConfig>(
       reject(new Error("Timeout waiting for insert"));
     }, timeout);
 
-    initializeClientDbPromise.then(() => {
-      const { sql: query, params } = clientDb()
+    const dbInstance = getDbInstance();
+
+    if (!dbInstance) {
+      throw new Error("Database not initialized");
+    }
+
+    dbInstance.waitForReady.then(() => {
+      const { sql: query, params } = dbInstance.drizzle
         .select({
           id: table.id,
         })
@@ -35,7 +41,7 @@ export function waitForInsert<T extends TableConfig>(
         .where(eq(table.id, id))
         .toSQL();
 
-      pglite().live.query({
+      dbInstance.pglite.live.query({
         query,
         params,
         signal: abortController.signal,

@@ -1,23 +1,22 @@
-import type { MessageWithOptionalChainRow, SegmentJson, ServerData } from "$lib/common/sharedTypes";
+import type {
+  MessageWithOptionalChainRow,
+  SegmentJson,
+  ServerDataGetter,
+} from "$lib/common/sharedTypes";
 import { eq, getTableColumns, sql } from "drizzle-orm";
-import { clientDb } from "../db/index.svelte";
 import { messageTable, messageSegmentsTable } from "../db/schema";
-import { createHydratableData } from "./localDbHook";
+import { HydratableQuery } from "../db/HydratableQuery.svelte";
 import { transformKeyToCamelCaseRecursive } from "./utils";
 
-export const useChatMessages = (
-  chatId: string,
-  serverData: ServerData<MessageWithOptionalChainRow[]>,
+export const createChatMessages = (
+  serverData: ServerDataGetter<MessageWithOptionalChainRow[]>,
+  chatId: () => string,
 ) =>
-  createHydratableData<MessageWithOptionalChainRow[], string>(
-    {
-      key: "chat-messages",
-      query: (chatId) => {
-        const cdb = clientDb();
-
-        const segmentsSubquery = cdb
-          .select({
-            segments: sql<SegmentJson[]>`jsonb_agg(jsonb_build_object(
+  new HydratableQuery(
+    (db, chatId) => {
+      const segmentsSubquery = db
+        .select({
+          segments: sql<SegmentJson[]>`jsonb_agg(jsonb_build_object(
 							'ordinal', ${messageSegmentsTable.ordinal},
 							'kind',    ${messageSegmentsTable.kind},
 							'content', ${messageSegmentsTable.content},
@@ -26,31 +25,30 @@ export const useChatMessages = (
 							'toolResult', ${messageSegmentsTable.toolResult},
               'streaming', ${messageSegmentsTable.streaming}
 						) ORDER BY ${messageSegmentsTable.ordinal})`.as("segments"),
-          })
-          .from(messageSegmentsTable)
-          .where(eq(messageSegmentsTable.messageId, messageTable.id))
-          .as("segments");
+        })
+        .from(messageSegmentsTable)
+        .where(eq(messageSegmentsTable.messageId, messageTable.id))
+        .as("segments");
 
-        return cdb
-          .select({
-            ...getTableColumns(messageTable),
-            segments: segmentsSubquery.segments,
-          })
-          .from(messageTable)
-          .leftJoinLateral(segmentsSubquery, sql<boolean>`true`)
-          .where(eq(messageTable.chatId, chatId))
-          .toSQL();
-      },
-      transform: (rows) =>
-        (
-          rows as (typeof messageTable.$inferSelect & {
-            segments: SegmentJson[];
-          })[]
-        ).map((row) => ({
-          ...(transformKeyToCamelCaseRecursive(row) as typeof messageTable.$inferSelect),
-          segments: row.segments ?? null,
-        })) satisfies MessageWithOptionalChainRow[],
+      return db
+        .select({
+          ...getTableColumns(messageTable),
+          segments: segmentsSubquery.segments,
+        })
+        .from(messageTable)
+        .leftJoinLateral(segmentsSubquery, sql<boolean>`true`)
+        .where(eq(messageTable.chatId, chatId))
+        .toSQL();
     },
+    (rows) =>
+      (
+        rows as (typeof messageTable.$inferSelect & {
+          segments: SegmentJson[];
+        })[]
+      ).map((row) => ({
+        ...(transformKeyToCamelCaseRecursive(row) as typeof messageTable.$inferSelect),
+        segments: row.segments ?? null,
+      })) satisfies MessageWithOptionalChainRow[],
     serverData,
     chatId,
   );

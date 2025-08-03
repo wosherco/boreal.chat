@@ -32,18 +32,18 @@
   import { orpc } from "$lib/client/orpc";
   import { toast } from "svelte-sonner";
   import { mode, setMode } from "mode-watcher";
-  import type { Chat, CurrentUserInfo, HydratableDataResult } from "$lib/common/sharedTypes";
+  import type { Chat, CurrentUserInfo } from "$lib/common/sharedTypes";
   import VirtualizedChatList from "./chatList/VirtualizedChatList.svelte";
   import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
   import BetaBadge from "./BetaBadge.svelte";
-  import { clearLocalDb } from "$lib/client/db/index.svelte";
+  import { resetDatabaseInstance } from "$lib/client/db/index.svelte";
   import { SheetClose } from "./ui/sheet";
   import { openSearchCommand } from "./SearchCommand.svelte";
 
   interface Props {
     loading: boolean;
     user: CurrentUserInfo | null;
-    chats: HydratableDataResult<Chat[]>;
+    chats: HydratableQuery<Chat[]>;
     onNewChat?: () => void;
     isPhone?: boolean;
   }
@@ -55,6 +55,7 @@
   import ShortcutsCheatsheetDialog from "./ShortcutsCheatsheetDialog.svelte";
   import SheetClosableOnlyOnPhone from "./utils/SheetClosableOnlyOnPhone.svelte";
   import { isSubscribed } from "$lib/common/utils/subscription";
+  import type { HydratableQuery } from "$lib/client/db/HydratableQuery.svelte";
 
   let shortcutsCheatsheetOpen = $state(false);
 
@@ -66,11 +67,10 @@
     try {
       await orpc.v1.auth.logout();
       try {
-        await clearLocalDb();
+        await resetDatabaseInstance();
       } catch {
-        console.warn("Failed to clear local db. Ignoring...");
+        console.warn("Failed to reset local db. Ignoring...");
       }
-      window.location.reload();
     } catch (e) {
       console.error(e);
       toast.error("Failed to log out");

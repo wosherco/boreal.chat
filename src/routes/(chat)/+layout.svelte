@@ -11,7 +11,7 @@
   import { onMount } from "svelte";
   import type { LayoutProps } from "./$types";
   import Sidebar from "$lib/components/Sidebar.svelte";
-  import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
+  import { createCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { browser } from "$app/environment";
   import Cookies from "js-cookie";
   import { SIDEBAR_COLLAPSED_COOKIE } from "$lib/common/cookies";
@@ -21,12 +21,12 @@
   import { Sheet, SheetContent, SheetTrigger } from "$lib/components/ui/sheet";
   import { cn } from "$lib/utils";
   import { goto } from "$app/navigation";
-  import { useChats } from "$lib/client/hooks/useChats.svelte";
+  import { createChats } from "$lib/client/hooks/useChats.svelte";
 
   const { data, children }: LayoutProps = $props();
 
-  const currentUser = useCurrentUser(data.auth.currentUserInfo);
-  const chats = useChats(data.lastChats ?? null);
+  const currentUser = createCurrentUser(() => data.auth.currentUserInfo);
+  const chats = createChats(() => data.lastChats ?? null);
 
   setSidebarCollapsed(data.sidebarCollapsed);
 
@@ -53,10 +53,10 @@
 
 {#snippet sidebar(isPhone = false)}
   <Sidebar
-    loading={$currentUser.loading}
-    user={$currentUser.data}
+    loading={currentUser.loading || chats.loading}
+    user={currentUser.data}
     {onNewChat}
-    chats={$chats}
+    {chats}
     {isPhone}
   />
 {/snippet}

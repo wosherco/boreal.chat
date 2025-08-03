@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
+  import { createCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { orpcQuery } from "$lib/client/orpc";
   import { isSubscribed } from "$lib/common/utils/subscription";
   import { createMutation } from "@tanstack/svelte-query";
@@ -11,11 +11,11 @@
   import { pricingPlans } from "$lib/common/pricing";
   import type { PricingPlan as PricingPlanType } from "$lib/common/pricing";
 
-  const user = useCurrentUser(null);
+  const user = createCurrentUser(() => null);
 
   // Clear subscription state derivations
-  const isLoggedIn = $derived($user.data?.authenticated ?? false);
-  const userData = $derived($user.data?.data ?? null);
+  const isLoggedIn = $derived(user.data?.authenticated ?? false);
+  const userData = $derived(user.data?.data ?? null);
   const isUserSubscribed = $derived(isSubscribed(userData));
 
   const createCheckoutSession = createMutation(

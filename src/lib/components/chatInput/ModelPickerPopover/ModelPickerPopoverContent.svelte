@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
+  import { createCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import {
     FREE_MODELS,
     HIGHLIGHTED_MODELS,
@@ -37,7 +37,7 @@
     byokEnabled = false,
   }: Props = $props();
 
-  const currentUser = useCurrentUser(null);
+  const currentUser = createCurrentUser(() => null);
 </script>
 
 <Command.Root>
@@ -45,7 +45,7 @@
   <Command.List>
     <Command.Empty>No model found.</Command.Empty>
 
-    {#if !BILLING_ENABLED || isSubscribed($currentUser.data?.data ?? null) || byokEnabled}
+    {#if !BILLING_ENABLED || isSubscribed(currentUser.data?.data ?? null) || byokEnabled}
       {@const viewModels = MODELS.filter((model) => byokEnabled || !MODEL_DETAILS[model].free)}
       {@const highlightedModels = viewModels.filter((model) =>
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -1,39 +1,34 @@
-import type { CurrentUserInfo, ServerData, UserInfo } from "$lib/common/sharedTypes";
+import type { CurrentUserInfo, ServerDataGetter, UserInfo } from "$lib/common/sharedTypes";
 import { isAnonymousUser } from "$lib/common/utils/anonymous";
-import { clientDb } from "../db/index.svelte";
 import { userTable } from "../db/schema";
-import { createHydratableData } from "./localDbHook";
 import { transformKeyToCamelCaseRecursive } from "./utils";
+import { HydratableQuery } from "../db/HydratableQuery.svelte";
 
-export const useCurrentUser = (serverData: ServerData<CurrentUserInfo>) =>
-  createHydratableData<CurrentUserInfo, void>(
-    {
-      key: "current-user",
-      query: () =>
-        clientDb()
-          .select({
-            id: userTable.id,
-            name: userTable.name,
-            email: userTable.email,
-            role: userTable.role,
-            profilePicture: userTable.profilePicture,
-            emailVerified: userTable.emailVerified,
-            subscribedUntil: userTable.subscribedUntil,
-            subscriptionStatus: userTable.subscriptionStatus,
-            subscriptionPlan: userTable.subscriptionPlan,
-          })
-          .from(userTable)
-          .limit(1)
-          .toSQL(),
-      transform: ([userData]) => ({
-        authenticated: userData ? !isAnonymousUser(userData as UserInfo) : false,
-        data: userData
-          ? (transformKeyToCamelCaseRecursive(
-              userData as Record<string, unknown>,
-            ) as unknown as UserInfo)
-          : null,
-      }),
-    },
-    serverData ?? null,
-    undefined,
+export const createCurrentUser = (serverData: ServerDataGetter<CurrentUserInfo>) =>
+  new HydratableQuery(
+    (db) =>
+      db
+        .select({
+          id: userTable.id,
+          name: userTable.name,
+          email: userTable.email,
+          role: userTable.role,
+          profilePicture: userTable.profilePicture,
+          emailVerified: userTable.emailVerified,
+          subscribedUntil: userTable.subscribedUntil,
+          subscriptionStatus: userTable.subscriptionStatus,
+          subscriptionPlan: userTable.subscriptionPlan,
+        })
+        .from(userTable)
+        .limit(1)
+        .toSQL(),
+    ([userData]) => ({
+      authenticated: userData ? !isAnonymousUser(userData as UserInfo) : false,
+      data: userData
+        ? (transformKeyToCamelCaseRecursive(
+            userData as Record<string, unknown>,
+          ) as unknown as UserInfo)
+        : null,
+    }),
+    serverData,
   );

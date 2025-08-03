@@ -12,7 +12,7 @@
   import { TrashIcon, FileTextIcon, CalendarIcon, GlobeIcon, BrainIcon } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
   import type { Draft } from "$lib/common/sharedTypes";
-  import { useDrafts } from "$lib/client/hooks/useDrafts.svelte";
+  import { createDrafts } from "$lib/client/hooks/useDrafts.svelte";
   import { createMutation } from "@tanstack/svelte-query";
   import { formatDateCompact } from "$lib/utils/date";
   import { truncateText, formatCount } from "$lib/utils/text";
@@ -31,9 +31,9 @@
 
   let open = $state(false);
 
-  const draftsStore = useDrafts();
-  const drafts = $derived($draftsStore?.data ?? []);
-  const loading = $derived($draftsStore?.loading ?? true);
+  const draftsStore = createDrafts();
+  const drafts = $derived(draftsStore.data ?? []);
+  const loading = $derived(draftsStore.loading);
 
   const deleteDraftMutation = createMutation(
     orpcQuery.v1.draft.delete.mutationOptions({

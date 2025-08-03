@@ -25,6 +25,7 @@
   import AuthBackArrow from "$lib/components/auth/AuthBackArrow.svelte";
   import TurnstileCaptcha from "$lib/components/TurnstileCaptcha.svelte";
   import { safeValidateEmail } from "$lib/utils/email";
+  import { getDbInstance } from "$lib/client/db/index.svelte";
 
   let turnstileToken = $state<string | undefined>(undefined);
 
@@ -38,10 +39,7 @@
       onSuccess: async (res) => {
         if (res.success) {
           await goto(res.redirect);
-
-          if (res.done) {
-            window.location.reload();
-          }
+          await getDbInstance().forceConnectionCheck();
         }
       },
       onError: (error) => {
