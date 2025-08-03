@@ -13,7 +13,7 @@ import {
   sessionCookieName,
   setSessionTokenCookie,
 } from "$lib/server/auth";
-import type { CurrentUserInfo } from "$lib/common/sharedTypes";
+import type { ServerCurrentUserInfo } from "$lib/common/sharedTypes";
 import { ORPCError } from "@orpc/client";
 import {
   loginIpLimiter,
@@ -70,10 +70,12 @@ export const v1AuthRouter = osBase.router({
       return {
         authenticated: false,
         data: null,
-      };
+        canSync: false,
+      } satisfies ServerCurrentUserInfo;
     }
     return {
       authenticated: !isAnonymousUser(user),
+      canSync: true,
       data: {
         id: user.id,
         name: user.name,
@@ -85,7 +87,7 @@ export const v1AuthRouter = osBase.router({
         subscriptionStatus: user.subscriptionStatus,
         subscriptionPlan: user.subscriptionPlan,
       },
-    } satisfies CurrentUserInfo;
+    } satisfies ServerCurrentUserInfo;
   }),
 
   verifySession: osBase

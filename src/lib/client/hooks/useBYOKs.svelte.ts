@@ -1,5 +1,4 @@
 import type { ServerData, BYOKInfo } from "$lib/common/sharedTypes";
-import { clientDb } from "../db/index.svelte";
 import { byokTable } from "../db/schema";
 import { createHydratableData } from "./localDbHook";
 import { transformKeyToCamelCaseRecursive } from "./utils";
@@ -8,8 +7,8 @@ export const useBYOKs = (serverData: ServerData<BYOKInfo[]>) =>
   createHydratableData<BYOKInfo[], void>(
     {
       key: "byoks",
-      query: () =>
-        clientDb()
+      query: (db) =>
+        db
           .select({
             id: byokTable.id,
             apiKey: byokTable.apiKey,
@@ -25,5 +24,5 @@ export const useBYOKs = (serverData: ServerData<BYOKInfo[]>) =>
         ),
     },
     serverData ?? null,
-    undefined,
+    () => undefined,
   );

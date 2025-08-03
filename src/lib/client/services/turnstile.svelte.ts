@@ -17,10 +17,10 @@ export async function waitForTurnstile() {
 
   turnstilePromiseCache = new Promise((resolve) => {
     try {
-      turnstile.ready(() => {
+      if (turnstile) {
         turnstileLoaded = true;
         resolve();
-      });
+      }
     } catch {
       // @ts-expect-error - Turnstile callback is not typed
       window.onloadTurnstileCallback = () => {

@@ -20,12 +20,18 @@ import type { TokenBucketRateLimiter } from "pv-ratelimit";
 import { getClientIp } from "../utils/ip";
 import { verifyTurnstileToken } from "../utils/turnstile";
 import { TURNSTILE_SECRET_KEY } from "$env/static/private";
-import { isAnonymousSessionVerified } from "../services/auth/anonymous";
+import { createAnonymousUser, isAnonymousSessionVerified } from "../services/auth/anonymous";
 import { isAnonymousUser } from "$lib/common/utils/anonymous";
 import { getServerSideUserFeatureFlag } from "../utils/featureFlags";
 import { FILES_FEATURE_FLAG } from "$lib/common/featureFlags";
 import { isImage } from "$lib/common/utils/files";
 import { getTotalFileUsage } from "../services/files/s3";
+import {
+  createSession,
+  generateSessionToken,
+  setSessionTokenCookie,
+  validateSessionToken,
+} from "../auth";
 
 /**
  * Middleware that checks if the request contains a client IP.
@@ -50,8 +56,30 @@ export const ipMiddleware = osBase.middleware(({ context, next }) => {
 /**
  * Middleware that checks if the request contains a session.
  */
-export const sessionMiddleware = osBase.middleware(({ context, next }) => {
+export const sessionMiddleware = osBase.middleware(async ({ context, next }) => {
   if (!context.userCtx.user || !context.userCtx.session) {
+    const ip = getClientIp(context.headers);
+
+    if (ip && context.cookies) {
+      // We're going to try to create an anonymous user and session
+      const createdAnonymousUser = await createAnonymousUser();
+      const sessionToken = generateSessionToken();
+      const createdSession = await createSession(sessionToken, createdAnonymousUser.id, false);
+      setSessionTokenCookie(context.cookies, sessionToken, createdSession.expiresAt);
+
+      const { session, user } = await validateSessionToken(sessionToken);
+      if (session && user) {
+        return next({
+          context: {
+            userCtx: {
+              user,
+              session,
+            },
+          },
+        });
+      }
+    }
+
     throw new ORPCError("UNAUTHORIZED", {
       message: "Unauthorized",
     });

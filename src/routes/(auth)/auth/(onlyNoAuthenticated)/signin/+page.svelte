@@ -23,6 +23,7 @@
   import { toast } from "svelte-sonner";
   import AuthBackArrow from "$lib/components/auth/AuthBackArrow.svelte";
   import { safeValidateEmail } from "$lib/utils/email";
+  import { getDbInstance } from "$lib/client/db/index.svelte";
 
   onMount(() => {
     const passwordInput = document.querySelector("input[name='password']") as HTMLInputElement;
@@ -34,11 +35,7 @@
       onSuccess: async (res) => {
         if (res.success) {
           await goto(res.redirect);
-
-          if (res.done) {
-            // Refreshing to pglite boots up
-            window.location.reload();
-          }
+          await getDbInstance().forceConnectionCheck();
         }
       },
       onError: (error) => {

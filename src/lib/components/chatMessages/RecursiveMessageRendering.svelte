@@ -55,6 +55,7 @@
   });
 
   const updateGlobalState = $derived(() => {
+    console.log("UPDATING GLOBAL STATE", lastMessage);
     if (!lastMessage) {
       return;
     }

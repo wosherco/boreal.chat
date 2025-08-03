@@ -1,6 +1,5 @@
 import type { Chat, ServerData } from "$lib/common/sharedTypes";
 import { desc, eq, isNull, and } from "drizzle-orm";
-import { clientDb } from "../db/index.svelte";
 import { chatTable } from "../db/schema";
 import { createHydratableData } from "./localDbHook";
 import { transformKeyToCamelCaseRecursive } from "./utils";
@@ -9,10 +8,8 @@ export const useArchivedChats = (serverData: ServerData<Chat[]>) =>
   createHydratableData<Chat[]>(
     {
       key: "archivedChats",
-      query: () => {
-        const cdb = clientDb();
-
-        return cdb
+      query: (db) =>
+        db
           .select({
             id: chatTable.id,
             title: chatTable.title,
@@ -25,8 +22,7 @@ export const useArchivedChats = (serverData: ServerData<Chat[]>) =>
           .from(chatTable)
           .where(and(eq(chatTable.archived, true), isNull(chatTable.deletedAt)))
           .orderBy(desc(chatTable.updatedAt))
-          .toSQL();
-      },
+          .toSQL(),
       transform: (chatData) =>
         chatData.map(
           (chat) =>
@@ -36,5 +32,5 @@ export const useArchivedChats = (serverData: ServerData<Chat[]>) =>
         ),
     },
     serverData,
-    undefined,
+    () => undefined,
   );

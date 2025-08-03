@@ -1,21 +1,18 @@
 import type { MessageWithOptionalChainRow, SegmentJson, ServerData } from "$lib/common/sharedTypes";
 import { eq, getTableColumns, sql } from "drizzle-orm";
-import { clientDb } from "../db/index.svelte";
 import { messageTable, messageSegmentsTable } from "../db/schema";
 import { createHydratableData } from "./localDbHook";
 import { transformKeyToCamelCaseRecursive } from "./utils";
 
 export const useChatMessages = (
-  chatId: string,
   serverData: ServerData<MessageWithOptionalChainRow[]>,
+  chatId: () => string,
 ) =>
   createHydratableData<MessageWithOptionalChainRow[], string>(
     {
       key: "chat-messages",
-      query: (chatId) => {
-        const cdb = clientDb();
-
-        const segmentsSubquery = cdb
+      query: (db, chatId) => {
+        const segmentsSubquery = db
           .select({
             segments: sql<SegmentJson[]>`jsonb_agg(jsonb_build_object(
 							'ordinal', ${messageSegmentsTable.ordinal},
@@ -31,7 +28,7 @@ export const useChatMessages = (
           .where(eq(messageSegmentsTable.messageId, messageTable.id))
           .as("segments");
 
-        return cdb
+        return db
           .select({
             ...getTableColumns(messageTable),
             segments: segmentsSubquery.segments,

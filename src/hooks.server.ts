@@ -8,7 +8,6 @@ import { posthog } from "$lib/server/posthog";
 import { POSTHOG_PROXY_PATH } from "$lib/common/constants";
 import { startCronJobs, stopCronJobs } from "$lib/server/services/cron";
 import { dev } from "$app/environment";
-import { createAnonymousUser } from "$lib/server/services/auth/anonymous";
 
 process.on("SIGINT", async () => {
   stopCronJobs();
@@ -52,18 +51,8 @@ const handleAuth: Handle = async ({ event, resolve }) => {
   const sessionToken = event.cookies.get(auth.sessionCookieName);
 
   if (!sessionToken) {
-    const createdAnonymousUser = await createAnonymousUser();
-    const sessionToken = auth.generateSessionToken();
-    const createdSession = await auth.createSession(sessionToken, createdAnonymousUser.id, false);
-    auth.setSessionTokenCookie(event.cookies, sessionToken, createdSession.expiresAt);
-
-    const { session, user } = await auth.validateSessionToken(sessionToken);
-    if (!user || !session) {
-      throw new Error("Failed to create anonymous user or session");
-    }
-
-    event.locals.user = user;
-    event.locals.session = session;
+    event.locals.user = null;
+    event.locals.session = null;
     return resolve(event);
   }
 

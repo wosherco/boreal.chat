@@ -1,6 +1,5 @@
 import type { Draft } from "$lib/common/sharedTypes";
 import { desc } from "drizzle-orm";
-import { clientDb } from "../db/index.svelte";
 import { draftsTable } from "../db/schema";
 import { createHydratableData } from "./localDbHook";
 import { transformKeyToCamelCaseRecursive } from "./utils";
@@ -9,8 +8,8 @@ export const useDrafts = () =>
   createHydratableData<Draft[]>(
     {
       key: "drafts",
-      query: () =>
-        clientDb()
+      query: (db) =>
+        db
           .select({
             id: draftsTable.id,
             content: draftsTable.content,
@@ -32,5 +31,5 @@ export const useDrafts = () =>
         ),
     },
     null, // No server hydration needed
-    undefined,
+    () => undefined,
   );

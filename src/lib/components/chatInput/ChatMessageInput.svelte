@@ -18,7 +18,7 @@
   import { Button } from "../ui/button";
   import KeyboardShortcuts from "../utils/KeyboardShortcuts.svelte";
   import { afterNavigate, goto, onNavigate } from "$app/navigation";
-  import { syncStreams } from "$lib/client/db/index.svelte";
+  import { getDbInstance } from "$lib/client/db/index.svelte";
   import { getCurrentChatState } from "$lib/client/state/currentChatState.svelte";
   import { Toggle } from "../ui/toggle";
   import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
@@ -70,6 +70,7 @@
   let webSearchEnabled = $state<boolean | undefined>(undefined);
   let reasoningLevel = $state<ReasoningLevel | undefined>(undefined);
   let byokId = $state<string | undefined>(undefined);
+  $effect(() => console.log("CURRENT CHAT", getCurrentChatState()));
 
   const actualSelectedModel = $derived(
     selectedModel ?? getCurrentChatState()?.model ?? defaultSelectedModel,
@@ -130,8 +131,8 @@
         value = "";
 
         if (isNewChat) {
-          const chatStream = syncStreams()?.streams.chat;
-          const messagesStream = syncStreams()?.streams.message;
+          const chatStream = getDbInstance()?.syncStreams?.streams.chat;
+          const messagesStream = getDbInstance()?.syncStreams?.streams.message;
           if (chatStream && messagesStream) {
             try {
               await Promise.all([

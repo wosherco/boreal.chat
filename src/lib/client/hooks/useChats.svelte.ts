@@ -1,6 +1,5 @@
 import type { Chat, ServerData } from "$lib/common/sharedTypes";
 import { desc, eq, isNull, and } from "drizzle-orm";
-import { clientDb } from "../db/index.svelte";
 import { chatTable } from "../db/schema";
 import { createHydratableData } from "./localDbHook";
 import { transformKeyToCamelCaseRecursive } from "./utils";
@@ -9,8 +8,8 @@ export const useChats = (serverData: ServerData<Chat[]>) =>
   createHydratableData<Chat[]>(
     {
       key: "chats",
-      query: () =>
-        clientDb()
+      query: (db) =>
+        db
           .select({
             id: chatTable.id,
             title: chatTable.title,
@@ -33,5 +32,5 @@ export const useChats = (serverData: ServerData<Chat[]>) =>
         ),
     },
     serverData,
-    undefined,
+    () => undefined,
   );

@@ -80,13 +80,6 @@
   });
 </script>
 
-<svelte:head>
-  <script
-    src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback"
-    defer
-  ></script>
-</svelte:head>
-
 <svelte:window on:copy={onCopy} />
 
 <QueryClientProvider client={queryClient}>

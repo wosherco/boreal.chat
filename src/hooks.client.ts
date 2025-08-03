@@ -1,9 +1,9 @@
 import { handleErrorWithSentry, replayIntegration } from "@sentry/sveltekit";
 import * as Sentry from "@sentry/sveltekit";
 import type { ClientInit } from "@sveltejs/kit";
-import { initializeClientDbPromise } from "$lib/client/db/index.svelte";
 import { env } from "$env/dynamic/public";
 import { dev } from "$app/environment";
+import { resetDatabaseInstance } from "$lib/client/db/index.svelte";
 
 Sentry.init({
   dsn: env.PUBLIC_SENTRY_DSN,
@@ -28,7 +28,7 @@ if (dev) {
 }
 
 export const init: ClientInit = () => {
-  void initializeClientDbPromise;
+  void resetDatabaseInstance();
 };
 
 // If you have a custom error handler, pass it to `handleErrorWithSentry`

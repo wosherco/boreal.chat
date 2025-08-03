@@ -10,6 +10,8 @@
   import { fade } from "svelte/transition";
   import { onMount } from "svelte";
   import { afterNavigate } from "$app/navigation";
+  import type { HydratableReadable } from "$lib/client/hooks/localDbHook";
+  import type { Draft } from "$lib/common/sharedTypes";
 
   const { data, children }: LayoutProps = $props();
 
@@ -74,8 +76,11 @@
   }
 
   // Draft functionality
-  const currentDraftId = $derived(getDraftIdFromUrl(page.url));
-  const currentDraft = $derived(useDraft(currentDraftId, data.draft ?? null));
+  const currentDraftId = getDraftIdFromUrl(page.url);
+  let currentDraft = $state<HydratableReadable<Draft>>();
+  $effect(() => {
+    currentDraft = useDraft(data.draft ?? null, () => currentDraftId);
+  });
 
   const currentUser = useCurrentUser(data.auth.currentUserInfo);
 </script>

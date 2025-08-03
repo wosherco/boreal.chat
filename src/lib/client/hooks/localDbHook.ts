@@ -1,13 +1,14 @@
 import { browser } from "$app/environment";
 import { writable, type Readable } from "svelte/store";
-import { initializeClientDbPromise, pglite } from "../db/index.svelte";
 import isPromise from "is-promise";
 import type { HydratableDataResult, ServerData } from "$lib/common/sharedTypes";
+import type { CommonDBClient } from "../db/LocalDatabase.svelte";
+import { getDbInstance } from "../db/index.svelte";
 
 interface HydratableData<T, TArgs = void> {
   key: string;
-  query: (args: TArgs) => { sql: string; params: unknown[] };
-  transform: (rows: unknown[], args: TArgs) => T | null;
+  query: (db: CommonDBClient, args: NonNullable<TArgs>) => { sql: string; params: unknown[] };
+  transform: (rows: unknown[], args: NonNullable<TArgs>) => T | null;
 }
 
 const cache = new Map<string, HydratableReadable<unknown>>();
@@ -24,11 +25,12 @@ export interface HydratableReadable<T> extends Readable<HydratableDataResult<T>>
 export function createHydratableData<T, TArgs = void>(
   config: HydratableData<T, TArgs>,
   ssrData: ServerData<T>,
-  args: TArgs,
+  args: () => TArgs,
 ): HydratableReadable<T> {
-  const cacheKey = createCacheKey(config.key, args);
+  const cacheKey = createCacheKey(config.key, args());
 
   if (!browser) {
+    // In browser we don't need to care about reactivity
     const ssrStore = createHydratableDataSSR(ssrData);
     cache.set(cacheKey, ssrStore as HydratableReadable<unknown>);
     return ssrStore;
@@ -57,6 +59,7 @@ export function createHydratableData<T, TArgs = void>(
       refetchQuery();
 
       return () => {
+        console.log(config.key, "UNSUBSCRIBING");
         unsubscribeCallback?.();
         unsubscribeCallback = undefined;
         hasSubscribers = false;
@@ -86,18 +89,31 @@ export function createHydratableData<T, TArgs = void>(
   };
 
   const createLiveQuery = () => {
+    console.log(config.key, "CREATING LIVE QUERY");
     const abortController = new AbortController();
 
-    initializeClientDbPromise.then(() => {
-      const { sql: query, params } = config.query(args);
+    const dbInstance = getDbInstance();
 
-      pglite().live.query({
+    if (!dbInstance) {
+      throw new Error("Database not initialized");
+    }
+
+    const resolvedArgs = args();
+
+    if (!resolvedArgs) {
+      return;
+    }
+
+    dbInstance.waitForReady.then(() => {
+      const { sql: query, params } = config.query(dbInstance.drizzle, resolvedArgs);
+
+      dbInstance.pglite.live.query({
         query,
         params,
         signal: abortController.signal,
         callback(results) {
           hasHydratedInClient = true;
-          const transformed = config.transform(results.rows, args);
+          const transformed = config.transform(results.rows, resolvedArgs);
 
           if (!transformed) {
             return;
@@ -112,7 +128,10 @@ export function createHydratableData<T, TArgs = void>(
       });
     });
 
-    return () => abortController.abort();
+    return () => {
+      console.log(config.key, "ABORTING LIVE QUERY");
+      abortController.abort();
+    };
   };
 
   setSSRData(ssrData);
@@ -123,6 +142,7 @@ export function createHydratableData<T, TArgs = void>(
       return;
     }
 
+    console.log(config.key, "REFETCHING QUERY");
     // When we're refetching, we need to unsubscribe from the previous live query
     // and create a new one
     unsubscribeCallback?.();

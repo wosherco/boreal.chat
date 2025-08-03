@@ -1,18 +1,22 @@
 import { desc, eq, sql } from "drizzle-orm";
-import { clientDb, initializeClientDbPromise, isDbReady } from "./index.svelte";
 import { chatTable, messageSegmentsTable, messageTable } from "./schema";
+import { getDbInstance } from "./index.svelte";
 
 const weighedTitle = sql`setweight(to_tsvector('english', ${chatTable.title}), 'A')`;
 const weighedContent = sql`setweight(to_tsvector('english', ${messageSegmentsTable.content}), 'B')`;
 
 export async function searchChats(query: string) {
-  if (!isDbReady()) {
-    await initializeClientDbPromise;
+  const dbInstance = getDbInstance();
+
+  if (!dbInstance) {
+    throw new Error("Database not initialized");
   }
+
+  await dbInstance.waitForReady;
 
   const tsQuery = sql`to_tsquery('english', ${query})`;
 
-  const rankedMessagesSubquery = clientDb()
+  const rankedMessagesSubquery = dbInstance.drizzle
     .select({
       chatId: chatTable.id,
       messageId: sql<string>`${messageTable.id}`.as("messageId"),
@@ -30,7 +34,7 @@ export async function searchChats(query: string) {
     .orderBy((t) => desc(t.rank))
     .as("ranked_messages");
 
-  const bestPerChat = clientDb()
+  const bestPerChat = dbInstance.drizzle
     .select({
       chatId: rankedMessagesSubquery.chatId,
       messageId: rankedMessagesSubquery.messageId,
@@ -46,7 +50,7 @@ export async function searchChats(query: string) {
     .from(rankedMessagesSubquery)
     .as("best_per_chat");
 
-  const chats = await clientDb()
+  const chats = await dbInstance.drizzle
     .select({
       chatId: bestPerChat.chatId,
       messageId: bestPerChat.messageId,

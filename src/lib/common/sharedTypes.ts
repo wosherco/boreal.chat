@@ -19,6 +19,10 @@ export type CurrentUserInfo = {
   data: UserInfo | null;
 };
 
+export type ServerCurrentUserInfo = CurrentUserInfo & {
+  canSync: boolean;
+};
+
 export type UserInfo = {
   id: string;
   name: string;

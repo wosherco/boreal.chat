@@ -36,7 +36,7 @@
   import VirtualizedChatList from "./chatList/VirtualizedChatList.svelte";
   import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
   import BetaBadge from "./BetaBadge.svelte";
-  import { clearLocalDb } from "$lib/client/db/index.svelte";
+  import { resetDatabaseInstance } from "$lib/client/db/index.svelte";
   import { SheetClose } from "./ui/sheet";
   import { openSearchCommand } from "./SearchCommand.svelte";
 
@@ -66,11 +66,10 @@
     try {
       await orpc.v1.auth.logout();
       try {
-        await clearLocalDb();
+        await resetDatabaseInstance();
       } catch {
-        console.warn("Failed to clear local db. Ignoring...");
+        console.warn("Failed to reset local db. Ignoring...");
       }
-      window.location.reload();
     } catch (e) {
       console.error(e);
       toast.error("Failed to log out");
