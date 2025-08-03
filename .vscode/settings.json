@@ -1,0 +1,5 @@
+{
+  "[liquid]": {
+    "editor.defaultFormatter": "vscode.markdown-language-features"
+  }
+}

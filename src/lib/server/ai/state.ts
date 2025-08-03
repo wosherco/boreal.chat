@@ -1,6 +1,8 @@
 import type { MessageWithSegments } from "$lib/common/sharedTypes";
 import { Annotation } from "@langchain/langgraph";
 import type OpenAI from "openai";
+import { parseMainPrompt } from "./prompts/main";
+import type { ModelId } from "$lib/common/ai/models";
 
 export const ChatContextAnnotation = Annotation.Root({
   messages: Annotation<OpenAI.ChatCompletionMessageParam[]>({
@@ -16,15 +18,16 @@ export const ChatContextAnnotation = Annotation.Root({
 
 export type ChatContext = typeof ChatContextAnnotation.State;
 
-export function initializeChatContext(params: {
+export async function initializeChatContext(params: {
   userId: string;
   userAlias: string;
   chatId: string;
   threadId: string;
   currentMessageId: string;
   messages: MessageWithSegments[];
-}): ChatContext {
-  const { messages, userId, chatId, threadId, currentMessageId, userAlias } = params;
+  modelId: ModelId;
+}): Promise<ChatContext> {
+  const { messages, userId, chatId, threadId, currentMessageId, userAlias, modelId } = params;
   if (messages.length === 0) {
     throw new Error("No messages provided");
   }
@@ -101,34 +104,15 @@ export function initializeChatContext(params: {
     threadId,
     currentMessageId,
     resumeState,
-    messages: [{ role: "system", content: systemMessage(userAlias) }, ...baseMessages],
+    messages: [
+      {
+        role: "system",
+        content: await parseMainPrompt({
+          userAlias,
+          model: modelId,
+        }),
+      },
+      ...baseMessages,
+    ],
   };
 }
-
-const systemMessage = (
-  userAlias: string,
-) => `You are an advanced AI model, running on boreal.chat, the most advanced AI chat platform in the world.
-
-You are currently chatting with ${userAlias}. Current time is ${new Date().toLocaleString()}.
-
-Instructions:
-
-- Engage warmly yet honestly with the user.
-- Be direct; avoid ungrounded or sycophantic flattery.
-- Maintain professionalism and grounded honesty.
-- Ask a general, single-sentence follow-up question when natural.
-- Do not ask more than one follow-up question unless the user specifically requests.
-- When sharing code, you can specify file names directly after the opening code fence. For example:
-
-  \`\`\`js index.js
-  console.log("hello");
-  \`\`\`
-
-- Use LaTeX for mathematical expressions if it helps communicate complex ideas. It can be inline or in a block. For example
-
-  $$this is an inline math expression$$
-
-  $$
-  This is a block math expression
-  $$
-`;
