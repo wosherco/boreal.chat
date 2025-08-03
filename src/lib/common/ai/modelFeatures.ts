@@ -3,7 +3,7 @@
 
 import type { ModelId } from "./models";
 
-export const GENERATED_AT = "2025-07-25T21:58:47.214Z";
+export const GENERATED_AT = "2025-08-03T15:08:57.542Z";
 
 export type ModelFeatures = {
   contextLength: number;
@@ -18,6 +18,50 @@ export type ModelFeatures = {
 };
 
 export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
+  "openrouter/horizon-beta": {
+    contextLength: 256000,
+    pricing: {
+      prompt: 0,
+      completion: 0,
+      image: 0,
+      web_search: 0,
+      request: 0,
+    },
+    inputModalities: ["image", "text"],
+  },
+  "z-ai/glm-4.5": {
+    contextLength: 131072,
+    pricing: {
+      prompt: 2e-7,
+      completion: 2e-7,
+      image: 0,
+      web_search: 0,
+      request: 0,
+    },
+    inputModalities: ["text"],
+  },
+  "z-ai/glm-4.5-air:free": {
+    contextLength: 131072,
+    pricing: {
+      prompt: 0,
+      completion: 0,
+      image: 0,
+      web_search: 0,
+      request: 0,
+    },
+    inputModalities: ["text"],
+  },
+  "z-ai/glm-4.5-air": {
+    contextLength: 128000,
+    pricing: {
+      prompt: 2e-7,
+      completion: 0.0000011,
+      image: 0,
+      web_search: 0,
+      request: 0,
+    },
+    inputModalities: ["text"],
+  },
   "qwen/qwen3-coder:free": {
     contextLength: 262144,
     pricing: {
@@ -32,8 +76,8 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
   "qwen/qwen3-coder": {
     contextLength: 262144,
     pricing: {
-      prompt: 3.024e-7,
-      completion: 3.024e-7,
+      prompt: 3e-7,
+      completion: 0.0000012,
       image: 0,
       web_search: 0,
       request: 0,
@@ -41,7 +85,7 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
     inputModalities: ["text"],
   },
   "moonshotai/kimi-k2:free": {
-    contextLength: 65536,
+    contextLength: 32768,
     pricing: {
       prompt: 0,
       completion: 0,
@@ -52,10 +96,10 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
     inputModalities: ["text"],
   },
   "moonshotai/kimi-k2": {
-    contextLength: 63000,
+    contextLength: 32768,
     pricing: {
-      prompt: 1.4e-7,
-      completion: 0.00000249,
+      prompt: 8.78e-8,
+      completion: 8.78e-8,
       image: 0,
       web_search: 0,
       request: 0,
@@ -82,7 +126,7 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
       web_search: 0,
       request: 0,
     },
-    inputModalities: ["file", "image", "text"],
+    inputModalities: ["file", "image", "text", "audio"],
   },
   "google/gemini-2.5-pro-preview": {
     contextLength: 1048576,
@@ -291,7 +335,7 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
       web_search: 0,
       request: 0,
     },
-    inputModalities: ["text", "image", "file"],
+    inputModalities: ["text", "image", "file", "audio"],
   },
   "google/gemini-2.0-flash-exp:free": {
     contextLength: 1048576,
