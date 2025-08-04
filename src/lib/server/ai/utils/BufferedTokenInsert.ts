@@ -19,6 +19,12 @@ interface CurrentSegment {
   kind: MessageSegmentKind;
 }
 
+export class BufferedTokenDestroyedError extends Error {
+  constructor() {
+    super("BufferedTokenInsert has been destroyed");
+  }
+}
+
 class BufferedTokenInsert {
   private userId: string;
   private messageId: string;
@@ -50,8 +56,7 @@ class BufferedTokenInsert {
 
   async insert(generationId: string, kind: MessageSegmentKind, content: string): Promise<void> {
     if (this.isDestroyed) {
-      // Don't throw here, just ignore inserts after destruction.
-      return;
+      throw new BufferedTokenDestroyedError();
     }
 
     // Schedule the token processing. Bottleneck ensures this runs serially.
@@ -89,7 +94,13 @@ class BufferedTokenInsert {
     this.flushTimer = setTimeout(() => {
       // Schedule the flush operation on the limiter to ensure it doesn't
       // run concurrently with a processToken operation.
-      this.limiter.schedule(() => this.flush());
+      this.flushTimer = null;
+      this.limiter
+        .schedule(() => this.flush())
+        .catch((err) => {
+          console.error("Error during flush:", err);
+          this.scheduleFlush();
+        });
     }, FLUSH_INTERVAL_MS);
   }
 
