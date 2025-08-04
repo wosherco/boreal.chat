@@ -4,23 +4,24 @@
   import type { PageProps } from "./$types";
   import { createCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { Loader2Icon } from "@lucide/svelte";
+  import SettingsLayout from "$lib/components/settings/SettingsLayout.svelte";
 
   const { data }: PageProps = $props();
 
   const user = createCurrentUser(() => data.auth.currentUserInfo);
 </script>
 
-<SvelteSeo title="Pricing & Billing | boreal.chat" />
-
-<h1 class="text-2xl font-semibold">Pricing & Billing</h1>
-<h2 class="text-muted-foreground">Manage your subscription and billing details.</h2>
-
-<div class="flex flex-col gap-2 pt-4">
-  {#if user.loading}
-    <div class="flex items-center justify-center">
-      <Loader2Icon class="size-4 animate-spin" />
-    </div>
-  {:else}
-    <BillingPage />
-  {/if}
-</div>
+<SettingsLayout
+  title="Pricing & Billing"
+  description="Manage your subscription and billing details."
+>
+  <div class="flex flex-col gap-2 pt-4">
+    {#if user.loading}
+      <div class="flex items-center justify-center">
+        <Loader2Icon class="size-4 animate-spin" />
+      </div>
+    {:else}
+      <BillingPage />
+    {/if}
+  </div>
+</SettingsLayout>

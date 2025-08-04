@@ -2,6 +2,6 @@
   import SettingsLayout from "$lib/components/settings/SettingsLayout.svelte";
 </script>
 
-<SettingsLayout title="Customization" description="Customization options will go here.">
+<SettingsLayout title="Models" description="Manage your models.">
   <p class="pt-10">Coming soon</p>
 </SettingsLayout>
