@@ -71,6 +71,9 @@ importers:
       async-lock:
         specifier: ^1.4.1
         version: 1.4.1
+      bottleneck:
+        specifier: ^2.19.5
+        version: 2.19.5
       drizzle-orm:
         specifier: ^0.44.2
         version: 0.44.2(@cloudflare/workers-types@4.20250607.0)(@electric-sql/pglite@0.3.5)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@upstash/redis@1.35.1)(bun-types@1.2.17)(gel@2.1.0)(kysely@0.27.6)(postgres@3.4.7)
@@ -98,6 +101,9 @@ importers:
       katex:
         specifier: ^0.16.22
         version: 0.16.22
+      liquidjs:
+        specifier: ^10.21.1
+        version: 10.21.1
       magika:
         specifier: ^0.3.2
         version: 0.3.2(seedrandom@3.0.5)
@@ -3624,6 +3630,9 @@ packages:
     resolution: {integrity: sha512-02qvAaxv8tp7fBa/mw1ga98OGm+eCbqzJOKoRt70sLmfEEi+jyBYVTDGfCL/k06/4EMk/z01gCe7HoCH/f2LTg==}
     engines: {node: '>=18'}
 
+  bottleneck@2.19.5:
+    resolution: {integrity: sha512-VHiNCbI1lKdl44tGrhNfU3lup0Tj/ZBMJB5/2ZbNXRCPuRCO7ed2mgcK4r17y+KB2EfuYuRaVlwNbAeaWGSpbw==}
+
   bowser@2.11.0:
     resolution: {integrity: sha512-AlcaJBi/pqqJBIQ8U9Mcpc9i8Aqxn88Skv5d+xBX006BY5u8N3mGLHa5Lgppa7L/HfwgwLgZ6NYs+Ag6uUmJRA==}
 
@@ -5144,6 +5153,11 @@ packages:
   lilconfig@2.1.0:
     resolution: {integrity: sha512-utWOt/GHzuUxnLKxB6dk81RoOeoNeHgbrXiuGk4yyF5qlRz+iIVWu56E2fqGHFrXz0QNUhLB/8nKqvRH66JKGQ==}
     engines: {node: '>=10'}
+
+  liquidjs@10.21.1:
+    resolution: {integrity: sha512-NZXmCwv3RG5nire3fmIn9HsOyJX3vo+ptp0yaXUHAMzSNBhx74Hm+dAGJvscUA6lNqbLuYfXgNavRQ9UbUJhQQ==}
+    engines: {node: '>=14'}
+    hasBin: true
 
   locate-character@3.0.0:
     resolution: {integrity: sha512-SW13ws7BjaeJ6p7Q6CO2nchbYEc3X3J6WrmTTDto7yMPqVSZTUyY5Tjbid+Ab8gLnATtygYtiDIJGQRRn2ZOiA==}
@@ -11039,6 +11053,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  bottleneck@2.19.5: {}
+
   bowser@2.11.0: {}
 
   brace-expansion@1.1.11:
@@ -12600,6 +12616,10 @@ snapshots:
       lightningcss-win32-x64-msvc: 1.30.1
 
   lilconfig@2.1.0: {}
+
+  liquidjs@10.21.1:
+    dependencies:
+      commander: 10.0.1
 
   locate-character@3.0.0: {}
 

@@ -1,6 +1,7 @@
 import { z } from "zod/v4";
 import { createOpenAIClient } from "../utils/client";
 import * as Sentry from "@sentry/sveltekit";
+import titlePrompt from "$lib/prompts/title.md?raw";
 
 export interface GenerateChatTitleContext {
   userId: string;
@@ -24,11 +25,11 @@ export async function generateChatTitle(
     messages: [
       {
         role: "system",
-        content: "Create a concise title (max 6 words, title case) summarizing the user message. ",
+        content: titlePrompt,
       },
       {
         role: "user",
-        content: firstMessage,
+        content: `Based on the following conversation, generate a very short and descriptive title for:\n\n${firstMessage}`,
       },
     ],
     user: context.userId,

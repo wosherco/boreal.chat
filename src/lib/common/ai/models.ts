@@ -1,6 +1,7 @@
 // From google
 export const GEMINI_2_5_PRO = "google/gemini-2.5-pro-preview";
 export const GEMINI_FLASH_2_5 = "google/gemini-2.5-flash";
+export const GEMINI_FLASH_2_5_LITE = "google/gemini-2.5-flash-lite";
 export const GEMINI_FLASH_2_0 = "google/gemini-2.0-flash-001";
 export const GEMINI_FLASH_2_0_FREE = "google/gemini-2.0-flash-exp:free";
 
@@ -50,6 +51,14 @@ export const GROK_4 = "x-ai/grok-4";
 export const KIMI_K2 = "moonshotai/kimi-k2";
 export const KIMI_K2_FREE = "moonshotai/kimi-k2:free";
 
+// Openrouter
+export const HORIZON_BETA = "openrouter/horizon-beta";
+
+// Z-AI
+export const Z_AI_4_5 = "z-ai/glm-4.5";
+export const Z_AI_4_5_AIR = "z-ai/glm-4.5-air";
+export const Z_AI_4_5_AIR_FREE = "z-ai/glm-4.5-air:free";
+
 export const MODELS = [
   // From google
   GEMINI_2_5_PRO,
@@ -98,6 +107,14 @@ export const MODELS = [
   // From moonshot
   KIMI_K2,
   KIMI_K2_FREE,
+
+  // From openrouter
+  HORIZON_BETA,
+
+  // From z-ai
+  Z_AI_4_5,
+  Z_AI_4_5_AIR,
+  Z_AI_4_5_AIR_FREE,
 ] as const;
 export type ModelId = (typeof MODELS)[number];
 
@@ -130,6 +147,13 @@ export const HIGHLIGHTED_MODELS = [
 
   // Moonshot
   KIMI_K2,
+
+  // Openrouter
+  HORIZON_BETA,
+
+  // Z-AI
+  Z_AI_4_5,
+  Z_AI_4_5_AIR,
 ] as const;
 
 export const FREE_MODELS = [
@@ -150,6 +174,12 @@ export const FREE_MODELS = [
 
   // Moonshot
   KIMI_K2,
+
+  // Openrouter
+  HORIZON_BETA,
+
+  // Z-AI
+  Z_AI_4_5_AIR,
 ];
 
 export interface ModelDetails {
@@ -318,9 +348,30 @@ export const MODEL_DETAILS: Record<ModelId, ModelDetails> = {
     reasoning: true,
     free: true,
   },
+
+  // From openrouter
+  [HORIZON_BETA]: {
+    displayName: "Horizon Beta",
+    reasoning: false,
+  },
+
+  // From z-ai
+  [Z_AI_4_5]: {
+    displayName: "Z-AI 4.5",
+    reasoning: true,
+  },
+  [Z_AI_4_5_AIR]: {
+    displayName: "Z-AI 4.5 Air",
+    reasoning: true,
+  },
+  [Z_AI_4_5_AIR_FREE]: {
+    displayName: "(Free) Z-AI 4.5 Air",
+    reasoning: true,
+    free: true,
+  },
 };
 
-export const DEFAULT_MODEL = GPT_4_1;
+export const DEFAULT_MODEL = GEMINI_FLASH_2_5;
 
 export const REASONING_HIGH = "high";
 export const REASONING_MEDIUM = "medium";

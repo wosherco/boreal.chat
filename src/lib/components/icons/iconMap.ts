@@ -34,6 +34,10 @@ import {
   LLAMA_3_3_70B_FREE,
   QWEN_3_CODER,
   QWEN_3_CODER_FREE,
+  Z_AI_4_5,
+  HORIZON_BETA,
+  Z_AI_4_5_AIR,
+  Z_AI_4_5_AIR_FREE,
 } from "$lib/common/ai/models";
 import OpenAiIcon from "./OpenAIIcon.svelte";
 import AnthropicIcon from "./AnthropicIcon.svelte";
@@ -42,6 +46,8 @@ import MetaIcon from "./MetaIcon.svelte";
 import QwenIcon from "./QwenIcon.svelte";
 import GrokIcon from "./GrokIcon.svelte";
 import KimiAiIcon from "./KimiAIIcon.svelte";
+import ZAiIcon from "./ZAi.svelte";
+import OpenRouterIcon from "./OpenRouter.svelte";
 
 export const ICON_MAP: Record<ModelId, Component> = {
   // From google
@@ -91,4 +97,12 @@ export const ICON_MAP: Record<ModelId, Component> = {
   // From moonshot
   [KIMI_K2]: KimiAiIcon,
   [KIMI_K2_FREE]: KimiAiIcon,
+
+  // From openrouter
+  [HORIZON_BETA]: OpenRouterIcon,
+
+  // From z-ai
+  [Z_AI_4_5]: ZAiIcon,
+  [Z_AI_4_5_AIR]: ZAiIcon,
+  [Z_AI_4_5_AIR_FREE]: ZAiIcon,
 };

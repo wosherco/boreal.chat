@@ -160,12 +160,13 @@ export const v1ChatRouter = osBase.router({
 
       try {
         // Initialize the context properly
-        const chatContext = initializeChatContext({
+        const chatContext = await initializeChatContext({
           userId: context.userCtx.user.id,
           userAlias: context.userCtx.user.name,
           chatId: result.chatId,
           threadId: result.threadId,
           currentMessageId: result.assistantMessageId,
+          modelId: input.model,
           messages: [
             {
               ...result.userMessage,
@@ -343,13 +344,14 @@ export const v1ChatRouter = osBase.router({
       }
 
       try {
-        const chatContext = initializeChatContext({
+        const chatContext = await initializeChatContext({
           userId: context.userCtx.user.id,
           userAlias: context.userCtx.user.name,
           chatId: result.chatId,
           threadId: result.threadId,
           currentMessageId: result.assistantMessageId,
           messages: messages,
+          modelId: input.model,
         });
 
         const agentPromise = executeAgentSafely(
@@ -465,13 +467,14 @@ export const v1ChatRouter = osBase.router({
       }
 
       try {
-        const chatContext = initializeChatContext({
+        const chatContext = await initializeChatContext({
           userId: context.userCtx.user.id,
           userAlias: context.userCtx.user.name,
           chatId: result.message.chatId,
           threadId: result.message.threadId,
           currentMessageId: result.message.id,
           messages: messages,
+          modelId: input.model,
         });
 
         const agentPromise = executeAgentSafely(
