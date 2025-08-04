@@ -153,6 +153,7 @@ export const HIGHLIGHTED_MODELS = [
 
   // Z-AI
   Z_AI_4_5,
+  Z_AI_4_5_AIR,
 ] as const;
 
 export const FREE_MODELS = [
