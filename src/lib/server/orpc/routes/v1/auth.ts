@@ -518,4 +518,94 @@ export const v1AuthRouter = osBase.router({
     context.cookies?.delete(sessionCookieName, { path: "/" });
     return { success: true };
   }),
+
+  // Authenticated user password reset endpoints
+  requestPasswordResetAuthenticated: osBase
+    .use(authenticatedMiddleware)
+    .handler(async ({ context }) => {
+      if (!context.cookies) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Cookies not found",
+        });
+      }
+
+      const user = context.userCtx.user;
+      const cookies = context.cookies;
+
+      await invalidateUserPasswordResetSessions(user.id);
+
+      try {
+        const sessionToken = generateSessionToken();
+        const session = await createPasswordResetSession(sessionToken, user.id, user.email);
+        await sendPasswordResetEmail(
+          user.email,
+          `${env.PUBLIC_URL}/settings/authentication/reset-password/verify-email?code=${session.code}`,
+          session.code,
+        );
+        setPasswordResetSessionTokenCookie(cookies, sessionToken, session.expiresAt);
+      } catch (e) {
+        Sentry.captureException(e);
+        console.error("Failed to send password reset email", e);
+        throw e;
+      }
+
+      return {
+        success: true,
+      };
+    }),
+
+  passwordResetAuthenticated: osBase
+    .use(authenticatedMiddleware)
+    .input(
+      z.object({
+        password: passwordSchema,
+      }),
+    )
+    .handler(async ({ context, input }) => {
+      if (!context.cookies) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Cookies not found",
+        });
+      }
+
+      const { user, session } = await validatePasswordResetSessionRequest(context.cookies);
+      const currentUser = context.userCtx.user;
+
+      if (!user || !session) {
+        throw new ORPCError("UNAUTHORIZED", {
+          message: "Invalid password reset request",
+        });
+      }
+
+      // Ensure the password reset session belongs to the current authenticated user
+      if (user.id !== currentUser.id) {
+        throw new ORPCError("FORBIDDEN", {
+          message: "Password reset session does not belong to current user",
+        });
+      }
+
+      if (!session.emailVerified) {
+        throw new ORPCError("FORBIDDEN", {
+          message: "Email not verified",
+        });
+      }
+
+      if (user.registered2FA && !session.twoFactorVerified) {
+        throw new ORPCError("FORBIDDEN", {
+          message: "2FA not verified",
+        });
+      }
+
+      await Promise.all([
+        invalidateUserPasswordResetSessions(user.id),
+        updateUserPassword(user.id, input.password),
+      ]);
+
+      deletePasswordResetSessionTokenCookie(context.cookies);
+
+      return {
+        success: true,
+        redirect: "/settings/authentication",
+      };
+    }),
 });

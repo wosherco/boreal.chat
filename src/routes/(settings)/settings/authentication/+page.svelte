@@ -23,9 +23,8 @@
   <!-- Password Reset Section -->
   <section class="bg-card rounded-lg border p-6 shadow">
     <h3 class="mb-2 text-lg font-semibold">Password Reset</h3>
-    <p class="text-muted-foreground mb-4">Change your account password.</p>
-    <Button disabled>Reset Password (soon...)</Button>
-    <!-- TODO: Wire up password reset logic -->
+    <p class="text-muted-foreground mb-4">Change your account password securely by verifying your email.</p>
+    <Button href="/settings/authentication/reset-password">Reset Password</Button>
   </section>
 
   <!-- OAuth Accounts Section (Google) -->
