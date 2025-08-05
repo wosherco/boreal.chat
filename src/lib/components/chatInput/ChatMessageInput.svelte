@@ -266,6 +266,7 @@
         gotoWithSeachParams(page.url, {
           keepFocus: true,
           noScroll: true,
+          replaceState: false,
           searchParams: {
             draft: draft.id,
           },

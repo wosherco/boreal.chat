@@ -30,6 +30,8 @@ async function createPGLiteInstance() {
   );
 }
 
+let checkedUser = false;
+
 export type PGliteType = NonNullable<Awaited<ReturnType<typeof createPGLiteInstance>>>;
 
 const createDrizzleClient = (db: PGliteType) =>
@@ -109,6 +111,15 @@ export class LocalDatabase {
         return;
       }
 
+      const dbUser = await this.getDbUser();
+
+      if (user.data?.id !== dbUser?.id && !checkedUser) {
+        checkedUser = true;
+        console.log("User ID mismatch. Clearing local db");
+        await resetDatabaseInstance();
+        return;
+      }
+
       if (!user.canSync) {
         console.log("User can't sync");
         // We can't sync because we don't have a user or any data... We're not necessarily offline, but we're not going to sync.
@@ -122,6 +133,11 @@ export class LocalDatabase {
     void checkConnection();
 
     this.connectionCheckInterval = setInterval(checkConnection, 5000);
+  }
+
+  private async getDbUser() {
+    const [user] = await this.drizzle.select().from(schema.userTable).limit(1);
+    return user;
   }
 
   private async startShapesSync() {
