@@ -13,6 +13,8 @@ import {
   GPT_4_1,
   GPT_4_1_NANO,
   GPT_4_1_MINI,
+  GPT_OSS_120B,
+  GPT_OSS_20B,
   CLAUDE_OPUS_4,
   CLAUDE_SONNET_4,
   CLAUDE_3_7_SONNET,
@@ -64,6 +66,8 @@ export const ICON_MAP: Record<ModelId, Component> = {
   [GPT_4_1]: OpenAiIcon,
   [GPT_4_1_NANO]: OpenAiIcon,
   [GPT_4_1_MINI]: OpenAiIcon,
+  [GPT_OSS_120B]: OpenAiIcon,
+  [GPT_OSS_20B]: OpenAiIcon,
 
   // From anthropic
   [CLAUDE_OPUS_4]: AnthropicIcon,

@@ -13,6 +13,8 @@ export const GPT_O4_MINI_HIGH = "openai/o4-mini-high";
 export const GPT_4_1 = "openai/gpt-4.1";
 export const GPT_4_1_MINI = "openai/gpt-4.1-mini";
 export const GPT_4_1_NANO = "openai/gpt-4.1-nano";
+export const GPT_OSS_120B = "openai/gpt-oss-120b";
+export const GPT_OSS_20B = "openai/gpt-oss-20b";
 
 // From anthropic
 export const CLAUDE_OPUS_4 = "anthropic/claude-opus-4";
@@ -74,6 +76,8 @@ export const MODELS = [
   GPT_4_1,
   GPT_4_1_NANO,
   GPT_4_1_MINI,
+  GPT_OSS_120B,
+  GPT_OSS_20B,
 
   // From anthropic
   CLAUDE_OPUS_4,
@@ -133,6 +137,7 @@ export const HIGHLIGHTED_MODELS = [
   GPT_4_1_MINI,
   GPT_O4_MINI,
   GPT_O4_MINI,
+  GPT_OSS_120B,
 
   // Deepseek
   DEEPSEEK_R1,
@@ -160,6 +165,10 @@ export const FREE_MODELS = [
   // Gemini
   GEMINI_FLASH_2_5,
   GEMINI_FLASH_2_0,
+
+  // OpenAI
+  GPT_4_1_MINI,
+  GPT_OSS_20B,
 
   // Meta
   LLAMA_4_MAVERICK,
@@ -246,6 +255,14 @@ export const MODEL_DETAILS: Record<ModelId, ModelDetails> = {
   [GPT_4_1_MINI]: {
     displayName: "GPT-4.1-mini",
     reasoning: false,
+  },
+  [GPT_OSS_120B]: {
+    displayName: "GPT-OSS 120B",
+    reasoning: true,
+  },
+  [GPT_OSS_20B]: {
+    displayName: "GPT-OSS 20B",
+    reasoning: true,
   },
 
   // From anthropic
