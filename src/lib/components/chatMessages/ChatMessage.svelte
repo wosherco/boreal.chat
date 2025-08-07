@@ -223,7 +223,7 @@
             <Markdown content={segment.content ?? ""} />
           {/if}
         {:else if segment.kind === "reasoning"}
-          <ReasoningSegment reasoning={segment.content ?? ""} isReasoning={segment.streaming} />
+          <ReasoningSegment reasoning={segment.content ?? ""} streaming={segment.streaming} />
         {:else if segment.kind === "tool_call"}
           TODO: Tool call
         {:else if segment.kind === "tool_result"}

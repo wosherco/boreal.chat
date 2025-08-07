@@ -1,79 +1,131 @@
+<script lang="ts" module>
+  export type ReasoningSegmentState = "default" | "closed" | "open";
+  export const MAX_STREAMING_HEIGHT = 200;
+</script>
+
+<!-- svelte-ignore state_referenced_locally -->
 <script lang="ts">
-  import { ChevronDownIcon, ChevronUpIcon } from "@lucide/svelte";
-  import { onMount } from "svelte";
+  import { ChevronDownIcon } from "@lucide/svelte";
   import Markdown from "../markdown/Markdown.svelte";
+  import { cn } from "$lib/utils";
+  import { useResizeObserver } from "runed";
+  import { StickToBottom } from "stick-to-bottom-svelte";
+  import { fade } from "svelte/transition";
 
   interface Props {
     reasoning: string;
-    isReasoning?: boolean;
+    streaming?: boolean;
     /**
      * @bindable
      */
-    collapsed?: boolean;
+    state?: ReasoningSegmentState;
   }
 
   let {
     reasoning,
-    isReasoning = $bindable(false),
-    collapsed = $bindable(isReasoning === false),
+    streaming = $bindable(false),
+    state: currentState = $bindable("default"),
   }: Props = $props();
 
-  function toggleCollapsed() {
-    collapsed = !collapsed;
-  }
-
-  let reasoningRef: HTMLParagraphElement;
-  let containerRef: HTMLDivElement;
-  let naturalHeight = $state<number>(0);
-
-  function updateNaturalHeight() {
-    if (reasoningRef) {
-      naturalHeight = reasoningRef.scrollHeight;
+  function cycleThroughStates() {
+    switch (currentState) {
+      case "default":
+      case "closed":
+        currentState = "open";
+        break;
+      case "open":
+        currentState = "closed";
+        break;
     }
   }
 
-  function handleResize() {
-    // Small delay to ensure DOM has updated after resize
-    setTimeout(updateNaturalHeight, 0);
-  }
+  let reasoningRef = $state<HTMLDivElement>();
+  let containerRef = $state<HTMLDivElement>();
+  let reasoningHeight = $state(reasoningRef?.clientHeight ?? 0);
 
-  onMount(() => {
-    updateNaturalHeight();
+  // Auto-close when streaming stops and in default state
+  $effect(() => {
+    if (!streaming && currentState === "default") {
+      currentState = "closed";
+    }
   });
 
-  // Update natural height when reasoning content changes
+  // Scroll to top when opening manually
   $effect(() => {
-    if (reasoningRef && reasoning) {
-      handleResize();
+    if (currentState === "open" && containerRef) {
+      containerRef.scrollTop = 0;
     }
+  });
+
+  // Computed properties
+  const isCollapsed = $derived(currentState === "closed");
+  const isDefault = $derived(currentState === "default");
+
+  useResizeObserver(
+    () => reasoningRef,
+    ([rect]) => {
+      reasoningHeight = rect.contentRect.height;
+    },
+  );
+
+  // Calculate display height based on state
+  const displayHeight = $derived.by(() => {
+    if (isCollapsed) return 0;
+    if (isDefault && streaming) return MAX_STREAMING_HEIGHT;
+    return reasoningHeight;
+  });
+
+  const autoScroll = new StickToBottom({
+    contentElement: () => containerRef,
+    scrollElement: () => containerRef,
+    initial: "instant",
+    targetScrollTop: (val) => (streaming && isDefault ? val : 0),
   });
 </script>
 
-<svelte:window on:resize={handleResize} />
-
 <button
-  onclick={toggleCollapsed}
-  class="text-muted-foreground hover:text-foreground flex flex-row items-center gap-2 text-sm"
+  onclick={cycleThroughStates}
+  class="text-muted-foreground hover:text-foreground flex flex-row items-center gap-2 pb-2 text-sm"
 >
-  {#if isReasoning}
+  {#if streaming}
     <p>Reasoning...</p>
   {:else}
     <p>Reasoned</p>
   {/if}
 
-  {#if collapsed}
-    <ChevronDownIcon class="size-4" />
-  {:else}
-    <ChevronUpIcon class="size-4" />
-  {/if}
+  <ChevronDownIcon class={cn("size-4 transition-transform", isCollapsed && "-rotate-90")} />
 </button>
 
-<div
-  bind:this={containerRef}
-  class="overflow-hidden transition-all duration-300 ease-in-out"
-  style="height: {collapsed ? '0px' : `${naturalHeight}px`}"
->
-  <div class="text-muted-foreground text-sm" bind:this={reasoningRef}>
-    <Markdown content={reasoning} reasoning={true} />
+<div class="relative">
+  <button
+    onclick={cycleThroughStates}
+    class="bg-muted-foreground/30 hover:bg-muted-foreground/50 absolute top-0 left-0 z-10 h-full w-1 cursor-pointer transition-colors"
+    aria-label="Toggle reasoning section"
+  ></button>
+
+  <div
+    bind:this={containerRef}
+    class={cn(
+      "h-full transition-all duration-300 ease-in-out",
+      isDefault && streaming ? "overflow-y-auto" : "overflow-hidden",
+    )}
+    style={`max-height: ${displayHeight}px;`}
+  >
+    <div class="text-muted-foreground pl-4 text-sm" bind:this={reasoningRef}>
+      <Markdown content={reasoning} reasoning={true} />
+    </div>
   </div>
+
+  {#if isDefault && streaming && !autoScroll.isAtBottom}
+    <button
+      class="from-background absolute bottom-0 left-0 z-10 flex w-full items-center justify-center bg-gradient-to-t to-transparent p-2"
+      onclick={() =>
+        autoScroll.scrollToBottom({
+          animation: "smooth",
+        })}
+      in:fade={{ duration: 100 }}
+    >
+      <ChevronDownIcon class="size-4" />
+    </button>
+  {/if}
 </div>
