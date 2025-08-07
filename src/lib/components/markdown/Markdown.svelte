@@ -6,6 +6,7 @@
   import remarkMath from "remark-math";
   import rehypeKatex from "rehype-katex";
   import "katex/dist/katex.min.css";
+  import { setContext } from "svelte";
 
   interface Props {
     content: string;
@@ -13,6 +14,8 @@
   }
 
   const { content, reasoning = false }: Props = $props();
+
+  setContext("reasoning", reasoning);
 
   const plugins: Plugin[] = [
     {
@@ -29,7 +32,7 @@
   class={cn(
     "break-words",
     reasoning
-      ? "text-muted-foreground prose-sm mb-0"
+      ? "reasoning text-muted-foreground prose-sm mb-0"
       : "prose dark:prose-invert text-foreground max-w-none",
   )}
 >
