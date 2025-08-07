@@ -5,7 +5,7 @@ import { transformKeyToCamelCaseRecursive } from "./utils";
 import { HydratableQuery } from "../db/HydratableQuery.svelte";
 
 export const createCurrentUser = (serverData: ServerDataGetter<CurrentUserInfo>) =>
-  new HydratableQuery(
+  new HydratableQuery<CurrentUserInfo>(
     (db) =>
       db
         .select({
