@@ -3,7 +3,6 @@
   export const MAX_STREAMING_HEIGHT = 200;
 </script>
 
-<!-- svelte-ignore state_referenced_locally -->
 <script lang="ts">
   import { ChevronDownIcon } from "@lucide/svelte";
   import Markdown from "../markdown/Markdown.svelte";
@@ -41,6 +40,7 @@
 
   let reasoningRef = $state<HTMLDivElement>();
   let containerRef = $state<HTMLDivElement>();
+  // svelte-ignore state_referenced_locally
   let reasoningHeight = $state(reasoningRef?.clientHeight ?? 0);
 
   // Auto-close when streaming stops and in default state
