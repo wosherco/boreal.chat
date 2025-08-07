@@ -13,7 +13,8 @@
 
 <a
   {href}
-  target="_blank"
+  target={!href.startsWith("/") ? "_blank" : undefined}
+  rel={href.startsWith("/") ? "noopener noreferrer" : undefined}
   class="hover:bg-accent hover:text-accent-foreground flex max-w-[500px] flex-row items-center gap-4 rounded-lg border p-4 transition-colors"
 >
   <Icon class="size-6 shrink-0" />
