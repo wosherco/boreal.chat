@@ -2,22 +2,47 @@
   import { createCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import type { PageProps } from "./$types";
   import Button from "$lib/components/ui/button/button.svelte";
+  import { createMutation } from "@tanstack/svelte-query";
+  import { orpcQuery } from "$lib/client/orpc";
+  import { toast } from "svelte-sonner";
+  import { Loader2Icon } from "@lucide/svelte";
+  import { goto } from "$app/navigation";
   import SettingsLayout from "$lib/components/settings/SettingsLayout.svelte";
 
   const { data }: PageProps = $props();
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const currentUser = createCurrentUser(() => data.auth.currentUserInfo);
+
+  const requestPasswordResetMutation = createMutation(
+    orpcQuery.v1.auth.requestPasswordResetAuthenticated.mutationOptions({
+      onSuccess: async (res) => {
+        if (res.redirect) {
+          await goto(res.redirect);
+        }
+      },
+      onError: (error) => {
+        toast.error(error.message);
+      },
+    }),
+  );
 </script>
 
 <SettingsLayout title="Authentication" description="Manage your authentication settings.">
   <div class="mt-8 space-y-8">
     <!-- Password Reset Section -->
     <section class="bg-card rounded-lg border p-6 shadow">
-      <h3 class="mb-2 text-lg font-semibold">Password Reset</h3>
+      <h3 class="mb-2 text-lg font-semibold">Reset Password</h3>
       <p class="text-muted-foreground mb-4">Change your account password.</p>
-      <Button disabled>Reset Password (soon...)</Button>
-      <!-- TODO: Wire up password reset logic -->
+      <Button
+        onclick={() => $requestPasswordResetMutation.mutate({})}
+        disabled={$requestPasswordResetMutation.isPending}
+      >
+        {#if $requestPasswordResetMutation.isPending}
+          <Loader2Icon class="size-4 animate-spin" />
+        {/if}
+        Reset Password
+      </Button>
     </section>
 
     <!-- OAuth Accounts Section (Google) -->
