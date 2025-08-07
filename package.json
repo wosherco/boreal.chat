@@ -165,6 +165,7 @@
     "runed": "^0.30.0",
     "sharp": "^0.34.3",
     "shiki": "^3.6.0",
+    "stick-to-bottom-svelte": "^1.0.0",
     "svelte-exmarkdown": "^5.0.1",
     "svelty-email": "^0.1.1"
   },

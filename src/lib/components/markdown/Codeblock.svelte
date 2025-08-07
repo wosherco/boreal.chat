@@ -11,8 +11,10 @@
   import { Button } from "../ui/button";
   import { CopyIcon, DownloadIcon, TextIcon, WrapTextIcon } from "@lucide/svelte";
   import { cn } from "$lib/utils";
-  import { onMount } from "svelte";
+  import { onMount, getContext } from "svelte";
   import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+
+  const reasoning = getContext<boolean>("reasoning");
 
   const astContext = getAstNode();
 
@@ -94,25 +96,32 @@
     isWrapped && "[&_pre]:break-words [&_pre]:![white-space:pre-wrap]",
   )}
 >
-  <div class="bg-input flex h-full flex-row items-center justify-between border-b px-4">
-    <p class="">{codeProps?.filename ?? codeProps?.lang}</p>
+  {#if !reasoning}
+    <div class="bg-input flex h-full flex-row items-center justify-between border-b px-4">
+      <p class="">{codeProps?.filename ?? codeProps?.lang}</p>
 
-    <div class="sticky top-4">
-      <Button variant="ghost" size="icon" onclick={copyToClipboard}>
-        <CopyIcon />
-      </Button>
-      <Button variant="ghost" size="icon" onclick={toggleWrap} class={cn(isWrapped && "bg-accent")}>
-        {#if isWrapped}
-          <TextIcon />
-        {:else}
-          <WrapTextIcon />
-        {/if}
-      </Button>
-      <Button variant="ghost" size="icon" onclick={downloadFile}>
-        <DownloadIcon />
-      </Button>
+      <div class="sticky top-4">
+        <Button variant="ghost" size="icon" onclick={copyToClipboard}>
+          <CopyIcon />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onclick={toggleWrap}
+          class={cn(isWrapped && "bg-accent")}
+        >
+          {#if isWrapped}
+            <TextIcon />
+          {:else}
+            <WrapTextIcon />
+          {/if}
+        </Button>
+        <Button variant="ghost" size="icon" onclick={downloadFile}>
+          <DownloadIcon />
+        </Button>
+      </div>
     </div>
-  </div>
+  {/if}
 
   {#if renderedCode}
     {@html renderedCode}
