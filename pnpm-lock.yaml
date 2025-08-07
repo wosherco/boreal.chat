@@ -143,6 +143,9 @@ importers:
       shiki:
         specifier: ^3.6.0
         version: 3.6.0
+      stick-to-bottom-svelte:
+        specifier: ^1.0.0
+        version: 1.0.0(svelte@5.33.18)
       svelte-exmarkdown:
         specifier: ^5.0.1
         version: 5.0.1(svelte@5.33.18)
@@ -6485,6 +6488,11 @@ packages:
 
   std-env@3.9.0:
     resolution: {integrity: sha512-UGvjygr6F6tpH7o2qyqR6QYpwraIjKSdtzyBdyytFOHmPZY917kwdwLG0RbOjWOnKmnm3PeHjaoLLMie7kPLQw==}
+
+  stick-to-bottom-svelte@1.0.0:
+    resolution: {integrity: sha512-GKw7DSXI6y5rZSQL981aT7qrSOmkR8/gUhg7Fn6K6lClrtZbyM0rn3/uIbxs+qS45K1RQDHXPcmyn39KO0s6Xg==}
+    peerDependencies:
+      svelte: ^5.0.0
 
   stoppable@1.1.0:
     resolution: {integrity: sha512-KXDYZ9dszj6bzvnEMRYvxgeTHU74QBFL54XKtP3nyMuJ81CFYtABZ3bAzL2EdFUaEwJOBOgENyFj3R7oTzDyyw==}
@@ -14135,6 +14143,10 @@ snapshots:
   statuses@2.0.2: {}
 
   std-env@3.9.0: {}
+
+  stick-to-bottom-svelte@1.0.0(svelte@5.33.18):
+    dependencies:
+      svelte: 5.33.18
 
   stoppable@1.1.0: {}
 

@@ -6,7 +6,7 @@
   import Button from "../ui/button/button.svelte";
 </script>
 
-<Alert variant="warning" class="mt-4">
+<Alert variant="warning">
   <MailWarningIcon class="size-4" />
   <AlertTitle>Email not verified</AlertTitle>
   <AlertDescription>

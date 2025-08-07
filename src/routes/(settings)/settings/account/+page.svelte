@@ -1,8 +1,8 @@
 <script lang="ts">
-  import BillingPage from "$lib/components/billing/BillingPage.svelte";
-  import type { PageProps } from "./$types";
   import { createCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
-  import { Loader2Icon } from "@lucide/svelte";
+  import { ArrowRightIcon, Loader2Icon } from "@lucide/svelte";
+  import type { PageProps } from "./$types";
+  import { Button } from "$lib/components/ui/button";
   import SettingsLayout from "$lib/components/settings/SettingsLayout.svelte";
 
   const { data }: PageProps = $props();
@@ -10,17 +10,18 @@
   const user = createCurrentUser(() => data.auth.currentUserInfo);
 </script>
 
-<SettingsLayout
-  title="Pricing & Billing"
-  description="Manage your subscription and billing details."
->
+<SettingsLayout title="Account Overview" description="Manage your boreal.chat account">
   <div class="flex flex-col gap-2 pt-4">
     {#if user.loading}
       <div class="flex items-center justify-center">
         <Loader2Icon class="size-4 animate-spin" />
       </div>
+    {:else if !user.data?.authenticated || !user.data?.data}
+      <Button variant="link" href="/auth" class="w-fit"
+        >Please, log in first <ArrowRightIcon /></Button
+      >
     {:else}
-      <BillingPage />
+      <p>👋 Welcome back, {user.data.data.name}!</p>
     {/if}
   </div>
 </SettingsLayout>
