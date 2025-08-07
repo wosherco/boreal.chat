@@ -40,6 +40,9 @@ import {
   HORIZON_BETA,
   Z_AI_4_5_AIR,
   Z_AI_4_5_AIR_FREE,
+  GPT_5_NANO,
+  GPT_5_MINI,
+  GPT_5_CHAT,
 } from "$lib/common/ai/models";
 import OpenAiIcon from "./OpenAIIcon.svelte";
 import AnthropicIcon from "./AnthropicIcon.svelte";
@@ -68,6 +71,9 @@ export const ICON_MAP: Record<ModelId, Component> = {
   [GPT_4_1_MINI]: OpenAiIcon,
   [GPT_OSS_120B]: OpenAiIcon,
   [GPT_OSS_20B]: OpenAiIcon,
+  [GPT_5_NANO]: OpenAiIcon,
+  [GPT_5_MINI]: OpenAiIcon,
+  [GPT_5_CHAT]: OpenAiIcon,
 
   // From anthropic
   [CLAUDE_OPUS_4]: AnthropicIcon,
