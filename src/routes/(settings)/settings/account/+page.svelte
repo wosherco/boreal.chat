@@ -1,11 +1,8 @@
 <script lang="ts">
   import { createCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { ArrowRightIcon, Loader2Icon } from "@lucide/svelte";
-  import { Card, CardContent, CardHeader, CardTitle } from "$lib/components/ui/card";
-  import SvelteSeo from "svelte-seo";
   import type { PageProps } from "./$types";
   import { Button } from "$lib/components/ui/button";
-  import EmailVerificationAlert from "$lib/components/alerts/EmailVerificationAlert.svelte";
   import SettingsLayout from "$lib/components/settings/SettingsLayout.svelte";
 
   const { data }: PageProps = $props();

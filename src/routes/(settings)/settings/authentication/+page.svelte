@@ -6,6 +6,7 @@
 
   const { data }: PageProps = $props();
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const currentUser = createCurrentUser(() => data.auth.currentUserInfo);
 </script>
 
@@ -23,7 +24,7 @@
     <section class="bg-card pointer-events-none rounded-lg border p-6 opacity-60 shadow">
       <h3 class="mb-2 text-lg font-semibold">OAuth Accounts</h3>
       <p class="text-muted-foreground mb-4">Link your account with Google for easy sign-in.</p>
-      <button class="btn btn-secondary" disabled>Connect Google Account</button>
+      <Button disabled>Connect Google Account</Button>
       <span class="text-muted-foreground ml-2 text-xs">Coming Soon</span>
     </section>
 
@@ -31,7 +32,7 @@
     <section class="bg-card pointer-events-none rounded-lg border p-6 opacity-60 shadow">
       <h3 class="mb-2 text-lg font-semibold">Two-Factor Authentication (2FA)</h3>
       <p class="text-muted-foreground mb-4">Add an extra layer of security to your account.</p>
-      <button class="btn btn-secondary" disabled>Enable 2FA</button>
+      <Button disabled>Enable 2FA</Button>
       <span class="text-muted-foreground ml-2 text-xs">Coming Soon</span>
     </section>
 
@@ -41,7 +42,7 @@
       <p class="text-muted-foreground mb-4">
         Use passkeys or hardware security keys for passwordless login.
       </p>
-      <button class="btn btn-secondary" disabled>Manage Security Keys</button>
+      <Button disabled>Manage Security Keys</Button>
       <span class="text-muted-foreground ml-2 text-xs">Coming Soon</span>
     </section>
   </div>
