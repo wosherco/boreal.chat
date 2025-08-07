@@ -1,6 +1,5 @@
 <script lang="ts">
   import BillingPage from "$lib/components/billing/BillingPage.svelte";
-  import SvelteSeo from "svelte-seo";
   import type { PageProps } from "./$types";
   import { createCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { Loader2Icon } from "@lucide/svelte";

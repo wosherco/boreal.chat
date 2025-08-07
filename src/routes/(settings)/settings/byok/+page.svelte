@@ -6,7 +6,6 @@
   import { toast } from "svelte-sonner";
   import { invalidate } from "$app/navigation";
   import { page } from "$app/state";
-  import SvelteSeo from "svelte-seo";
   import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "$lib/components/ui/card";
   import { createCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { createBYOKs } from "$lib/client/hooks/useBYOKs.svelte";
