@@ -31,6 +31,7 @@
     orpcQuery.v1.auth.passwordReset.mutationOptions({
       onSuccess: async (res) => {
         if (res.success) {
+          toast.success("Password reset successfully! 🎉");
           await goto(res.redirect);
           await getDbInstance().forceConnectionCheck();
         }

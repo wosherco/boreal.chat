@@ -539,7 +539,7 @@ export const v1AuthRouter = osBase.router({
         const session = await createPasswordResetSession(sessionToken, user.id, user.email);
         await sendPasswordResetEmail(
           user.email,
-          `${env.PUBLIC_URL}/settings/authentication/reset-password/verify-email?code=${session.code}`,
+          `${env.PUBLIC_URL}/auth/reset-password/verify-email?code=${session.code}`,
           session.code,
         );
         setPasswordResetSessionTokenCookie(cookies, sessionToken, session.expiresAt);
@@ -551,6 +551,7 @@ export const v1AuthRouter = osBase.router({
 
       return {
         success: true,
+        redirect: "/auth/reset-password/verify-email",
       };
     }),
 
