@@ -1,3 +1,29 @@
+<script lang="ts" module>
+  interface EditingMessage {
+    messageId: string;
+    cleanedMessageText: string;
+    parentMessageId: string | null;
+    chatId: string;
+    model: ModelId;
+    reasoningLevel: ReasoningLevel;
+    webSearchEnabled: boolean;
+    onSubmitCallback: (newThreadId: string, newMessageId: string) => Promise<void>;
+  }
+
+  let editingMessage = $state<EditingMessage | null>(null);
+
+  export const setEditingMessage = (message: EditingMessage) => {
+    editingMessage = message;
+  };
+
+  export const clearEditingMessage = () => {
+    editingMessage = null;
+  };
+
+  export const isEditingMessage = () => editingMessage !== null;
+  export const getEditingMessage = () => editingMessage;
+</script>
+
 <script lang="ts">
   import { orpc, orpcQuery } from "$lib/client/orpc";
   import {
@@ -7,11 +33,7 @@
     GEMINI_FLASH_2_5,
   } from "$lib/common/ai/models";
   import {
-    BrainIcon,
-    ChevronDownIcon,
-    GlobeIcon,
     Loader2Icon,
-    MessageCircleDashedIcon,
     MicIcon,
     PencilIcon,
     SendIcon,
@@ -23,8 +45,6 @@
   import { afterNavigate, goto, onNavigate } from "$app/navigation";
   import { getDbInstance } from "$lib/client/db/index.svelte";
   import { getCurrentChatState } from "$lib/client/state/currentChatState.svelte";
-  import { Toggle } from "../ui/toggle";
-  import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
   import { safe, ORPCError } from "@orpc/client";
   import { browser } from "$app/environment";
   import { toast } from "svelte-sonner";
@@ -36,7 +56,6 @@
   import { TextareaAutosize, useDebounce } from "runed";
   import DraftManager from "../drafts/DraftManager.svelte";
   import type { Draft } from "$lib/common/sharedTypes";
-  import { FileTextIcon } from "@lucide/svelte";
   import { VoiceMessageService } from "$lib/client/services/voiceMessageService.svelte";
   import { env } from "$env/dynamic/public";
   import { createMutation } from "@tanstack/svelte-query";
@@ -45,7 +64,6 @@
   import { PremiumWrapper } from "../ui/premium-badge";
   import { verifySession } from "$lib/client/services/turnstile.svelte";
   import OptionsMenu from "./OptionsMenu.svelte";
-  import { ICON_MAP } from "../icons/iconMap";
   import UploadFileButton from "./UploadFileButton.svelte";
   import { FILES_FEATURE_FLAG, getFeatureFlag } from "$lib/common/featureFlags";
   import VoiceInput from "./VoiceInput.svelte";
@@ -70,7 +88,7 @@
   let textAreaFocused = $state(false);
   let value = $state(page.url.searchParams.get("prompt") ?? "");
   let loading = $state(false);
-  let prevDraftId = $state<string | undefined>(undefined);
+  let prevDraftId: string | undefined = undefined;
   let navigateOnDraftSafe = true;
   let draftManagerOpen = $state(false);
 
@@ -113,8 +131,11 @@
     loading = true;
     expanded = false;
 
-    const currentChatState = getCurrentChatState();
-    const isNewChat = !currentChatState;
+    const editingMessage = getEditingMessage();
+    const chatId = editingMessage?.chatId ?? getCurrentChatState()?.chatId ?? null;
+    const parentMessageId =
+      editingMessage?.parentMessageId ?? getCurrentChatState()?.lastMessageId ?? null;
+    const isNewChat = !chatId;
     const genericErrorMessage = isNewChat ? "Failed to create chat" : "Failed to send message";
 
     // Cancel any pending draft saves
@@ -123,11 +144,11 @@
     try {
       const sendRequest = () =>
         safe(
-          currentChatState
+          chatId
             ? orpc.v1.chat.sendMessage({
-                chatId: currentChatState.chatId,
+                chatId,
                 model: actualSelectedModel,
-                parentMessageId: currentChatState.lastMessageId,
+                parentMessageId,
                 message: value,
                 reasoningLevel: actualReasoningLevel,
                 webSearchEnabled: actualWebSearchEnabled,
@@ -147,6 +168,9 @@
       const onSuccess = async (
         data: NonNullable<Awaited<ReturnType<typeof sendRequest>>["data"]>,
       ) => {
+        void editingMessage?.onSubmitCallback(data.threadId, data.assistantMessageId);
+        clearEditingMessage();
+        navigateToDraft(undefined);
         value = "";
 
         if (isNewChat) {
@@ -159,6 +183,7 @@
                 waitForInsert(messageTable, data.userMessageId, 5000),
               ]);
             } catch (err) {
+              3;
               console.error("Waiting for chat sync failed", err);
             }
           }
@@ -270,32 +295,6 @@
     }
   });
 
-  onNavigate(({ from, to }) => {
-    // This means we're going out of the new chat page, or the current chat page, and we want to save the draft
-    if (from?.url.pathname !== to?.url.pathname) {
-      navigateOnDraftSafe = false;
-      debouncedSaveDraft.runScheduledNow();
-    }
-  });
-
-  $effect(() => {
-    if (draft?.id !== untrack(() => prevDraftId)) {
-      navigateOnDraftSafe = false;
-      debouncedSaveDraft.runScheduledNow();
-      prevDraftId = draft?.id;
-      value = draft?.content ?? "";
-
-      if (draft?.selectedModel && !MODEL_DETAILS[draft.selectedModel]) {
-        console.warn(`Unknown model: ${draft.selectedModel}`);
-        return;
-      }
-
-      selectedModel = draft?.selectedModel ?? untrack(() => actualSelectedModel);
-      webSearchEnabled = draft?.webSearchEnabled ?? untrack(() => actualWebSearchEnabled);
-      reasoningLevel = draft?.reasoningLevel ?? untrack(() => actualReasoningLevel);
-    }
-  });
-
   let modelPickerOpen = $state(false);
 
   const isLastMessageFinished = $derived.by(() => {
@@ -305,20 +304,41 @@
       : true;
   });
 
+  /**
+   * VOICE MESSAGE STUFF
+   */
+  const voiceMessageService = new VoiceMessageService();
+
+  async function startRecording() {
+    const valid = await voiceMessageService.startRecording();
+    if (!valid) {
+      toast.error("Failed to access microphone. Please, allow access in your browser settings.");
+      return;
+    }
+  }
+
+  /**
+   * DRAFT STUFF
+   */
+
+  function navigateToDraft(draftId: string | undefined) {
+    gotoWithSeachParams(page.url, {
+      keepFocus: true,
+      noScroll: true,
+      replaceState: false,
+      searchParams: {
+        draft: draftId,
+      },
+    });
+  }
+
   const upsertDraftMutation = createMutation(
     orpcQuery.v1.draft.upsert.mutationOptions({
       onSuccess: (draft) => {
         // We set this so the user can keep typing without the draft update losing focus
         prevDraftId = draft.id;
         if (navigateOnDraftSafe) {
-          gotoWithSeachParams(page.url, {
-            keepFocus: true,
-            noScroll: true,
-            replaceState: false,
-            searchParams: {
-              draft: draft.id,
-            },
-          });
+          navigateToDraft(draft.id);
         } else {
           navigateOnDraftSafe = true;
         }
@@ -333,13 +353,7 @@
     orpcQuery.v1.draft.delete.mutationOptions({
       onSuccess: () => {
         if (navigateOnDraftSafe) {
-          gotoWithSeachParams(page.url, {
-            keepFocus: true,
-            noScroll: true,
-            searchParams: {
-              draft: undefined,
-            },
-          });
+          navigateToDraft(undefined);
         } else {
           navigateOnDraftSafe = true;
         }
@@ -350,8 +364,7 @@
     }),
   );
 
-  // Draft functionality
-  async function saveDraft() {
+  function saveDraft() {
     if (loading) return;
 
     if (!value.trim()) {
@@ -374,16 +387,74 @@
 
   const debouncedSaveDraft = useDebounce(() => saveDraft(), 1000);
 
-  // Mic stuff
-  const voiceMessageService = new VoiceMessageService();
+  onNavigate(({ from, to }) => {
+    // This means we're going out of the new chat page, or the current chat page, and we want to save the draft
+    if (from?.url.pathname !== to?.url.pathname) {
+      navigateOnDraftSafe = false;
+      debouncedSaveDraft.runScheduledNow();
+    }
 
-  async function startRecording() {
-    const valid = await voiceMessageService.startRecording();
-    if (!valid) {
-      toast.error("Failed to access microphone. Please, allow access in your browser settings.");
+    clearEditingMessage();
+  });
+
+  function resetChat() {
+    value = "";
+    selectedModel = actualSelectedModel;
+    webSearchEnabled = actualWebSearchEnabled;
+    reasoningLevel = actualReasoningLevel;
+    byokId = actualByokId;
+  }
+
+  $effect(() => {
+    if (draft?.id !== prevDraftId) {
+      navigateOnDraftSafe = false;
+      debouncedSaveDraft.runScheduledNow();
+      prevDraftId = draft?.id;
+      if (!draft) {
+        resetChat();
+        return;
+      }
+
+      value = draft.content;
+
+      if (draft.selectedModel && !MODEL_DETAILS[draft.selectedModel]) {
+        console.warn(`Unknown model: ${draft.selectedModel}`);
+        return;
+      }
+
+      selectedModel = draft.selectedModel ?? untrack(() => actualSelectedModel);
+      webSearchEnabled = draft.webSearchEnabled ?? untrack(() => actualWebSearchEnabled);
+      reasoningLevel = draft.reasoningLevel ?? untrack(() => actualReasoningLevel);
+    }
+  });
+
+  /**
+   * EDITING MESSAGE STUFF
+   */
+  $effect(() => {
+    console.log("EDIT EFFECT");
+    const editingMessage = getEditingMessage();
+
+    if (!editingMessage) {
+      navigateOnDraftSafe = false;
+      debouncedSaveDraft.runScheduledNow().then(() => {
+        navigateToDraft(undefined);
+        resetChat();
+      });
       return;
     }
-  }
+
+    // Setting the message
+    debouncedSaveDraft.runScheduledNow().then(() => {
+      value = editingMessage.cleanedMessageText;
+      selectedModel = editingMessage.model;
+      webSearchEnabled = editingMessage.webSearchEnabled;
+      reasoningLevel = editingMessage.reasoningLevel;
+      modelPickerOpen = false;
+      draftManagerOpen = false;
+      expanded = false;
+    });
+  });
 </script>
 
 <KeyboardShortcuts
@@ -457,6 +528,18 @@
         transition:fade={{ duration: 150 }}
         onclick={() => (expanded = false)}
       ></div>
+    {/if}
+
+    {#if isEditingMessage()}
+      <div
+        class="bg-accent pointer-events-auto mb-2 flex items-center gap-3 rounded-full py-0.5 pr-2 pl-4"
+      >
+        <PencilIcon class="size-4" />
+        Editing message
+        <Button variant="ghost" size="icon" class="ml-auto" onclick={() => clearEditingMessage()}>
+          <XIcon />
+        </Button>
+      </div>
     {/if}
 
     <div
