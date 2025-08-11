@@ -496,10 +496,7 @@
                 </Button>
               {:else}
                 <PremiumLockPopover>
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                  >
+                  <Button variant="secondary" size="icon">
                     <MicIcon class="h-4 w-4" />
                   </Button>
                 </PremiumLockPopover>
