@@ -9,6 +9,7 @@ import {
   varchar,
   boolean,
   integer,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 export const userTable = pgTable("user", {
@@ -20,6 +21,9 @@ export const userTable = pgTable("user", {
   emailVerified: boolean().notNull().default(false),
   passwordHash: text(),
   recoveryCode: bytea(),
+
+  // User preferences
+  modelSettings: jsonb().$type<Record<string, unknown> | null>(),
 
   // Payment stuff
   stripeCustomerId: text().unique(),

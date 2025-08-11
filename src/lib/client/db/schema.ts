@@ -1,4 +1,4 @@
-import { boolean, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { boolean, pgTable, text, timestamp, uuid, varchar, jsonb } from "drizzle-orm/pg-core";
 import { SUBSCRIPTION_PLANS, SUBSCRIPTION_STATUS, USER_ROLES } from "../../common";
 import { createChatTables } from "../../common/schema/chats";
 import { createDraftsTable } from "../../common/schema/drafts";
@@ -12,6 +12,9 @@ export const userTable = pgTable("user", {
   profilePicture: text(),
   role: varchar({ length: 255, enum: USER_ROLES }).notNull().default("ANONYMOUS"),
   emailVerified: boolean().notNull().default(false),
+
+  // Preferences
+  modelSettings: jsonb().$type<Record<string, unknown> | null>(),
 
   // Payment stuff
   subscribedUntil: timestamp({ withTimezone: true }),

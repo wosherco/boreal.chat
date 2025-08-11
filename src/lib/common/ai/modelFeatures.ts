@@ -3,7 +3,7 @@
 
 import type { ModelId } from "./models";
 
-export const GENERATED_AT = "2025-08-03T15:08:57.542Z";
+export const GENERATED_AT = "2025-08-11T14:19:30.624Z";
 
 export type ModelFeatures = {
   contextLength: number;
@@ -18,22 +18,33 @@ export type ModelFeatures = {
 };
 
 export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
-  "openrouter/horizon-beta": {
-    contextLength: 256000,
+  "openai/gpt-oss-120b": {
+    contextLength: 131072,
     pricing: {
-      prompt: 0,
-      completion: 0,
+      prompt: 7.256312e-8,
+      completion: 2.903936e-7,
       image: 0,
       web_search: 0,
       request: 0,
     },
-    inputModalities: ["image", "text"],
+    inputModalities: ["text"],
   },
-  "z-ai/glm-4.5": {
+  "openai/gpt-oss-20b": {
     contextLength: 131072,
     pricing: {
-      prompt: 2e-7,
-      completion: 2e-7,
+      prompt: 4e-8,
+      completion: 1.6e-7,
+      image: 0,
+      web_search: 0,
+      request: 0,
+    },
+    inputModalities: ["text"],
+  },
+  "z-ai/glm-4.5": {
+    contextLength: 98304,
+    pricing: {
+      prompt: 1.999188e-7,
+      completion: 8.00064e-7,
       image: 0,
       web_search: 0,
       request: 0,
@@ -52,7 +63,7 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
     inputModalities: ["text"],
   },
   "z-ai/glm-4.5-air": {
-    contextLength: 128000,
+    contextLength: 131072,
     pricing: {
       prompt: 2e-7,
       completion: 0.0000011,
@@ -76,8 +87,8 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
   "qwen/qwen3-coder": {
     contextLength: 262144,
     pricing: {
-      prompt: 3e-7,
-      completion: 0.0000012,
+      prompt: 1.999188e-7,
+      completion: 8.00064e-7,
       image: 0,
       web_search: 0,
       request: 0,
@@ -96,10 +107,10 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
     inputModalities: ["text"],
   },
   "moonshotai/kimi-k2": {
-    contextLength: 32768,
+    contextLength: 63000,
     pricing: {
-      prompt: 8.78e-8,
-      completion: 8.78e-8,
+      prompt: 1.4e-7,
+      completion: 0.00000249,
       image: 0,
       web_search: 0,
       request: 0,
@@ -153,8 +164,8 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
   "deepseek/deepseek-r1-0528": {
     contextLength: 163840,
     pricing: {
-      prompt: 2.72e-7,
-      completion: 2.72e-7,
+      prompt: 1.7992692e-7,
+      completion: 7.200576e-7,
       image: 0,
       web_search: 0,
       request: 0,
@@ -170,7 +181,7 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
       web_search: 0,
       request: 0,
     },
-    inputModalities: ["image", "text"],
+    inputModalities: ["image", "text", "file"],
   },
   "anthropic/claude-sonnet-4": {
     contextLength: 200000,
@@ -181,13 +192,13 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
       web_search: 0,
       request: 0,
     },
-    inputModalities: ["image", "text"],
+    inputModalities: ["image", "text", "file"],
   },
   "qwen/qwen3-30b-a3b": {
     contextLength: 40960,
     pricing: {
-      prompt: 8e-8,
-      completion: 2.9e-7,
+      prompt: 1.999188e-8,
+      completion: 8.00064e-8,
       image: 0,
       web_search: 0,
       request: 0,
@@ -294,7 +305,7 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
     inputModalities: ["text", "image"],
   },
   "deepseek/deepseek-chat-v3-0324:free": {
-    contextLength: 32768,
+    contextLength: 163840,
     pricing: {
       prompt: 0,
       completion: 0,
@@ -307,8 +318,8 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
   "deepseek/deepseek-chat-v3-0324": {
     contextLength: 163840,
     pricing: {
-      prompt: 2.5e-7,
-      completion: 8.5e-7,
+      prompt: 1.7992692e-7,
+      completion: 7.200576e-7,
       image: 0,
       web_search: 0,
       request: 0,
@@ -324,7 +335,7 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
       web_search: 0,
       request: 0,
     },
-    inputModalities: ["text", "image"],
+    inputModalities: ["text", "image", "file"],
   },
   "google/gemini-2.0-flash-001": {
     contextLength: 1048576,
@@ -368,7 +379,7 @@ export const MODEL_FEATURES: Partial<Record<ModelId, ModelFeatures>> = {
       web_search: 0,
       request: 0,
     },
-    inputModalities: ["text", "image"],
+    inputModalities: ["text", "image", "file"],
   },
   "openai/gpt-4o-mini": {
     contextLength: 128000,

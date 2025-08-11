@@ -18,6 +18,11 @@ export type ServerCurrentUserInfo = CurrentUserInfo & {
   canSync: boolean;
 };
 
+export type UserModelSettings = {
+  allmodels: ModelId[];
+  highlight: ModelId[];
+};
+
 export type UserInfo = {
   id: string;
   name: string;
@@ -28,6 +33,7 @@ export type UserInfo = {
   subscribedUntil: Date | null;
   subscriptionStatus: SubscriptionStatus | null;
   subscriptionPlan: SubscriptionPlan | null;
+  modelSettings?: UserModelSettings | null;
 };
 
 export interface Chat {

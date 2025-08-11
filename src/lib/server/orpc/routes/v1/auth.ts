@@ -62,6 +62,8 @@ import { constantTimeEquals } from "$lib/server/services/auth/utils";
 import { verifyAnonymousSession } from "$lib/server/services/auth/anonymous";
 import { isAnonymousUser } from "$lib/common/utils/anonymous";
 import { db } from "$lib/server/db";
+import { userTable } from "$lib/server/db/schema";
+import { eq } from "drizzle-orm";
 
 export const v1AuthRouter = osBase.router({
   getUser: osBase.handler(async ({ context }) => {
@@ -73,6 +75,12 @@ export const v1AuthRouter = osBase.router({
         canSync: false,
       } satisfies ServerCurrentUserInfo;
     }
+
+    const [userRow] = await db
+      .select({ modelSettings: userTable.modelSettings })
+      .from(userTable)
+      .where(eq(userTable.id, user.id));
+
     return {
       authenticated: !isAnonymousUser(user),
       canSync: true,
@@ -86,6 +94,7 @@ export const v1AuthRouter = osBase.router({
         subscribedUntil: user.subscribedUntil,
         subscriptionStatus: user.subscriptionStatus,
         subscriptionPlan: user.subscriptionPlan,
+        modelSettings: userRow?.modelSettings ?? null,
       },
     } satisfies ServerCurrentUserInfo;
   }),

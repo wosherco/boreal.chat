@@ -38,6 +38,16 @@
   }: Props = $props();
 
   const currentUser = createCurrentUser(() => null);
+
+  const userHighlighted = $derived(() => {
+    const settings = currentUser.data?.data?.modelSettings;
+    if (!settings) return new Set(HIGHLIGHTED_MODELS as unknown as ModelId[]);
+    // ensure that any newly highlighted models are still shown highlighted even if not in saved allmodels
+    const base = new Set(settings.highlight as ModelId[]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const m of (HIGHLIGHTED_MODELS as any as ModelId[])) base.add(m);
+    return base;
+  });
 </script>
 
 <Command.Root>
@@ -47,17 +57,11 @@
 
     {#if !BILLING_ENABLED || isSubscribed(currentUser.data?.data ?? null) || byokEnabled}
       {@const viewModels = MODELS.filter((model) => byokEnabled || !MODEL_DETAILS[model].free)}
-      {@const highlightedModels = viewModels.filter((model) =>
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        HIGHLIGHTED_MODELS.includes(model as any),
-      )}
-      {@const experimentalModels = viewModels.filter(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (model) => !HIGHLIGHTED_MODELS.includes(model as any),
-      )}
+      {@const highlightedModels = viewModels.filter((model) => userHighlighted.has(model))}
+      {@const experimentalModels = viewModels.filter((model) => !userHighlighted.has(model))}
 
       <!-- Highlighted Models Group -->
-      <Command.Group heading="Recommended">
+      <Command.Group heading="Highlighted">
         {#each highlightedModels as model (model)}
           <Command.Item
             value={model}
@@ -73,7 +77,7 @@
       </Command.Group>
 
       <!-- Experimental Models Group -->
-      <Command.Group heading="Experimental">
+      <Command.Group heading="Others">
         {#each experimentalModels as model (model)}
           <Command.Item
             value={model}
