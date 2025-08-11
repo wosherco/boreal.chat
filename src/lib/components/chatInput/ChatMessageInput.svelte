@@ -45,6 +45,7 @@
   import { ICON_MAP } from "../icons/iconMap";
   import UploadFileButton from "./UploadFileButton.svelte";
   import { FILES_FEATURE_FLAG, getFeatureFlag } from "$lib/common/featureFlags";
+  import { PremiumLockPopover } from "../ui/premium-badge";
 
   interface Props {
     /**
@@ -484,17 +485,25 @@
         <div class="flex items-center gap-2">
           {#if env.PUBLIC_VOICE_INPUT_ENABLED}
             <PremiumWrapper showBadge={!isUserSubscribed} variant="icon-only">
-              <Button
-                variant="secondary"
-                size="icon"
-                disabled={loading ||
-                  !browser ||
-                  voiceMessageService.state === "error" ||
-                  !isUserSubscribed}
-                onclick={startRecording}
-              >
-                <MicIcon class="h-4 w-4" />
-              </Button>
+              {#if isUserSubscribed}
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  disabled={loading || !browser || voiceMessageService.state === "error"}
+                  onclick={startRecording}
+                >
+                  <MicIcon class="h-4 w-4" />
+                </Button>
+              {:else}
+                <PremiumLockPopover>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                  >
+                    <MicIcon class="h-4 w-4" />
+                  </Button>
+                </PremiumLockPopover>
+              {/if}
             </PremiumWrapper>
           {/if}
 
