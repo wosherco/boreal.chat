@@ -74,7 +74,9 @@
   </button>
 {/snippet}
 
-<div class="flex h-full w-full flex-col items-center justify-center px-4 pb-24">
+<div
+  class="max-h-pwa mb-24 flex h-full w-full flex-col items-center justify-center overflow-y-auto px-4"
+>
   {#if currentUser.data?.authenticated && currentUser.data?.data}
     <h1 class="text-2xl font-bold">👋 Welcome back, {currentUser.data.data.name}!</h1>
     <h2 class="text-muted-foreground text-lg">What do you want to do?</h2>

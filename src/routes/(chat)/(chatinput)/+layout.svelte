@@ -8,14 +8,17 @@
   import { ArrowDownIcon } from "@lucide/svelte";
   import type { LayoutProps } from "./$types";
   import { fade } from "svelte/transition";
-  import { onMount } from "svelte";
+  import { onMount, setContext } from "svelte";
   import { afterNavigate } from "$app/navigation";
+  import { createDraftCount } from "$lib/client/hooks/useDraftCount.svelte";
 
   const { data, children }: LayoutProps = $props();
 
   // Auto scroll functionality
   let chatContainer = $state<HTMLElement>();
   let autoscroll = $state(true);
+
+  setContext("chatContainer", () => chatContainer);
 
   $effect(() => {
     if (!chatContainer) return;
@@ -81,6 +84,7 @@
   );
 
   const currentUser = createCurrentUser(() => data.auth.currentUserInfo);
+  const draftCount = createDraftCount(() => null);
 </script>
 
 <main class="relative h-full overflow-y-auto" bind:this={chatContainer} onscroll={handleScroll}>
@@ -102,5 +106,6 @@
   <ChatMessageInput
     draft={currentDraft.data ?? null}
     isUserSubscribed={isSubscribed(currentUser.data?.data ?? null)}
+    draftCount={draftCount.data ?? 0}
   />
 </div>
