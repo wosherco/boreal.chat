@@ -18,6 +18,11 @@ export type ServerCurrentUserInfo = CurrentUserInfo & {
   canSync: boolean;
 };
 
+export type UserModelSettings = {
+  allmodels: ModelId[];
+  highlight: ModelId[];
+};
+
 export type UserInfo = {
   id: string;
   name: string;
