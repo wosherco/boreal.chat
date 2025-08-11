@@ -11,8 +11,11 @@
     ChevronDownIcon,
     GlobeIcon,
     Loader2Icon,
+    MessageCircleDashedIcon,
     MicIcon,
+    PencilIcon,
     SendIcon,
+    Settings2Icon,
     StopCircleIcon,
   } from "@lucide/svelte";
   import { Button } from "../ui/button";
@@ -38,7 +41,7 @@
   import { env } from "$env/dynamic/public";
   import { createMutation } from "@tanstack/svelte-query";
   import { gotoWithSeachParams } from "$lib/utils/navigate";
-  import { untrack } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { PremiumWrapper } from "../ui/premium-badge";
   import { verifySession } from "$lib/client/services/turnstile.svelte";
   import OptionsMenu from "./OptionsMenu.svelte";
@@ -46,6 +49,11 @@
   import UploadFileButton from "./UploadFileButton.svelte";
   import { FILES_FEATURE_FLAG, getFeatureFlag } from "$lib/common/featureFlags";
   import VoiceInput from "./VoiceInput.svelte";
+  import { fade } from "svelte/transition";
+  import SsrAnimation from "../utils/SSRAnimation.svelte";
+  import ChatInputButton from "./ChatInputButton.svelte";
+  import { Maximize2Icon, XIcon } from "@lucide/svelte";
+  import { cn } from "$lib/utils";
 
   interface Props {
     /**
@@ -54,13 +62,17 @@
     textAreaElement?: HTMLTextAreaElement;
     draft: Draft | null;
     isUserSubscribed: boolean;
+    draftCount: number;
   }
 
-  let { textAreaElement = $bindable(), draft, isUserSubscribed }: Props = $props();
+  let { textAreaElement = $bindable(), draft, isUserSubscribed, draftCount }: Props = $props();
 
+  let textAreaFocused = $state(false);
   let value = $state(page.url.searchParams.get("prompt") ?? "");
   let loading = $state(false);
   let prevDraftId = $state<string | undefined>(undefined);
+  let navigateOnDraftSafe = true;
+  let draftManagerOpen = $state(false);
 
   const defaultSelectedModel = browser ? getLastSelectedModel() : GEMINI_FLASH_2_5;
   const defaultWebSearchEnabled = false;
@@ -84,15 +96,22 @@
   const actualByokId = $derived(byokId ?? getCurrentChatState()?.byokId ?? defaultByokId);
 
   // Reactive statement to adjust textarea height
-  new TextareaAutosize({
+  const autoresize = new TextareaAutosize({
     element: () => textAreaElement,
     input: () => value,
     maxHeight: 24 * 9,
   });
 
+  // Fullscreen/expanded state
+  let expanded = $state(false);
+
+  // Show expand control once content reaches ~4 lines (simple heuristic by newlines)
+  const showExpandToggle = $derived.by(() => autoresize.textareaHeight > 24 * 5);
+
   async function onSendMessage() {
     if (loading || !isLastMessageFinished) return;
     loading = true;
+    expanded = false;
 
     const currentChatState = getCurrentChatState();
     const isNewChat = !currentChatState;
@@ -217,6 +236,31 @@
     }
   }
 
+  function focusTextArea() {
+    textAreaElement?.focus();
+  }
+
+  function toggleExpanded() {
+    expanded = !expanded;
+    focusTextArea();
+  }
+
+  /**
+   * FOCUS FUNCTIONS
+   */
+  onMount(() => {
+    // We autofocus when mounting the chat input
+    focusTextArea();
+  });
+
+  $effect(() => {
+    if (!draftManagerOpen) {
+      setTimeout(() => {
+        focusTextArea();
+      }, 1);
+    }
+  });
+
   afterNavigate(({ to }) => {
     if (!to) return;
 
@@ -229,12 +273,14 @@
   onNavigate(({ from, to }) => {
     // This means we're going out of the new chat page, or the current chat page, and we want to save the draft
     if (from?.url.pathname !== to?.url.pathname) {
+      navigateOnDraftSafe = false;
       debouncedSaveDraft.runScheduledNow();
     }
   });
 
   $effect(() => {
     if (draft?.id !== untrack(() => prevDraftId)) {
+      navigateOnDraftSafe = false;
       debouncedSaveDraft.runScheduledNow();
       prevDraftId = draft?.id;
       value = draft?.content ?? "";
@@ -264,14 +310,18 @@
       onSuccess: (draft) => {
         // We set this so the user can keep typing without the draft update losing focus
         prevDraftId = draft.id;
-        gotoWithSeachParams(page.url, {
-          keepFocus: true,
-          noScroll: true,
-          replaceState: false,
-          searchParams: {
-            draft: draft.id,
-          },
-        });
+        if (navigateOnDraftSafe) {
+          gotoWithSeachParams(page.url, {
+            keepFocus: true,
+            noScroll: true,
+            replaceState: false,
+            searchParams: {
+              draft: draft.id,
+            },
+          });
+        } else {
+          navigateOnDraftSafe = true;
+        }
       },
       onError: (error) => {
         console.error("Failed to save draft:", error);
@@ -282,13 +332,17 @@
   const deleteDraftMutation = createMutation(
     orpcQuery.v1.draft.delete.mutationOptions({
       onSuccess: () => {
-        gotoWithSeachParams(page.url, {
-          keepFocus: true,
-          noScroll: true,
-          searchParams: {
-            draft: undefined,
-          },
-        });
+        if (navigateOnDraftSafe) {
+          gotoWithSeachParams(page.url, {
+            keepFocus: true,
+            noScroll: true,
+            searchParams: {
+              draft: undefined,
+            },
+          });
+        } else {
+          navigateOnDraftSafe = true;
+        }
       },
       onError: (error) => {
         console.error("Failed to delete draft:", error);
@@ -351,7 +405,7 @@
       key: "j",
       isControl: true,
       callback: () => {
-        textAreaElement?.focus();
+        focusTextArea();
       },
     },
     {
@@ -361,126 +415,156 @@
         modelPickerOpen = !modelPickerOpen;
       },
     },
+    {
+      key: "f",
+      isControl: true,
+      isShift: true,
+      callback: toggleExpanded,
+    },
+    {
+      key: "d",
+      isControl: true,
+      callback: () => {
+        draftManagerOpen = !draftManagerOpen;
+      },
+    },
+    {
+      key: "Escape",
+      callback: () => {
+        if (expanded) {
+          expanded = false;
+        } else if (textAreaFocused) {
+          textAreaElement?.blur();
+        }
+      },
+    },
   ]}
 />
 
-<div
-  class="mx-auto w-full max-w-screen-md px-2"
-  style:padding-bottom="calc(env(safe-area-inset-bottom) + var(--spacing) * 2)"
->
+<SsrAnimation>
   <div
-    class="bg-card group pointer-events-auto z-50 flex w-full flex-col gap-3
-    rounded-lg"
+    class={cn(
+      "mx-auto h-min w-full max-w-screen-md px-2 pb-[calc(env(safe-area-inset-bottom)+var(--spacing)*2)] md:px-2",
+      expanded && "h-pwa p-0 md:py-4",
+    )}
+    transition:fade={{ duration: 150 }}
   >
-    {#if voiceMessageService.state === "idle" || voiceMessageService.state === "error"}
-      <!-- svelte-ignore a11y_autofocus -->
-      <textarea
-        id="chat-input"
-        autocomplete="off"
-        disabled={loading}
-        bind:this={textAreaElement}
-        bind:value
-        oninput={debouncedSaveDraft}
-        placeholder="Message Bot..."
-        class="placeholder:text-muted-foreground min-h-20 w-full resize-none overflow-y-auto border-none bg-transparent p-4 pb-2 focus:ring-0 focus:outline-none"
-      ></textarea>
-
-      <div class="flex items-center justify-between p-2 pt-0">
-        <div class="flex items-center gap-2">
-          <DraftManager>
-            <Button variant="ghost" size="icon" disabled={loading || !browser}>
-              <FileTextIcon class="h-4 w-4" />
-            </Button>
-          </DraftManager>
-
-          {#if getFeatureFlag(FILES_FEATURE_FLAG).enabled}
-            <UploadFileButton />
-          {/if}
-
-          <OptionsMenu
-            selectedModel={actualSelectedModel}
-            onSelectModel={(newModel) => {
-              selectedModel = newModel;
-              setLastSelectedModel(newModel);
-            }}
-            bind:open={modelPickerOpen}
-            byokId={actualByokId}
-            onSelectByok={(newByokId) => (byokId = newByokId)}
-          >
-            <Button variant="ghost">
-              {@const ModelIcon = ICON_MAP[actualSelectedModel]}
-              <ModelIcon class="size-4" />
-              {MODEL_DETAILS[actualSelectedModel].displayName}
-              <ChevronDownIcon class="h-4 w-4" />
-            </Button>
-          </OptionsMenu>
-
-          <Toggle
-            pressed={actualWebSearchEnabled}
-            onPressedChange={(newWebSearchEnabled) => (webSearchEnabled = newWebSearchEnabled)}
-            class="text-sm"
-            variant="outline"
-          >
-            <GlobeIcon />
-            <span class="hidden text-xs md:block">Web Search</span>
-          </Toggle>
-
-          {#if MODEL_DETAILS[actualSelectedModel].reasoning}
-            <Select
-              type="single"
-              value={actualReasoningLevel}
-              onValueChange={(newValue) => (reasoningLevel = newValue as ReasoningLevel)}
-            >
-              <SelectTrigger>
-                <BrainIcon />
-                <span class="hidden sm:block">
-                  {actualReasoningLevel.charAt(0).toUpperCase() + actualReasoningLevel.slice(1)}
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-              </SelectContent>
-            </Select>
-          {/if}
-        </div>
-
-        <div class="flex items-center gap-2">
-          {#if env.PUBLIC_VOICE_INPUT_ENABLED}
-            <PremiumWrapper showBadge={!isUserSubscribed} variant="icon-only">
-              <Button
-                variant="secondary"
-                size="icon"
-                disabled={loading ||
-                  !browser ||
-                  voiceMessageService.state === "error" ||
-                  !isUserSubscribed}
-                onclick={startRecording}
-              >
-                <MicIcon class="h-4 w-4" />
-              </Button>
-            </PremiumWrapper>
-          {/if}
-
-          <Button
-            disabled={(!value.trim() && isLastMessageFinished) || loading || !browser}
-            onclick={isLastMessageFinished ? onSendMessage : onCancelMessage}
-            size="icon"
-          >
-            {#if loading}
-              <Loader2Icon class="animate-spin" />
-            {:else if !isLastMessageFinished}
-              <StopCircleIcon />
-            {:else}
-              <SendIcon />
-            {/if}
-          </Button>
-        </div>
-      </div>
-    {:else}
-      <VoiceInput {voiceMessageService} onTranscript={(transcript) => (value += transcript)} />
+    {#if expanded}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="pointer-events-auto fixed inset-0 z-[40] bg-black/60"
+        transition:fade={{ duration: 150 }}
+        onclick={() => (expanded = false)}
+      ></div>
     {/if}
+
+    <div
+      class={cn(
+        "bg-card group pointer-events-auto relative z-50 flex h-full w-full flex-col gap-3 rounded-lg transition-[border-radius]",
+        expanded && "rounded-none md:rounded-lg",
+      )}
+    >
+      {#if voiceMessageService.state === "idle" || voiceMessageService.state === "error"}
+        <!-- svelte-ignore a11y_autofocus -->
+        <textarea
+          id="chat-input"
+          autocomplete="off"
+          disabled={loading}
+          bind:this={textAreaElement}
+          bind:value
+          oninput={debouncedSaveDraft}
+          placeholder="What do you need today?"
+          onfocus={() => (textAreaFocused = true)}
+          onblur={() => (textAreaFocused = false)}
+          class="placeholder:text-muted-foreground w-full flex-grow resize-none overflow-y-auto border-none bg-transparent p-3 pb-0 focus:ring-0 focus:outline-none md:p-4"
+        ></textarea>
+
+        {#if showExpandToggle || expanded}
+          <div
+            transition:fade={{ duration: 150 }}
+            class="absolute top-2 right-2 z-10 opacity-80 md:right-4"
+          >
+            <ChatInputButton onclick={toggleExpanded}>
+              {#if expanded}
+                <XIcon class="size-3.5 md:size-4" />
+              {:else}
+                <Maximize2Icon class="size-3.5 md:size-4" />
+              {/if}
+            </ChatInputButton>
+          </div>
+        {/if}
+
+        <div class="flex items-center justify-between p-2 pt-0">
+          <div class="flex items-center gap-2">
+            {#if draftCount > 0}
+              <DraftManager bind:open={draftManagerOpen}>
+                <ChatInputButton disabled={loading || !browser}>
+                  <PencilIcon />
+                  {draftCount}
+                </ChatInputButton>
+              </DraftManager>
+            {/if}
+
+            <OptionsMenu
+              selectedModel={actualSelectedModel}
+              onSelectModel={(newModel) => {
+                selectedModel = newModel;
+                setLastSelectedModel(newModel);
+              }}
+              bind:open={modelPickerOpen}
+              byokId={actualByokId}
+              onSelectByok={(newByokId) => (byokId = newByokId)}
+              reasoningLevel={actualReasoningLevel}
+              onSelectReasoningLevel={(newReasoningLevel) => (reasoningLevel = newReasoningLevel)}
+              webSearch={actualWebSearchEnabled}
+              onSelectWebSearch={(newWebSearch) => (webSearchEnabled = newWebSearch)}
+            >
+              <ChatInputButton>
+                <Settings2Icon />
+              </ChatInputButton>
+            </OptionsMenu>
+
+            {#if getFeatureFlag(FILES_FEATURE_FLAG).enabled}
+              <UploadFileButton />
+            {/if}
+          </div>
+
+          <div class="flex items-center gap-2">
+            {#if env.PUBLIC_VOICE_INPUT_ENABLED}
+              <PremiumWrapper showBadge={!isUserSubscribed} variant="icon-only">
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  disabled={loading ||
+                    !browser ||
+                    voiceMessageService.state === "error" ||
+                    !isUserSubscribed}
+                  onclick={startRecording}
+                >
+                  <MicIcon class="h-4 w-4" />
+                </Button>
+              </PremiumWrapper>
+            {/if}
+
+            <Button
+              disabled={(!value.trim() && isLastMessageFinished) || loading || !browser}
+              onclick={isLastMessageFinished ? onSendMessage : onCancelMessage}
+              size="icon"
+            >
+              {#if loading}
+                <Loader2Icon class="animate-spin" />
+              {:else if !isLastMessageFinished}
+                <StopCircleIcon />
+              {:else}
+                <SendIcon />
+              {/if}
+            </Button>
+          </div>
+        </div>
+      {:else}
+        <VoiceInput {voiceMessageService} onTranscript={(transcript) => (value += transcript)} />
+      {/if}
+    </div>
   </div>
-</div>
+</SsrAnimation>
