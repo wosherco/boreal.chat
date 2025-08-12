@@ -56,9 +56,6 @@ export const GROK_4 = "x-ai/grok-4";
 export const KIMI_K2 = "moonshotai/kimi-k2";
 export const KIMI_K2_FREE = "moonshotai/kimi-k2:free";
 
-// Openrouter
-export const HORIZON_BETA = "openrouter/horizon-beta";
-
 // Z-AI
 export const Z_AI_4_5 = "z-ai/glm-4.5";
 export const Z_AI_4_5_AIR = "z-ai/glm-4.5-air";
@@ -81,7 +78,6 @@ export const MODELS = [
   GPT_4_1_MINI,
   GPT_OSS_120B,
   GPT_OSS_20B,
-  GPT_5_NANO,
   GPT_5_MINI,
   GPT_5_CHAT,
 
@@ -117,9 +113,6 @@ export const MODELS = [
   // From moonshot
   KIMI_K2,
   KIMI_K2_FREE,
-
-  // From openrouter
-  HORIZON_BETA,
 
   // From z-ai
   Z_AI_4_5,
@@ -158,9 +151,6 @@ export const HIGHLIGHTED_MODELS = [
   // Moonshot
   KIMI_K2,
 
-  // Openrouter
-  HORIZON_BETA,
-
   // Z-AI
   Z_AI_4_5,
   Z_AI_4_5_AIR,
@@ -173,6 +163,7 @@ export const FREE_MODELS = [
 
   // OpenAI
   GPT_OSS_20B,
+  GPT_4_1_MINI,
   GPT_5_MINI,
 
   // Meta
@@ -188,9 +179,6 @@ export const FREE_MODELS = [
 
   // Moonshot
   KIMI_K2,
-
-  // Openrouter
-  HORIZON_BETA,
 
   // Z-AI
   Z_AI_4_5_AIR,
@@ -271,10 +259,6 @@ export const MODEL_DETAILS: Record<ModelId, ModelDetails> = {
   },
 
   // GPT-5 (OpenAI)
-  [GPT_5_NANO]: {
-    displayName: "GPT-5-nano",
-    reasoning: false,
-  },
   [GPT_5_MINI]: {
     displayName: "GPT-5-mini",
     reasoning: false,
@@ -383,12 +367,6 @@ export const MODEL_DETAILS: Record<ModelId, ModelDetails> = {
     displayName: "(Free) Kimi K2",
     reasoning: true,
     free: true,
-  },
-
-  // From openrouter
-  [HORIZON_BETA]: {
-    displayName: "Horizon Beta",
-    reasoning: false,
   },
 
   // From z-ai
