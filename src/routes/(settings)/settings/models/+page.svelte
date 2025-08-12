@@ -2,7 +2,12 @@
   import SettingsLayout from "$lib/components/settings/SettingsLayout.svelte";
   import { Input } from "$lib/components/ui/input";
   import { Switch } from "$lib/components/ui/switch";
-  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "$lib/components/ui/tooltip";
+  import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+  } from "$lib/components/ui/tooltip";
   import { createCurrentUser } from "$lib/client/hooks/useCurrentUser.svelte";
   import { orpcQuery } from "$lib/client/orpc";
   import { createMutation, useQueryClient } from "@tanstack/svelte-query";
@@ -39,14 +44,23 @@
     if (!saved) return defaultSettings;
     const known = new Set(MODELS);
     // Merge logic: ensure allmodels tracks current MODELS; highlight keeps saved ones, plus any currently highlighted new models not present before
-    const mergedAll = Array.from(new Set([...(saved.allmodels ?? []), ...MODELS])).filter((m) => known.has(m)) as ModelId[];
+    const mergedAll = Array.from(new Set([...(saved.allmodels ?? []), ...MODELS])).filter((m) =>
+      known.has(m),
+    ) as ModelId[];
 
     const savedHighlight = new Set((saved.highlight ?? []) as ModelId[]);
     // Add newly highlighted models that might have been added since save
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const globalHighlighted = new Set(HIGHLIGHTED_MODELS as any as ModelId[]);
 
-    const mergedHighlight = Array.from(new Set([...savedHighlight, ...[...globalHighlighted].filter((m) => !saved.allmodels?.includes(m) || !savedHighlight.has(m))])) as ModelId[];
+    const mergedHighlight = Array.from(
+      new Set([
+        ...savedHighlight,
+        ...[...globalHighlighted].filter(
+          (m) => !saved.allmodels?.includes(m) || !savedHighlight.has(m),
+        ),
+      ]),
+    ) as ModelId[];
 
     return { allmodels: mergedAll, highlight: mergedHighlight };
   });
@@ -92,7 +106,10 @@
 
   const filteredModels = $derived(() => {
     const q = search.trim().toLowerCase();
-    const list = MODELS.filter((m) => MODEL_DETAILS[m]?.displayName?.toLowerCase().includes(q) || m.toLowerCase().includes(q));
+    const list = MODELS.filter(
+      (m) =>
+        MODEL_DETAILS[m]?.displayName?.toLowerCase().includes(q) || m.toLowerCase().includes(q),
+    );
     return list as ModelId[];
   });
 </script>
@@ -126,13 +143,15 @@
           <div class="flex items-center gap-3">
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger class="text-xs underline-offset-2 hover:underline">Pricing</TooltipTrigger>
+                <TooltipTrigger class="text-xs underline-offset-2 hover:underline"
+                  >Pricing</TooltipTrigger
+                >
                 <TooltipContent>
                   {@const pricing = MODEL_FEATURES[model]?.pricing}
                   {#if pricing}
                     <div class="text-xs">
-                      <div>Prompt: ${'{'}{pricing.prompt}{'}'}/token</div>
-                      <div>Completion: ${'{'}{pricing.completion}{'}'}/token</div>
+                      <div>Prompt: ${"{"}{pricing.prompt}}/token</div>
+                      <div>Completion: ${"{"}{pricing.completion}}/token</div>
                       {#if pricing.image}<div>Image: {pricing.image}</div>{/if}
                       {#if pricing.web_search}<div>Web: {pricing.web_search}</div>{/if}
                       {#if pricing.request}<div>Request: {pricing.request}</div>{/if}

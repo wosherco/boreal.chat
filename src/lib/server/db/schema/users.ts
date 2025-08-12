@@ -11,6 +11,7 @@ import {
   integer,
   jsonb,
 } from "drizzle-orm/pg-core";
+import type { UserModelSettings } from "../../../common/sharedTypes";
 
 export const userTable = pgTable("user", {
   id: uuid().defaultRandom().primaryKey(),
@@ -23,7 +24,7 @@ export const userTable = pgTable("user", {
   recoveryCode: bytea(),
 
   // User preferences
-  modelSettings: jsonb().$type<Record<string, unknown> | null>(),
+  modelSettings: jsonb().$type<UserModelSettings>(),
 
   // Payment stuff
   stripeCustomerId: text().unique(),

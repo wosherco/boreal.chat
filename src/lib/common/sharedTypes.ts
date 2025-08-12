@@ -33,7 +33,6 @@ export type UserInfo = {
   subscribedUntil: Date | null;
   subscriptionStatus: SubscriptionStatus | null;
   subscriptionPlan: SubscriptionPlan | null;
-  modelSettings?: UserModelSettings | null;
 };
 
 export interface Chat {

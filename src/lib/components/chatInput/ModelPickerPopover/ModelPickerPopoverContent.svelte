@@ -45,7 +45,7 @@
     // ensure that any newly highlighted models are still shown highlighted even if not in saved allmodels
     const base = new Set(settings.highlight as ModelId[]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const m of (HIGHLIGHTED_MODELS as any as ModelId[])) base.add(m);
+    for (const m of HIGHLIGHTED_MODELS as any as ModelId[]) base.add(m);
     return base;
   });
 </script>
