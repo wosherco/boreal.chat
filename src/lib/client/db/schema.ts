@@ -4,6 +4,7 @@ import { createChatTables } from "../../common/schema/chats";
 import { createDraftsTable } from "../../common/schema/drafts";
 import { createByokTable } from "../../common/schema/byok";
 import { createFilesTable } from "../../common/schema/files";
+import { createJournalTable } from "../../common/schema/journal";
 
 export const userTable = pgTable("user", {
   id: uuid().defaultRandom().primaryKey(),
@@ -29,6 +30,8 @@ const { chatTable, threadTable, messageTable, messageSegmentsTable, messageSegme
 
 const { draftsTable } = createDraftsTable(userTable, true);
 
+const { journalTable } = createJournalTable(userTable, true);
+
 const { assetTable, draftAttachmentTable, messageAttachmentTable } = createFilesTable(
   messageTable,
   draftsTable,
@@ -43,6 +46,7 @@ export {
   messageSegmentsTable,
   messageSegmentUsageTable,
   draftsTable,
+  journalTable,
   assetTable,
   draftAttachmentTable,
   messageAttachmentTable,

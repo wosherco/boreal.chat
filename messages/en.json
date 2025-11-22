@@ -1,4 +1,14 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "hello_world": "Hello, {name} from en!"
+  "hello_world": "Hello, {name} from en!",
+  "emotional_journal": "Emotional Journal",
+  "journal_emocional": "Journal Emocional",
+  "new_entry": "New Entry",
+  "create_first_entry": "Create Your First Entry",
+  "track_thoughts_emotions": "Track your thoughts and emotions",
+  "no_journal_entries": "No journal entries yet",
+  "start_emotional_journey": "Start your emotional journey by creating your first journal entry.",
+  "mood": "Mood",
+  "journal_entry_title_placeholder": "How are you feeling today?",
+  "journal_entry_content_placeholder": "Write about your thoughts, feelings, or experiences..."
 }

@@ -27,6 +27,7 @@
     ArchiveIcon,
     TrashIcon,
     MailWarningIcon,
+    HeartIcon,
   } from "@lucide/svelte";
   import { goto } from "$app/navigation";
   import { orpc } from "$lib/client/orpc";
@@ -253,6 +254,11 @@
                 </Tabs>
               </div>
             </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onclick={() => goto("/journal")}>
+              <HeartIcon class="mr-2 size-4" />
+              <span>Emotional Journal</span>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onclick={() => goto("/archived")}>
               <ArchiveIcon class="mr-2 size-4" />

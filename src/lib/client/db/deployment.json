@@ -32,7 +32,9 @@
     "when": 1749999276314,
     "tag": "0002_charming_union_jack",
     "hash": "00c91d9c42f42258ced12af5a83468aab56e3e5086b192d7ad395197aff18b73",
-    "sql": ["ALTER TABLE \"messages\" ADD COLUMN \"error\" text;"]
+    "sql": [
+      "ALTER TABLE \"messages\" ADD COLUMN \"error\" text;"
+    ]
   },
   {
     "idx": 3,
@@ -72,21 +74,27 @@
     "when": 1751729562420,
     "tag": "0006_dry_maelstrom",
     "hash": "4d3d4162e4f1ab4a41fc67833eeb95dcae93117e2f9f798aed2328d3807673a1",
-    "sql": ["ALTER TABLE \"user\" ADD COLUMN \"subscription_status\" varchar(255);"]
+    "sql": [
+      "ALTER TABLE \"user\" ADD COLUMN \"subscription_status\" varchar(255);"
+    ]
   },
   {
     "idx": 7,
     "when": 1751757359361,
     "tag": "0007_cold_azazel",
     "hash": "49995c3bf3dedf92e1c6822c0dc4844e873b08a6a6f0c1c8aa8f22af0cc0ef25",
-    "sql": ["ALTER TABLE \"chats\" ADD COLUMN \"pinned\" boolean DEFAULT false NOT NULL;"]
+    "sql": [
+      "ALTER TABLE \"chats\" ADD COLUMN \"pinned\" boolean DEFAULT false NOT NULL;"
+    ]
   },
   {
     "idx": 8,
     "when": 1751909175077,
     "tag": "0008_broken_proudstar",
     "hash": "79d44a61d56fc676d1d2dd716c26f529b7c839b9879f1d8a494b613d3c2f5a43",
-    "sql": ["ALTER TABLE \"user\" ADD COLUMN \"subscription_plan\" varchar(50);"]
+    "sql": [
+      "ALTER TABLE \"user\" ADD COLUMN \"subscription_plan\" varchar(50);"
+    ]
   },
   {
     "idx": 9,
@@ -125,7 +133,9 @@
     "when": 1753132741630,
     "tag": "0012_tricky_young_avengers",
     "hash": "9941de581bde387a48e4158af90e79dd71326d76e64ba0e7502266ff6e865f7c",
-    "sql": ["ALTER TABLE \"user\" ADD COLUMN \"email_verified\" boolean DEFAULT false NOT NULL;"]
+    "sql": [
+      "ALTER TABLE \"user\" ADD COLUMN \"email_verified\" boolean DEFAULT false NOT NULL;"
+    ]
   },
   {
     "idx": 13,
@@ -160,6 +170,15 @@
       "CREATE TABLE \"message_attachments\" (\"id\" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,\"message_id\" uuid NOT NULL,\"asset_id\" uuid NOT NULL);",
       "ALTER TABLE \"byok\" DROP CONSTRAINT \"byok_user_id_user_id_fk\";",
       "CREATE INDEX \"assets_asset_id_index\" ON \"assets\" USING btree (\"asset_id\");"
+    ]
+  },
+  {
+    "idx": 16,
+    "when": 1763834410564,
+    "tag": "0016_colossal_fat_cobra",
+    "hash": "8301ebb84789f05e497d0f41bdeab0a050f04e435a35e94af44bf6a3e5b5946a",
+    "sql": [
+      "CREATE TABLE \"journal_entries\" (\"id\" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,\"user_id\" uuid NOT NULL,\"title\" text,\"content\" text NOT NULL,\"mood\" integer,\"tags\" text,\"created_at\" timestamp with time zone DEFAULT now() NOT NULL,\"updated_at\" timestamp with time zone DEFAULT now() NOT NULL);"
     ]
   }
 ]
