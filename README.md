@@ -1,3 +1,8 @@
+> [!WARNING]
+> I consider this boreal.chat v1. It didn't scale as I expected, I want to do it better.
+>
+> **Check out v2 on [boreal.chat](https://boreal.chat)**, it's P2P, completely encrypted, syncable, and more.
+
 <div align="center">
 
 # 🌌 boreal.chat
