@@ -1,3 +1,5 @@
+export const ssr = (import.meta.env.VITE_PLATFORM as string | undefined) === "web";
+
 import posthog from "posthog-js";
 import { browser } from "$app/environment";
 import type { LayoutLoad } from "./$types";
