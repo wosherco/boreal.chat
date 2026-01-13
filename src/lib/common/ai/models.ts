@@ -15,6 +15,9 @@ export const GPT_4_1_MINI = "openai/gpt-4.1-mini";
 export const GPT_4_1_NANO = "openai/gpt-4.1-nano";
 export const GPT_OSS_120B = "openai/gpt-oss-120b";
 export const GPT_OSS_20B = "openai/gpt-oss-20b";
+export const GPT_5_NANO = "openai/gpt-5-nano";
+export const GPT_5_MINI = "openai/gpt-5-mini";
+export const GPT_5_CHAT = "openai/gpt-5-chat";
 
 // From anthropic
 export const CLAUDE_OPUS_4 = "anthropic/claude-opus-4";
@@ -53,9 +56,6 @@ export const GROK_4 = "x-ai/grok-4";
 export const KIMI_K2 = "moonshotai/kimi-k2";
 export const KIMI_K2_FREE = "moonshotai/kimi-k2:free";
 
-// Openrouter
-export const HORIZON_BETA = "openrouter/horizon-beta";
-
 // Z-AI
 export const Z_AI_4_5 = "z-ai/glm-4.5";
 export const Z_AI_4_5_AIR = "z-ai/glm-4.5-air";
@@ -78,6 +78,8 @@ export const MODELS = [
   GPT_4_1_MINI,
   GPT_OSS_120B,
   GPT_OSS_20B,
+  GPT_5_MINI,
+  GPT_5_CHAT,
 
   // From anthropic
   CLAUDE_OPUS_4,
@@ -112,9 +114,6 @@ export const MODELS = [
   KIMI_K2,
   KIMI_K2_FREE,
 
-  // From openrouter
-  HORIZON_BETA,
-
   // From z-ai
   Z_AI_4_5,
   Z_AI_4_5_AIR,
@@ -134,9 +133,8 @@ export const HIGHLIGHTED_MODELS = [
 
   // OpenAI
   GPT_4_1,
-  GPT_4_1_MINI,
-  GPT_O4_MINI,
-  GPT_O4_MINI,
+  GPT_5_MINI,
+  GPT_5_CHAT,
   GPT_OSS_120B,
 
   // Deepseek
@@ -153,9 +151,6 @@ export const HIGHLIGHTED_MODELS = [
   // Moonshot
   KIMI_K2,
 
-  // Openrouter
-  HORIZON_BETA,
-
   // Z-AI
   Z_AI_4_5,
   Z_AI_4_5_AIR,
@@ -167,8 +162,9 @@ export const FREE_MODELS = [
   GEMINI_FLASH_2_0,
 
   // OpenAI
-  GPT_4_1_MINI,
   GPT_OSS_20B,
+  GPT_4_1_MINI,
+  GPT_5_MINI,
 
   // Meta
   LLAMA_4_MAVERICK,
@@ -183,9 +179,6 @@ export const FREE_MODELS = [
 
   // Moonshot
   KIMI_K2,
-
-  // Openrouter
-  HORIZON_BETA,
 
   // Z-AI
   Z_AI_4_5_AIR,
@@ -263,6 +256,16 @@ export const MODEL_DETAILS: Record<ModelId, ModelDetails> = {
   [GPT_OSS_20B]: {
     displayName: "GPT-OSS 20B",
     reasoning: true,
+  },
+
+  // GPT-5 (OpenAI)
+  [GPT_5_MINI]: {
+    displayName: "GPT-5-mini",
+    reasoning: false,
+  },
+  [GPT_5_CHAT]: {
+    displayName: "GPT-5-chat",
+    reasoning: false,
   },
 
   // From anthropic
@@ -364,12 +367,6 @@ export const MODEL_DETAILS: Record<ModelId, ModelDetails> = {
     displayName: "(Free) Kimi K2",
     reasoning: true,
     free: true,
-  },
-
-  // From openrouter
-  [HORIZON_BETA]: {
-    displayName: "Horizon Beta",
-    reasoning: false,
   },
 
   // From z-ai
