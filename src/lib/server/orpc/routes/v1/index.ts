@@ -6,6 +6,7 @@ import { v1BillingRouter } from "./billing";
 import { v1DraftRouter } from "./draft";
 import { v1VoiceRouter } from "./voice";
 import { v1FilesRouter } from "./files";
+import { v1SettingsRouter } from "./settings";
 
 export const v1Router = {
   chat: v1ChatRouter,
@@ -17,4 +18,5 @@ export const v1Router = {
   voice: v1VoiceRouter,
 
   files: v1FilesRouter,
+  settings: v1SettingsRouter,
 };

@@ -73,6 +73,7 @@ export const v1AuthRouter = osBase.router({
         canSync: false,
       } satisfies ServerCurrentUserInfo;
     }
+
     return {
       authenticated: !isAnonymousUser(user),
       canSync: true,
