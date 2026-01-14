@@ -1,5 +1,19 @@
 # boreal.chat
 
+## 0.3.2
+
+### Patch Changes
+
+- 3b58cfe: Added password reset for authenticated users
+- e21f4af: Added GPT oss model
+- 7859e92: fixed anonymous users spam
+- 381573e: New settings page
+- ba389b6: New models and fixed buffered stream
+- 7859e92: Better Hydration queries (not using stores anymore)
+- 7859e92: Local-fist pglite DB is more stable
+- 8aa44e3: Started with file uploads
+- 3e93b8a: Better reasoning
+
 ## 0.3.1
 
 ### Patch Changes
