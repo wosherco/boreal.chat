@@ -9,14 +9,29 @@
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
   } from "../ui/dropdown-menu";
-  import { ChevronRightIcon, CpuIcon, KeyIcon } from "@lucide/svelte";
+  import {
+    BrainIcon,
+    CheckIcon,
+    ChevronRightIcon,
+    CpuIcon,
+    KeyIcon,
+    GlobeIcon,
+  } from "@lucide/svelte";
   import Drawer from "../ui/drawer/drawer.svelte";
   import { DrawerContent, DrawerTrigger } from "../ui/drawer";
-  import { MODEL_DETAILS, type ModelId } from "$lib/common/ai/models";
+  import {
+    MODEL_DETAILS,
+    REASONING_LEVELS,
+    REASONING_LOW,
+    type ModelId,
+    type ReasoningLevel,
+  } from "$lib/common/ai/models";
   import Button from "../ui/button/button.svelte";
   import ModelPickerContent from "./ModelPickerPopover/ModelPickerPopoverContent.svelte";
   import { createBYOKs } from "$lib/client/hooks/useBYOKs.svelte";
   import { Switch } from "../ui/switch";
+  import HelpTooltip from "../utils/HelpTooltip.svelte";
+  import { capitalize } from "$lib/utils/text";
 
   interface Props {
     /**
@@ -31,6 +46,16 @@
      */
     byokId?: string;
     onSelectByok?: (byokId: string | undefined) => void;
+    /**
+     * @bindable
+     */
+    reasoningLevel: ReasoningLevel;
+    onSelectReasoningLevel: (reasoningLevel: ReasoningLevel) => void;
+    /**
+     * @bindable
+     */
+    webSearch?: boolean;
+    onSelectWebSearch?: (webSearch: boolean) => void;
   }
 
   let inputRef = $state<HTMLInputElement | null>(null);
@@ -42,6 +67,10 @@
     onSelectModel,
     byokId = $bindable(undefined),
     onSelectByok,
+    reasoningLevel = $bindable(REASONING_LOW),
+    onSelectReasoningLevel,
+    webSearch = $bindable(false),
+    onSelectWebSearch,
   }: Props = $props();
 
   let windowWidth = $state(0);
@@ -65,6 +94,13 @@
   function toggleBYOK() {
     onSelectByok?.(byokId ? undefined : openRouterByok?.id);
   }
+
+  function toggleWebSearch() {
+    onSelectWebSearch?.(!webSearch);
+  }
+
+  const modelDetails = $derived(MODEL_DETAILS[selectedModel]);
+  const modelSupportsReasoning = $derived(!!modelDetails?.reasoning);
 </script>
 
 <svelte:window bind:innerWidth={windowWidth} />
@@ -74,7 +110,7 @@
   Models
   {#if selectedModel}
     <span class="text-muted-foreground text-xs">
-      {MODEL_DETAILS[selectedModel].displayName}
+      {modelDetails?.displayName ?? "Unknown"}
     </span>
   {/if}
 {/snippet}
@@ -92,10 +128,23 @@
 {#snippet byokButton()}
   <KeyIcon class="size-4" />
   BYOK
-  {#if hasBYOKs}
-    <Switch checked={!!byokId} onchange={toggleBYOK} class="ml-auto" />
-  {:else}
-    <span class="text-muted-foreground text-xs"> You don't have any BYOKs yet. </span>
+  {#if !hasBYOKs}
+    <HelpTooltip>You don't have any BYOKs yet.</HelpTooltip>
+  {/if}
+  <Switch checked={!!byokId} onchange={toggleBYOK} class="ml-auto" />
+{/snippet}
+
+{#snippet webSearchButton()}
+  <GlobeIcon class="size-4" />
+  Web Search
+  <Switch checked={!!webSearch} onchange={toggleWebSearch} class="ml-auto" />
+{/snippet}
+
+{#snippet reasoningButton()}
+  <BrainIcon class="size-4" />
+  Reasoning Level
+  {#if !modelSupportsReasoning}
+    <HelpTooltip>This model does not support reasoning.</HelpTooltip>
   {/if}
 {/snippet}
 
@@ -127,6 +176,34 @@
       >
         {@render byokButton()}
       </Button>
+
+      <!-- WEB SEARCH -->
+      <Button variant="ghost" class="w-full justify-start" onclick={toggleWebSearch}>
+        {@render webSearchButton()}
+      </Button>
+
+      <!-- REASONING -->
+      <Drawer>
+        <DrawerTrigger disabled={!modelSupportsReasoning}>
+          <Button variant="ghost" class="w-full justify-start" disabled={!modelSupportsReasoning}>
+            {@render reasoningButton()}
+          </Button>
+        </DrawerTrigger>
+        <DrawerContent class="p-0">
+          {#each REASONING_LEVELS as reasoningLevelOption}
+            <Button
+              variant="ghost"
+              class="w-full justify-start"
+              onclick={() => onSelectReasoningLevel?.(reasoningLevelOption)}
+            >
+              {capitalize(reasoningLevelOption)}
+              {#if reasoningLevel === reasoningLevelOption}
+                <CheckIcon class="ml-auto size-4" />
+              {/if}
+            </Button>
+          {/each}
+        </DrawerContent>
+      </Drawer>
     </DrawerContent>
   </Drawer>
 {:else}
@@ -146,9 +223,31 @@
       </DropdownMenuSub>
 
       <!-- BYOK -->
-      <DropdownMenuItem onSelect={toggleBYOK} disabled={!hasBYOKs}>
+      <DropdownMenuItem onSelect={toggleBYOK} disabled={!hasBYOKs} closeOnSelect={false}>
         {@render byokButton()}
       </DropdownMenuItem>
+
+      <!-- WEB SEARCH -->
+      <DropdownMenuItem onSelect={toggleWebSearch} closeOnSelect={false}>
+        {@render webSearchButton()}
+      </DropdownMenuItem>
+
+      <!-- REASONING -->
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger disabled={!modelSupportsReasoning}>
+          {@render reasoningButton()}
+        </DropdownMenuSubTrigger>
+        <DropdownMenuSubContent class="p-0">
+          {#each REASONING_LEVELS as reasoningLevelOption}
+            <DropdownMenuItem onSelect={() => onSelectReasoningLevel?.(reasoningLevelOption)}>
+              {capitalize(reasoningLevelOption)}
+              {#if reasoningLevel === reasoningLevelOption}
+                <CheckIcon class="ml-auto size-4" />
+              {/if}
+            </DropdownMenuItem>
+          {/each}
+        </DropdownMenuSubContent>
+      </DropdownMenuSub>
     </DropdownMenuContent>
   </DropdownMenu>
 {/if}

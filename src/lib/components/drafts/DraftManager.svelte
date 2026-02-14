@@ -25,11 +25,13 @@
 
   interface Props {
     children: Snippet;
+    /**
+     * @bindable
+     */
+    open: boolean;
   }
 
-  let { children }: Props = $props();
-
-  let open = $state(false);
+  let { children, open = $bindable(false) }: Props = $props();
 
   const draftsStore = createDrafts();
   const drafts = $derived(draftsStore.data ?? []);

@@ -1,3 +1,29 @@
+<script lang="ts" module>
+  interface EditingMessage {
+    messageId: string;
+    cleanedMessageText: string;
+    parentMessageId: string | null;
+    chatId: string;
+    model: ModelId;
+    reasoningLevel: ReasoningLevel;
+    webSearchEnabled: boolean;
+    onSubmitCallback: (newThreadId: string, newMessageId: string) => Promise<void>;
+  }
+
+  let editingMessage = $state<EditingMessage | null>(null);
+
+  export const setEditingMessage = (message: EditingMessage) => {
+    editingMessage = message;
+  };
+
+  export const clearEditingMessage = () => {
+    editingMessage = null;
+  };
+
+  export const isEditingMessage = () => editingMessage !== null;
+  export const getEditingMessage = () => editingMessage;
+</script>
+
 <script lang="ts">
   import { orpc, orpcQuery } from "$lib/client/orpc";
   import {
@@ -7,12 +33,11 @@
     GEMINI_FLASH_2_5,
   } from "$lib/common/ai/models";
   import {
-    BrainIcon,
-    ChevronDownIcon,
-    GlobeIcon,
     Loader2Icon,
     MicIcon,
+    PencilIcon,
     SendIcon,
+    Settings2Icon,
     StopCircleIcon,
   } from "@lucide/svelte";
   import { Button } from "../ui/button";
@@ -20,8 +45,6 @@
   import { afterNavigate, goto, onNavigate } from "$app/navigation";
   import { getDbInstance } from "$lib/client/db/index.svelte";
   import { getCurrentChatState } from "$lib/client/state/currentChatState.svelte";
-  import { Toggle } from "../ui/toggle";
-  import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
   import { safe, ORPCError } from "@orpc/client";
   import { browser } from "$app/environment";
   import { toast } from "svelte-sonner";
@@ -33,18 +56,22 @@
   import { TextareaAutosize, useDebounce } from "runed";
   import DraftManager from "../drafts/DraftManager.svelte";
   import type { Draft } from "$lib/common/sharedTypes";
-  import { FileTextIcon } from "@lucide/svelte";
   import { VoiceMessageService } from "$lib/client/services/voiceMessageService.svelte";
   import { env } from "$env/dynamic/public";
   import { createMutation } from "@tanstack/svelte-query";
   import { gotoWithSeachParams } from "$lib/utils/navigate";
-  import { untrack } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { PremiumWrapper } from "../ui/premium-badge";
   import { verifySession } from "$lib/client/services/turnstile.svelte";
   import OptionsMenu from "./OptionsMenu.svelte";
-  import { ICON_MAP } from "../icons/iconMap";
   import UploadFileButton from "./UploadFileButton.svelte";
   import { FILES_FEATURE_FLAG, getFeatureFlag } from "$lib/common/featureFlags";
+  import VoiceInput from "./VoiceInput.svelte";
+  import { fade } from "svelte/transition";
+  import SsrAnimation from "../utils/SSRAnimation.svelte";
+  import ChatInputButton from "./ChatInputButton.svelte";
+  import { Maximize2Icon, XIcon } from "@lucide/svelte";
+  import { cn } from "$lib/utils";
 
   interface Props {
     /**
@@ -53,13 +80,17 @@
     textAreaElement?: HTMLTextAreaElement;
     draft: Draft | null;
     isUserSubscribed: boolean;
+    draftCount: number;
   }
 
-  let { textAreaElement = $bindable(), draft, isUserSubscribed }: Props = $props();
+  let { textAreaElement = $bindable(), draft, isUserSubscribed, draftCount }: Props = $props();
 
+  let textAreaFocused = $state(false);
   let value = $state(page.url.searchParams.get("prompt") ?? "");
   let loading = $state(false);
-  let prevDraftId = $state<string | undefined>(undefined);
+  let prevDraftId: string | undefined = undefined;
+  let navigateOnDraftSafe = true;
+  let draftManagerOpen = $state(false);
 
   const defaultSelectedModel = browser ? getLastSelectedModel() : GEMINI_FLASH_2_5;
   const defaultWebSearchEnabled = false;
@@ -83,18 +114,28 @@
   const actualByokId = $derived(byokId ?? getCurrentChatState()?.byokId ?? defaultByokId);
 
   // Reactive statement to adjust textarea height
-  new TextareaAutosize({
+  const autoresize = new TextareaAutosize({
     element: () => textAreaElement,
     input: () => value,
     maxHeight: 24 * 9,
   });
 
+  // Fullscreen/expanded state
+  let expanded = $state(false);
+
+  // Show expand control once content reaches ~4 lines (simple heuristic by newlines)
+  const showExpandToggle = $derived.by(() => autoresize.textareaHeight > 24 * 5);
+
   async function onSendMessage() {
     if (loading || !isLastMessageFinished) return;
     loading = true;
+    expanded = false;
 
-    const currentChatState = getCurrentChatState();
-    const isNewChat = !currentChatState;
+    const editingMessage = getEditingMessage();
+    const chatId = editingMessage?.chatId ?? getCurrentChatState()?.chatId ?? null;
+    const parentMessageId =
+      editingMessage?.parentMessageId ?? getCurrentChatState()?.lastMessageId ?? null;
+    const isNewChat = !chatId;
     const genericErrorMessage = isNewChat ? "Failed to create chat" : "Failed to send message";
 
     // Cancel any pending draft saves
@@ -103,11 +144,11 @@
     try {
       const sendRequest = () =>
         safe(
-          currentChatState
+          chatId
             ? orpc.v1.chat.sendMessage({
-                chatId: currentChatState.chatId,
+                chatId,
                 model: actualSelectedModel,
-                parentMessageId: currentChatState.lastMessageId,
+                parentMessageId,
                 message: value,
                 reasoningLevel: actualReasoningLevel,
                 webSearchEnabled: actualWebSearchEnabled,
@@ -127,6 +168,9 @@
       const onSuccess = async (
         data: NonNullable<Awaited<ReturnType<typeof sendRequest>>["data"]>,
       ) => {
+        void editingMessage?.onSubmitCallback(data.threadId, data.assistantMessageId);
+        clearEditingMessage();
+        navigateToDraft(undefined);
         value = "";
 
         if (isNewChat) {
@@ -139,6 +183,7 @@
                 waitForInsert(messageTable, data.userMessageId, 5000),
               ]);
             } catch (err) {
+              3;
               console.error("Waiting for chat sync failed", err);
             }
           }
@@ -216,36 +261,37 @@
     }
   }
 
+  function focusTextArea() {
+    textAreaElement?.focus();
+  }
+
+  function toggleExpanded() {
+    expanded = !expanded;
+    focusTextArea();
+  }
+
+  /**
+   * FOCUS FUNCTIONS
+   */
+  onMount(() => {
+    // We autofocus when mounting the chat input
+    focusTextArea();
+  });
+
+  $effect(() => {
+    if (!draftManagerOpen) {
+      setTimeout(() => {
+        focusTextArea();
+      }, 1);
+    }
+  });
+
   afterNavigate(({ to }) => {
     if (!to) return;
 
     const urlPrompt = to.url.searchParams.get("prompt");
     if (urlPrompt && (!value || to.url.searchParams.has("forcePrompt"))) {
       value = urlPrompt;
-    }
-  });
-
-  onNavigate(({ from, to }) => {
-    // This means we're going out of the new chat page, or the current chat page, and we want to save the draft
-    if (from?.url.pathname !== to?.url.pathname) {
-      debouncedSaveDraft.runScheduledNow();
-    }
-  });
-
-  $effect(() => {
-    if (draft?.id !== untrack(() => prevDraftId)) {
-      debouncedSaveDraft.runScheduledNow();
-      prevDraftId = draft?.id;
-      value = draft?.content ?? "";
-
-      if (draft?.selectedModel && !MODEL_DETAILS[draft.selectedModel]) {
-        console.warn(`Unknown model: ${draft.selectedModel}`);
-        return;
-      }
-
-      selectedModel = draft?.selectedModel ?? untrack(() => actualSelectedModel);
-      webSearchEnabled = draft?.webSearchEnabled ?? untrack(() => actualWebSearchEnabled);
-      reasoningLevel = draft?.reasoningLevel ?? untrack(() => actualReasoningLevel);
     }
   });
 
@@ -258,19 +304,44 @@
       : true;
   });
 
+  /**
+   * VOICE MESSAGE STUFF
+   */
+  const voiceMessageService = new VoiceMessageService();
+
+  async function startRecording() {
+    const valid = await voiceMessageService.startRecording();
+    if (!valid) {
+      toast.error("Failed to access microphone. Please, allow access in your browser settings.");
+      return;
+    }
+  }
+
+  /**
+   * DRAFT STUFF
+   */
+
+  function navigateToDraft(draftId: string | undefined) {
+    gotoWithSeachParams(page.url, {
+      keepFocus: true,
+      noScroll: true,
+      replaceState: false,
+      searchParams: {
+        draft: draftId,
+      },
+    });
+  }
+
   const upsertDraftMutation = createMutation(
     orpcQuery.v1.draft.upsert.mutationOptions({
       onSuccess: (draft) => {
         // We set this so the user can keep typing without the draft update losing focus
         prevDraftId = draft.id;
-        gotoWithSeachParams(page.url, {
-          keepFocus: true,
-          noScroll: true,
-          replaceState: false,
-          searchParams: {
-            draft: draft.id,
-          },
-        });
+        if (navigateOnDraftSafe) {
+          navigateToDraft(draft.id);
+        } else {
+          navigateOnDraftSafe = true;
+        }
       },
       onError: (error) => {
         console.error("Failed to save draft:", error);
@@ -281,13 +352,11 @@
   const deleteDraftMutation = createMutation(
     orpcQuery.v1.draft.delete.mutationOptions({
       onSuccess: () => {
-        gotoWithSeachParams(page.url, {
-          keepFocus: true,
-          noScroll: true,
-          searchParams: {
-            draft: undefined,
-          },
-        });
+        if (navigateOnDraftSafe) {
+          navigateToDraft(undefined);
+        } else {
+          navigateOnDraftSafe = true;
+        }
       },
       onError: (error) => {
         console.error("Failed to delete draft:", error);
@@ -295,8 +364,7 @@
     }),
   );
 
-  // Draft functionality
-  async function saveDraft() {
+  function saveDraft() {
     if (loading) return;
 
     if (!value.trim()) {
@@ -319,53 +387,74 @@
 
   const debouncedSaveDraft = useDebounce(() => saveDraft(), 1000);
 
-  // Mic stuff
-  const voiceMessageService = new VoiceMessageService();
-  const volumeLevels = $derived.by(() => {
-    const levels = voiceMessageService.volumeLevels.slice(-20);
-    const remaining = new Array(20 - levels.length).fill(0);
-    return [...remaining, ...levels];
+  onNavigate(({ from, to }) => {
+    // This means we're going out of the new chat page, or the current chat page, and we want to save the draft
+    if (from?.url.pathname !== to?.url.pathname) {
+      navigateOnDraftSafe = false;
+      debouncedSaveDraft.runScheduledNow();
+    }
+
+    clearEditingMessage();
   });
 
-  async function startRecording() {
-    const valid = await voiceMessageService.startRecording();
-    if (!valid) {
-      toast.error("Failed to access microphone. Please, allow access in your browser settings.");
-      return;
+  function resetChat() {
+    value = "";
+    selectedModel = actualSelectedModel;
+    webSearchEnabled = actualWebSearchEnabled;
+    reasoningLevel = actualReasoningLevel;
+    byokId = actualByokId;
+  }
+
+  $effect(() => {
+    if (draft?.id !== prevDraftId) {
+      navigateOnDraftSafe = false;
+      debouncedSaveDraft.runScheduledNow();
+      prevDraftId = draft?.id;
+      if (!draft) {
+        resetChat();
+        return;
+      }
+
+      value = draft.content;
+
+      if (draft.selectedModel && !MODEL_DETAILS[draft.selectedModel]) {
+        console.warn(`Unknown model: ${draft.selectedModel}`);
+        return;
+      }
+
+      selectedModel = draft.selectedModel ?? untrack(() => actualSelectedModel);
+      webSearchEnabled = draft.webSearchEnabled ?? untrack(() => actualWebSearchEnabled);
+      reasoningLevel = draft.reasoningLevel ?? untrack(() => actualReasoningLevel);
     }
-  }
+  });
 
-  async function pauseRecording() {
-    await voiceMessageService.pauseRecording();
-  }
+  /**
+   * EDITING MESSAGE STUFF
+   */
+  $effect(() => {
+    console.log("EDIT EFFECT");
+    const editingMessage = getEditingMessage();
 
-  async function resumeRecording() {
-    await voiceMessageService.resumeRecording();
-  }
-
-  async function stopRecording() {
-    const result = await voiceMessageService.stopRecording();
-
-    if (!result) {
-      voiceMessageService.reset();
-      toast.error("Failed to stop recording");
-      return;
-    }
-
-    try {
-      const { transcript } = await orpc.v1.voice.transcribe({
-        audioBlob: result.audioBlob,
-        duration: result.duration / 1000,
+    if (!editingMessage) {
+      navigateOnDraftSafe = false;
+      debouncedSaveDraft.runScheduledNow().then(() => {
+        navigateToDraft(undefined);
+        resetChat();
       });
-
-      value += transcript;
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to transcribe voice message");
-    } finally {
-      voiceMessageService.reset();
+      return;
     }
-  }
+
+    // Setting the message
+    debouncedSaveDraft.runScheduledNow().then(() => {
+      value = editingMessage.cleanedMessageText;
+      selectedModel = editingMessage.model;
+      webSearchEnabled = editingMessage.webSearchEnabled;
+      reasoningLevel = editingMessage.reasoningLevel;
+      modelPickerOpen = false;
+      draftManagerOpen = false;
+      expanded = false;
+    });
+  });
 </script>
 
 <KeyboardShortcuts
@@ -387,7 +476,7 @@
       key: "j",
       isControl: true,
       callback: () => {
-        textAreaElement?.focus();
+        focusTextArea();
       },
     },
     {
@@ -397,188 +486,168 @@
         modelPickerOpen = !modelPickerOpen;
       },
     },
+    {
+      key: "f",
+      isControl: true,
+      isShift: true,
+      callback: toggleExpanded,
+    },
+    {
+      key: "d",
+      isControl: true,
+      callback: () => {
+        draftManagerOpen = !draftManagerOpen;
+      },
+    },
+    {
+      key: "Escape",
+      callback: () => {
+        if (expanded) {
+          expanded = false;
+        } else if (textAreaFocused) {
+          textAreaElement?.blur();
+        }
+      },
+    },
   ]}
 />
 
-<div class="mx-auto w-full max-w-screen-md px-4">
+<SsrAnimation>
   <div
-    class="bg-muted/50 group pointer-events-auto z-50 flex w-full flex-col gap-3 rounded-lg rounded-b-none border border-b-0 shadow backdrop-blur transition-colors focus-within:border-white"
-    style:padding-bottom="env(safe-area-inset-bottom)"
+    class={cn(
+      "mx-auto h-min w-full max-w-screen-md px-2 pb-[calc(env(safe-area-inset-bottom)+var(--spacing)*2)] md:px-2",
+      expanded && "h-pwa p-0 md:py-4",
+    )}
+    transition:fade={{ duration: 150 }}
   >
-    {#if voiceMessageService.state === "idle" || voiceMessageService.state === "error"}
-      <!-- svelte-ignore a11y_autofocus -->
-      <textarea
-        id="chat-input"
-        autocomplete="off"
-        autofocus={browser}
-        disabled={loading}
-        bind:this={textAreaElement}
-        bind:value
-        oninput={debouncedSaveDraft}
-        placeholder="Message Bot..."
-        class="placeholder:text-muted-foreground min-h-20 w-full resize-none overflow-y-auto border-none bg-transparent p-4 pb-2 focus:ring-0 focus:outline-none"
-      ></textarea>
+    {#if expanded}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="pointer-events-auto fixed inset-0 z-[40] bg-black/60"
+        transition:fade={{ duration: 150 }}
+        onclick={() => (expanded = false)}
+      ></div>
+    {/if}
 
-      <div class="flex items-center justify-between p-2 pt-0">
-        <div class="flex items-center gap-2">
-          <DraftManager>
-            <Button variant="ghost" size="icon" disabled={loading || !browser}>
-              <FileTextIcon class="h-4 w-4" />
-            </Button>
-          </DraftManager>
-
-          {#if getFeatureFlag(FILES_FEATURE_FLAG).enabled}
-            <UploadFileButton />
-          {/if}
-
-          <OptionsMenu
-            selectedModel={actualSelectedModel}
-            onSelectModel={(newModel) => {
-              selectedModel = newModel;
-              setLastSelectedModel(newModel);
-            }}
-            bind:open={modelPickerOpen}
-            byokId={actualByokId}
-            onSelectByok={(newByokId) => (byokId = newByokId)}
-          >
-            <Button variant="ghost">
-              {@const ModelIcon = ICON_MAP[actualSelectedModel]}
-              <ModelIcon class="size-4" />
-              {MODEL_DETAILS[actualSelectedModel].displayName}
-              <ChevronDownIcon class="h-4 w-4" />
-            </Button>
-          </OptionsMenu>
-
-          <Toggle
-            pressed={actualWebSearchEnabled}
-            onPressedChange={(newWebSearchEnabled) => (webSearchEnabled = newWebSearchEnabled)}
-            class="text-sm"
-            variant="outline"
-          >
-            <GlobeIcon />
-            <span class="hidden text-xs md:block">Web Search</span>
-          </Toggle>
-
-          {#if MODEL_DETAILS[actualSelectedModel].reasoning}
-            <Select
-              type="single"
-              value={actualReasoningLevel}
-              onValueChange={(newValue) => (reasoningLevel = newValue as ReasoningLevel)}
-            >
-              <SelectTrigger>
-                <BrainIcon />
-                <span class="hidden sm:block">
-                  {actualReasoningLevel.charAt(0).toUpperCase() + actualReasoningLevel.slice(1)}
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-              </SelectContent>
-            </Select>
-          {/if}
-        </div>
-
-        <div class="flex items-center gap-2">
-          {#if env.PUBLIC_VOICE_INPUT_ENABLED}
-            <PremiumWrapper showBadge={!isUserSubscribed} variant="icon-only">
-              <Button
-                variant="secondary"
-                size="icon"
-                disabled={loading ||
-                  !browser ||
-                  voiceMessageService.state === "error" ||
-                  !isUserSubscribed}
-                onclick={startRecording}
-              >
-                <MicIcon class="h-4 w-4" />
-              </Button>
-            </PremiumWrapper>
-          {/if}
-
-          <Button
-            disabled={(!value.trim() && isLastMessageFinished) || loading || !browser}
-            onclick={isLastMessageFinished ? onSendMessage : onCancelMessage}
-            size="icon"
-          >
-            {#if loading}
-              <Loader2Icon class="animate-spin" />
-            {:else if !isLastMessageFinished}
-              <StopCircleIcon />
-            {:else}
-              <SendIcon />
-            {/if}
-          </Button>
-        </div>
-      </div>
-    {:else}
-      <div class="flex flex-col gap-3 p-4">
-        <!-- Controls row -->
-        <div class="flex items-center justify-between">
-          <!-- Cancel button on the left -->
-          <Button
-            variant="outline"
-            size="sm"
-            onclick={async () => {
-              voiceMessageService.cancelRecording();
-            }}
-            class="text-destructive hover:text-destructive"
-          >
-            Cancel
-          </Button>
-
-          <!-- Pause/Resume and Finish buttons on the right -->
-          <div class="flex items-center gap-2">
-            {#if voiceMessageService.state === "recording"}
-              <Button variant="outline" size="sm" onclick={pauseRecording}>Pause</Button>
-            {:else if voiceMessageService.state === "paused"}
-              <Button variant="outline" size="sm" onclick={resumeRecording}>Resume</Button>
-            {/if}
-
-            {#if voiceMessageService.state === "processing"}
-              <Loader2Icon class="animate-spin" />
-              Processing...
-            {:else}
-              <Button variant="default" size="sm" onclick={stopRecording}>Finish</Button>
-            {/if}
-          </div>
-        </div>
-
-        <!-- Volume visualization -->
-        <div class="flex flex-col items-center gap-2">
-          <!-- Animated vertical bars -->
-          <div class="flex h-12 items-end gap-1">
-            {#each volumeLevels as level, index (index)}
-              <div
-                class="bg-primary rounded-sm transition-all duration-75 ease-out"
-                style="width: 3px; height: {Math.max(2, level * 48)}px; opacity: {0.3 +
-                  level * 0.7};"
-              ></div>
-            {/each}
-          </div>
-
-          <!-- Duration display -->
-          <div class="text-muted-foreground font-mono text-sm">
-            {voiceMessageService.duration / 1000}
-          </div>
-
-          <!-- Recording state indicator -->
-          <div class="text-muted-foreground flex items-center gap-2 text-xs">
-            {#if voiceMessageService.state === "recording"}
-              <div class="h-2 w-2 animate-pulse rounded-full bg-red-500"></div>
-              Recording...
-            {:else if voiceMessageService.state === "paused"}
-              <div class="h-2 w-2 rounded-full bg-yellow-500"></div>
-              Paused
-            {:else if voiceMessageService.state === "processing"}
-              <div class="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
-              Processing...
-            {/if}
-          </div>
-        </div>
+    {#if isEditingMessage()}
+      <div
+        class="bg-accent pointer-events-auto mb-2 flex items-center gap-3 rounded-full py-0.5 pr-2 pl-4"
+      >
+        <PencilIcon class="size-4" />
+        Editing message
+        <Button variant="ghost" size="icon" class="ml-auto" onclick={() => clearEditingMessage()}>
+          <XIcon />
+        </Button>
       </div>
     {/if}
+
+    <div
+      class={cn(
+        "bg-card group pointer-events-auto relative z-50 flex h-full w-full flex-col gap-3 rounded-lg transition-[border-radius]",
+        expanded && "rounded-none md:rounded-lg",
+      )}
+    >
+      {#if voiceMessageService.state === "idle" || voiceMessageService.state === "error"}
+        <!-- svelte-ignore a11y_autofocus -->
+        <textarea
+          id="chat-input"
+          autocomplete="off"
+          disabled={loading}
+          bind:this={textAreaElement}
+          bind:value
+          oninput={debouncedSaveDraft}
+          placeholder="What do you need today?"
+          onfocus={() => (textAreaFocused = true)}
+          onblur={() => (textAreaFocused = false)}
+          class="placeholder:text-muted-foreground w-full flex-grow resize-none overflow-y-auto border-none bg-transparent p-3 pb-0 focus:ring-0 focus:outline-none md:p-4"
+        ></textarea>
+
+        {#if showExpandToggle || expanded}
+          <div
+            transition:fade={{ duration: 150 }}
+            class="absolute top-2 right-2 z-10 opacity-80 md:right-4"
+          >
+            <ChatInputButton onclick={toggleExpanded}>
+              {#if expanded}
+                <XIcon class="size-3.5 md:size-4" />
+              {:else}
+                <Maximize2Icon class="size-3.5 md:size-4" />
+              {/if}
+            </ChatInputButton>
+          </div>
+        {/if}
+
+        <div class="flex items-center justify-between p-2 pt-0">
+          <div class="flex items-center gap-2">
+            {#if draftCount > 0}
+              <DraftManager bind:open={draftManagerOpen}>
+                <ChatInputButton disabled={loading || !browser}>
+                  <PencilIcon />
+                  {draftCount}
+                </ChatInputButton>
+              </DraftManager>
+            {/if}
+
+            <OptionsMenu
+              selectedModel={actualSelectedModel}
+              onSelectModel={(newModel) => {
+                selectedModel = newModel;
+                setLastSelectedModel(newModel);
+              }}
+              bind:open={modelPickerOpen}
+              byokId={actualByokId}
+              onSelectByok={(newByokId) => (byokId = newByokId)}
+              reasoningLevel={actualReasoningLevel}
+              onSelectReasoningLevel={(newReasoningLevel) => (reasoningLevel = newReasoningLevel)}
+              webSearch={actualWebSearchEnabled}
+              onSelectWebSearch={(newWebSearch) => (webSearchEnabled = newWebSearch)}
+            >
+              <ChatInputButton>
+                <Settings2Icon />
+              </ChatInputButton>
+            </OptionsMenu>
+
+            {#if getFeatureFlag(FILES_FEATURE_FLAG).enabled}
+              <UploadFileButton />
+            {/if}
+          </div>
+
+          <div class="flex items-center gap-2">
+            {#if env.PUBLIC_VOICE_INPUT_ENABLED}
+              <PremiumWrapper showBadge={!isUserSubscribed} variant="icon-only">
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  disabled={loading ||
+                    !browser ||
+                    voiceMessageService.state === "error" ||
+                    !isUserSubscribed}
+                  onclick={startRecording}
+                >
+                  <MicIcon class="h-4 w-4" />
+                </Button>
+              </PremiumWrapper>
+            {/if}
+
+            <Button
+              disabled={(!value.trim() && isLastMessageFinished) || loading || !browser}
+              onclick={isLastMessageFinished ? onSendMessage : onCancelMessage}
+              size="icon"
+            >
+              {#if loading}
+                <Loader2Icon class="animate-spin" />
+              {:else if !isLastMessageFinished}
+                <StopCircleIcon />
+              {:else}
+                <SendIcon />
+              {/if}
+            </Button>
+          </div>
+        </div>
+      {:else}
+        <VoiceInput {voiceMessageService} onTranscript={(transcript) => (value += transcript)} />
+      {/if}
+    </div>
   </div>
-</div>
+</SsrAnimation>
